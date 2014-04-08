@@ -1,0 +1,20 @@
+﻿@using GridMvc
+@using GridMvc.Filtering
+@using GridMvc.Html
+@using GridMvc.Sorting
+@model IEnumerable<Bauhaus.Models.Order>
+
+@Html.Grid(Model).Named("ordersGrid").Columns(columns =>
+    {
+        columns.Add(item => item.SapID)
+            .Titled("Order #");
+        columns.Add(item => item.CustomerPO)
+            .Titled("Cust. PO");
+        columns.Add(item => item.Customer.ID)
+            .Titled("Ship To");
+        columns.Add(item => item.Customer.Name)
+            .Titled("Cust. Name");
+        columns.Add(item => item.Status.Code)
+            .Titled("ST");
+        columns.Add(item => item.Type);
+    }).SetRowCssClasses(item => item.RDDF.Confirmed ? "success" : string.Empty).SetLanguage("En").Sortable().Filterable().WithMultipleFilters().WithPaging(50)

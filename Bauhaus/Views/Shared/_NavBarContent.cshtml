@@ -1,0 +1,87 @@
+﻿@if (Request.IsAuthenticated)
+{
+    <ul class="nav navbar-nav">
+        <li><a onclick="JavaScript:window.history.back(1);return false;"><i class="fa fa-arrow-left fa-x2"></i></a></li>
+        @if (User.IsInRole("Admin"))
+        {
+            <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Actions<b class="caret"></b></a>
+                <ul class="dropdown-menu">
+                    <li><a onclick="location.href='@Url.Action("Index", "Report")';return false;">Reports <i class="fa fa-archive fa-x2"></i></a></li>
+                    <li><a onclick="location.href='@Url.Action("ViewOrders", "Order", new { desc = "all" })';return false;">Orders <i class="fa fa-shopping-cart fa-x2"></i></a></li>
+                    <li><a onclick="location.href='@Url.Action("Index", "Customer")';return false;">Customers <i class="fa fa-suitcase fa-x2"></i></a></li>
+                    <li><a onclick="location.href='@Url.Action("VisibilityIndex", "Order")';return false;">Order Tracking <i class="fa fa-map-marker fa-x2"></i></a></li>
+                    <li><a onclick="location.href='@Url.Action("RDDFConfirmation", "Order")';return false;">RDDF Check <i class="fa fa-calendar fa-x2"></i></a></li>
+                    <li class="divider"></li>
+                    <li><a onclick="location.href='@Url.Action("Index", "Carrier")';return false;">Shipments <i class="fa fa-truck fa-x2"></i></a></li>
+                    <li class="divider"></li>
+                    <li><a onclick="location.href='@Url.Action("ManageUsers", "Admin")';return false;">Users <i class="fa fa-users fa-x2"></i></a></li>
+                    <li><a onclick="location.href='@Url.Action("LogIndex", "Admin")';return false;">Log <i class="fa fa-video-camera fa-x2"></i></a></li>
+                </ul>
+            </li>
+
+        }
+
+        @if (User.IsInRole("CSR"))
+        {
+            <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Actions<b class="caret"></b></a>
+                <ul class="dropdown-menu">
+                    <li><a onclick="location.href='@Url.Action("Index", "Report")';return false;">Reports <i class="fa fa-archive fa-x2"></i></a></li>
+                    <li class="divider"></li>
+                    <li class="dropdown-header">Orders <i class="fa fa-shopping-cart"></i></li>
+                    <li><a href="@Url.Action("Index", "Order")"><i class="fa fa-expand"></i> All</a></li>
+                    <li><a href="@Url.Action("Index", "Order", new { filter = true })"><i class="fa fa-filter"></i> Filtered</a></li>
+                    <li class="divider"></li>
+                    <li class="dropdown-header">Customers <i class="fa fa-suitcase fa-x2"></i></li>
+                    <li><a href="@Url.Action("Index", "Customer")"><i class="fa fa-expand"></i> All</a></li>
+                    <li><a href="@Url.Action("Index", "Customer", new { filter = true })"><i class="fa fa-filter"></i> Filtered</a></li>
+                    <li class="divider"></li>
+                    <li><a onclick="location.href='@Url.Action("VisibilityIndex", "Order")';return false;">Order Tracking <i class="fa fa-map-marker fa-x2"></i></a></li>
+                    <li><a onclick="location.href='@Url.Action("RDDFConfirmation", "Order")';return false;">RDDF Check <i class="fa fa-calendar fa-x2"></i></a></li>
+                </ul>
+            </li>
+        }
+        @if (User.IsInRole("CBD"))
+        {
+            <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Actions<b class="caret"></b></a>
+                <ul class="dropdown-menu">
+                    <li><a onclick="location.href='@Url.Action("ViewOrders", "Order", new { desc = "all", filter = true  })';return false;">Orders <i class="fa fa-shopping-cart fa-x2"></i></a></li>
+                    <li><a onclick="location.href='@Url.Action("Index", "Customer", new { filter = true })';return false;">Customers <i class="fa fa-suitcase fa-x2"></i></a></li>
+                    <li><a onclick="location.href='@Url.Action("VisibilityIndex", "Order")';return false;">Order Tracking <i class="fa fa-map-marker fa-x2"></i></a></li>
+                </ul>
+            </li>
+        }
+
+        @if (User.IsInRole("Planner"))
+        {
+            <li class="dropdown">
+                <a href="#" class="dropdown-toggle" data-toggle="dropdown">Actions<b class="caret"></b></a>
+                <ul class="dropdown-menu">
+                    <li><a onclick="location.href='@Url.Action("Index", "Report")';return false;">Reports <i class="fa fa-archive fa-x2"></i></a></li>
+                </ul>
+            </li>
+        }
+    </ul>
+    if (User.IsInRole("Admin") || User.IsInRole("CSR") || User.IsInRole("CBD"))
+    {
+        <form class="navbar-form navbar-left" action="/Order/GeneralSearch" method="post" role="search">
+            <input type="text" placeholder="Search" name="id" style="width:60%" />
+            <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-search"></i></button>
+        </form>
+    }
+
+    <a class="navbar-brand" href="#">
+            @ViewBag.Title
+    </a>
+
+}
+else
+{
+    <ul class="nav navbar-nav">
+        <li>@Html.ActionLink("Home", "Index", "Home")</li>
+        <li>@Html.ActionLink("About", "About", "Home")</li>
+        <li>@Html.ActionLink("Contact", "Contact", "Home")</li>
+    </ul>
+}

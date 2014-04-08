@@ -1,0 +1,48 @@
+﻿@using GridMvc
+@using GridMvc.Filtering
+@using GridMvc.Html
+@using GridMvc.Sorting
+@using Bauhaus.Models
+@model IEnumerable<Vehicle>
+
+@Html.Grid(Model).Named("vehiclesGrid").Columns(columns =>
+                              {
+                                  columns.Add(item => item.Plate);
+                                  columns.Add(item => item.Type);
+                                  columns.Add(item => item.Driver.Name)
+                                      .Titled("Drivers Name");
+                                  columns.Add()
+                                      .Sanitized(false)
+                                      .Encoded(false)
+                                      .RenderValueAs(o =>
+                                        @<div>
+                                            <button type="button" class="btn btn-link loadVeh" value="@o.ID">
+                                                <i class="fa fa-sign-in fa-2x"></i>
+                                            </button>
+                                        </div>
+                                      );
+                              }).SetLanguage("En")
+<script>
+    // Load Vehicle Data on Form
+    $(".loadVeh").click(function () {
+        if ($(this).val() == $("#vehId").val())
+            $("#vehicleInfo").toggle("slow");
+        else {
+            $.post("@Url.Action("GetVehicle")", {
+                id: $(this).val()
+            }, function (data) {
+                if (data.Status != 1)
+                    displayAlert("warning", data.Message);
+                else {
+                    $("#vehId").val(data.Content.ID)
+                    $("#plate").val(data.Content.Plate);
+                    $("#type").val(data.Content.Type);
+                    $("#status").val(data.Content.Status);
+                    $("#name").val(data.Content.Driver.Name);
+                    $("#tel").val(data.Content.Driver.Telephone);
+                    $("#vehicleInfo").show("slow");
+                }
+            });
+        }
+    });
+</script>

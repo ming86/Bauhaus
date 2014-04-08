@@ -1,0 +1,243 @@
+﻿@model DateTime
+
+@{
+    ViewBag.Title = "Dashboard";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-2" style="border-right: solid 2px #c8c8c8">
+
+            <button title="Report Uploading and Processing."class="btn btn-default btn-lg" style="margin-top:15px" onclick="location.href='@Url.Action("Index", "Report")';return false;">
+                Reports
+            <span class="fa fa-archive fa-x2"></span>
+            </button>
+
+            <button title="All information regarding your Orders." type="button" class="btn btn-default btn-lg" style="margin-top:15px" onclick="location.href='@Url.Action("Index", "Order", new { filter = 0 })';return false;">
+                Orders
+                <span class="fa fa-shopping-cart fa-x2"></span>
+            </button>
+
+            <button title="Truck Monitoring" type="button" class="btn btn-default btn-lg" style="margin-top:15px" onclick="location.href='@Url.Action("Index", "Carrier")';return false;">
+                Shipments
+                <span class="fa fa-truck fa-x2"></span>
+            </button>
+
+            <button title="All information regarding Customers." class="btn btn-default btn-lg" style="margin-top:15px" onclick="location.href='@Url.Action("Index", "Customer")';return false;">
+                Customers
+            <span class="fa fa-suitcase fa-x2"></span>
+            </button>
+
+            <button title="Order's Completeness." class="btn btn-default btn-lg" style="margin-top:15px" onclick="location.href='@Url.Action("VisibilityIndex", "Order")';return false;">
+                Order Tracking
+            <span class="fa fa-map-marker fa-x2"></span>
+            </button>
+
+            <button title="Order's Completeness." class="btn btn-default btn-lg" style="margin-top:15px" onclick="location.href='@Url.Action("RDDFConfirmation", "Order")';return false;">
+                RDDF Check
+            <span class="fa fa-calendar fa-x2"></span>
+            </button>
+
+            <button title="System Users and Role Assignation." class="btn btn-default btn-lg" style="margin-top:15px" onclick="location.href='@Url.Action("ManageUsers", "Admin")';return false;">
+                Manage Users
+            <span class="fa fa-users fa-x2"></span>
+            </button>
+
+            <button title="System Users and Role Assignation." class="btn btn-default btn-lg" style="margin-top:15px" onclick="location.href='@Url.Action("ManageRoles", "Admin")';return false;">
+                Manage Roles
+            <span class="fa fa-bookmark-o fa-x2"></span>
+            </button>
+
+            <button title="System Log." class="btn btn-default btn-lg" style="margin-top:15px" onclick="location.href='@Url.Action("LogIndex", "Admin")';return false;">
+                Security Log
+            <span class="fa fa-video-camera fa-x2"></span>
+            </button>
+        </div>
+
+        <div class="col-md-9">
+
+            <ul class="nav nav-tabs">
+                <li class="active"><a href="#general" data-toggle="tab">General</a></li>
+                <li><a href="#distribution" data-toggle="tab">Distribution</a></li>
+                <li>
+                     @using (Html.BeginForm("GeneralSearch", "Order"))
+                    {
+                    <input type="text" placeholder="#?" style="width:70%" name="id" />
+                    <button type="submit" class="btn btn-primary btn-sm"><i class="fa fa-search"></i></button>
+                     }
+                </li>
+                <li>
+                    <small class="text-muted">Last Updated: @Model.ToString("dd/MM/yyyy h:mm tt") <button class="btn btn-link" data-toggle="modal" data-target="#ReportHelp"><i class="fa fa-question-circle"></i></button></small>
+                </li>
+            </ul>
+
+            <!-- Tab panes -->
+            <!-- GENERAL SUMMARY TAB -->
+            <div class="tab-content">
+                <div class="tab-pane active" id="general">
+                    <div class="row">
+                        <div class="col-md-10">
+                            <h3 class="text-center">General Summary</h3>
+                        </div>
+                    </div>
+                    <div class="row" style="margin-top:10px">
+                        <div class="col-md-5">
+                            <ul class="list-group">
+                                <li class="list-group-item"><span class="fa fa-files-o"></span>@Html.ActionLink("Open Items", "CustomDateOrders", "Order", new { option = 3 }, null)<span id="openItems" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadSpecialOrders", "Order", new { option = 3 })"><span class="fa fa-download"></span></a></li>
+                                <li class="list-group-item"><span class="fa fa-clock-o"></span>@Html.ActionLink("15+D Without DSS", "CustomDateOrders", "Order", new { option = 0 }, null)<span id="15D" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadSpecialOrders", "Order", new { option = 0 })"><span class="fa fa-download"></span></a></li>
+                                <li class="list-group-item"><span class="fa fa-anchor"></span>@Html.ActionLink("3+D Non Shipped", "CustomDateOrders", "Order", new { option = 1 }, null)<span id="3D" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadSpecialOrders", "Order", new { option = 1 })"><span class="fa fa-download"></span></a></li>
+                                <li class="list-group-item"><span class="fa fa-ban"></span>@Html.ActionLink("5+D Without POD", "CustomDateOrders", "Order", new { option = 2 }, null)<span id="5D" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadSpecialOrders", "Order", new { option = 2 })"><span class="fa fa-download"></span></a></li>
+                            </ul>
+                            @*<div id="pie" style="height:200px"></div>*@
+                        </div>
+                        <div class="col-md-5">
+                            <ul class="list-group">
+                                <li class="list-group-item"><span class="fa fa-lock"></span>@Html.ActionLink("Blocked", "CustomStOrders", "Order", new { status = 10 }, null)<span id="blocked" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadOrdersByStatus", "Order", new { status = 10 })"><span class="fa fa-download"></span></a></li>
+                                <li class="list-group-item"><span class="fa fa-unlock"></span>@Html.ActionLink("Open", "CustomStOrders", "Order", new { status = 20 }, null)<span id="open" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadOrdersByStatus", "Order", new { status = 20 })"><span class="fa fa-download"></span></a></li>
+                                <li class="list-group-item"><span class="fa fa-dropbox"></span>@Html.ActionLink("Assigned", "CustomStOrders", "Order", new { status = 30 }, null)<span id="assigned" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadOrdersByStatus", "Order", new { status = 30 })"><span class="fa fa-download"></span></a></li>
+                                <li class="list-group-item"><span class="fa fa-calendar"></span>@Html.ActionLink("Planned", "CustomStOrders", "Order", new { status = 40 }, null)<span id="planned" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadOrdersByStatus", "Order", new { status = 40 })"><span class="fa fa-download"></span></a></li>
+                                <li class="list-group-item"><span class="fa fa-road"></span>@Html.ActionLink("On Transit", "CustomStOrders", "Order", new { status = 50 }, null)<span id="onTransit" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadOrdersByStatus", "Order", new { status = 50 })"><span class="fa fa-download"></span></a></li>
+                                <li class="list-group-item"><span class="fa fa-building-o"></span>@Html.ActionLink("On Customer", "CustomStOrders", "Order", new { status = 60 }, null)<span id="onCustomer" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadOrdersByStatus", "Order", new { status = 50 })"><span class="fa fa-download"></span></a></li>
+                                <li class="list-group-item"><span class="fa fa-check"></span>@Html.ActionLink("Delivered", "CustomStOrders", "Order", new { status = 80 }, null)<span id="delivered" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadOrdersByStatus", "Order", new { status = 80 })"><span class="fa fa-download"></span></a></li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane" id="distribution">
+                    <div class="col-md-5">
+                            <ul class="list-group" style="margin-top:10px">
+                                <li class="list-group-item"><i class="fa fa-check"></i>@Html.ActionLink("Planned", "CustomStOrders", "Order", new { status = 10 }, null)<span id="plannedD" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadOrdersByStatus", "Order", new { status = 10 })"><span class="fa fa-download"></span></a></li>
+                                <li class="list-group-item"><i class="fa fa-truck"></i>@Html.ActionLink("Vehicle", "CustomStOrders", "Order", new { status = 30 }, null)<span id="vehicle" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadOrdersByStatus", "Order", new { status = 30 })"><span class="fa fa-download"></span></a></li>
+                                <li class="list-group-item"><i class="fa fa-eraser"></i>@Html.ActionLink("Deleted", "CustomStOrders", "Order", new { status = 40 }, null)<span id="deleted" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadOrdersByStatus", "Order", new { status = 40 })"><span class="fa fa-download"></span></a></li>
+                                <li class="list-group-item"><i class="fa fa-building-o"></i>@Html.ActionLink("Cust. Cap.", "CustomStOrders", "Order", new { status = 50 }, null)<span id="customerCap" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadOrdersByStatus", "Order", new { status = 50 })"><span class="fa fa-download"></span></a></li>
+                                <li class="list-group-item"><i class="fa fa-sort-numeric-asc"></i>@Html.ActionLink("VFR <", "CustomStOrders", "Order", new { status = 20 }, null)<span id="vfr" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadOrdersByStatus", "Order", new { status = 20 })"><span class="fa fa-download"></span></a></li>
+                                <li class="list-group-item"><i class="fa fa-sort-numeric-asc"></i><i class="fa fa-maxcdn"></i>@Html.ActionLink("VFR < Makro", "CustomStOrders", "Order", new { status = 60 }, null)<span id="vfrMakro" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadOrdersByStatus", "Order", new { status = 50 })"><span class="fa fa-download"></span></a></li>
+                                <li class="list-group-item"><i class="fa fa-calendar"></i>@Html.ActionLink("Ap. Confirmation", "CustomStOrders", "Order", new { status = 80 }, null)<span id="appointmentConf" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadOrdersByStatus", "Order", new { status = 80 })"><span class="fa fa-download"></span></a></li>
+                                <li class="list-group-item"><i class="fa fa-minus-square"></i>@Html.ActionLink("Min. Order", "CustomStOrders", "Order", new { status = 80 }, null)<span id="minOrder" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadOrdersByStatus", "Order", new { status = 80 })"><span class="fa fa-download"></span></a></li>
+                                <li class="list-group-item"><i class="fa fa-minus-square"></i><i class="fa fa-maxcdn"></i>@Html.ActionLink("Min. Order Makro", "CustomStOrders", "Order", new { status = 80 }, null)<span id="minOrderMakro" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadOrdersByStatus", "Order", new { status = 80 })"><span class="fa fa-download"></span></a></li>
+                                <li class="list-group-item"><i class="fa fa-minus-square"></i>@Html.ActionLink("ZPLIT", "CustomStOrders", "Order", new { status = 80 }, null)<span id="zsplit" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadOrdersByStatus", "Order", new { status = 80 })"><span class="fa fa-download"></span></a></li>
+                                <li class="list-group-item"><i class="fa fa-minus-square"></i>@Html.ActionLink("Inventory Lack", "CustomStOrders", "Order", new { status = 80 }, null)<span id="inventoryLack" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadOrdersByStatus", "Order", new { status = 80 })"><span class="fa fa-download"></span></a></li>
+                                <li class="list-group-item"><i class="fa fa-minus-square"></i>@Html.ActionLink("Others", "CustomStOrders", "Order", new { status = 80 }, null)<span id="others" class="badge"><i class="fa fa-cog fa-spin"></i></span><a class="pull-right download" href="@Url.Action("DownloadOrdersByStatus", "Order", new { status = 80 })"><span class="fa fa-download"></span></a></li>
+                            </ul>
+                        </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="ReportHelp" tabindex="-1" role="dialog" aria-labelledby="ReportHelpLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+        <h4 class="modal-title" id="ReportHelpLabel">Need up to date information?</h4>
+      </div>
+      <div class="modal-body">
+        <p>You can update order's information manually by loading a ZSKU report following the next steps</p>
+
+          <ol>
+              <li>Open SAP LogOn</li>
+              <li>Choose ZSKU Transaction</li>
+              <li>Select variant created by CN2819</li>
+              <li>Use Layout /VEBAUHAUS</li>
+              <li>Download Report to your computer as "ZSKU.xls"</li>
+              <li>Open Report and save it with ".xlsx" extension</li>
+              <li>Open bauhaus.pg.com and LogIn</li>
+              <li>Select Reports View (<i class="fa fa-archive"></i>)</li>
+              <li>Choose file ZSKU.xlsx and click upload button (<i class="fa fa-cloud-upload"></i>)</li>
+          </ol>
+        
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-primary" onclick="location.href='@Url.Action("Index", "Report")';return false;">Upload Report</button>
+      </div>
+    </div><!-- /.modal-content -->
+  </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+@{
+        
+        string message = "";
+        string type = "";
+        
+        if (TempData["Message"] != null)
+        {
+            message = TempData["Message"].ToString();
+            type = TempData["Type"].ToString();
+        }
+    } 
+
+
+<script>
+    
+
+    $(function () {
+        updateGeneral();
+        displayAlert("@message","@type");
+        
+    });
+
+    function updateGeneral() {
+        $.post("@Url.Action("UpdateGeneral","Order")", function (data) {
+            $("#openItems").html("").animate({ opacity: 0 });
+            $("#openItems").text(data.OpenItems).animate({ opacity: 1 });
+            $("#15D").html("").animate({ opacity: 0 });
+            $("#15D").text(data.AgingOrders).animate({ opacity: 1 });
+            $("#3D").html("").animate({ opacity: 0 });
+            $("#3D").text(data.OutLeadTimeOrders).animate({ opacity: 1 });
+            $("#5D").html("").animate({ opacity: 0 });
+            $("#5D").text(data.OutPODOrders).animate({ opacity: 1 });
+            $("#blocked").html("").animate({ opacity: 0 });
+            $("#blocked").text(data.Blocked).animate({ opacity: 1 });
+            $("#open").html("").animate({ opacity: 0 });
+            $("#open").text(data.Open).animate({ opacity: 1 });
+            $("#assigned").html("").animate({ opacity: 0 });
+            $("#assigned").text(data.Assigned).animate({ opacity: 1 });
+            $("#planned").html("").animate({ opacity: 0 });
+            $("#planned").text(data.Planned).animate({ opacity: 1 });
+            $("#onTransit").html("").animate({ opacity: 0 });
+            $("#onTransit").text(data.OnTransit).animate({ opacity: 1 });
+            $("#onCustomer").html("").animate({ opacity: 0 });
+            $("#onCustomer").text(data.OnCustomer).animate({ opacity: 1 });
+            $("#delivered").html("").animate({ opacity: 0 });
+            $("#delivered").text(data.Delivered).animate({ opacity: 1 });
+        }
+    )
+    };
+
+    function updateDistribution() {
+        $.post("@Url.Action("UpdateDistribution","Order")", function (data) {
+            $("#").html("").animate({ opacity: 0 });
+            $("#openItems").text(data.OpenItems).animate({ opacity: 1 });
+            $("#15D").html("").animate({ opacity: 0 });
+            $("#15D").text(data.AgingOrders).animate({ opacity: 1 });
+            $("#3D").html("").animate({ opacity: 0 });
+            $("#3D").text(data.OutLeadTimeOrders).animate({ opacity: 1 });
+            $("#5D").html("").animate({ opacity: 0 });
+            $("#5D").text(data.OutPODOrders).animate({ opacity: 1 });
+            $("#blocked").html("").animate({ opacity: 0 });
+            $("#blocked").text(data.Blocked).animate({ opacity: 1 });
+            $("#open").html("").animate({ opacity: 0 });
+            $("#open").text(data.Open).animate({ opacity: 1 });
+            $("#assigned").html("").animate({ opacity: 0 });
+            $("#assigned").text(data.Assigned).animate({ opacity: 1 });
+            $("#planned").html("").animate({ opacity: 0 });
+            $("#planned").text(data.Planned).animate({ opacity: 1 });
+            $("#onTransit").html("").animate({ opacity: 0 });
+            $("#onTransit").text(data.OnTransit).animate({ opacity: 1 });
+            $("#onCustomer").html("").animate({ opacity: 0 });
+            $("#onCustomer").text(data.OnCustomer).animate({ opacity: 1 });
+            $("#delivered").html("").animate({ opacity: 0 });
+            $("#delivered").text(data.Delivered).animate({ opacity: 1 });
+        });
+    }
+
+    $(".download").click(function () {
+        toastr.info("Please Wait. Your Download is being prepared.");
+    });
+
+
+</script>

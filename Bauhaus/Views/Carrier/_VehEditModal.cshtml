@@ -1,0 +1,275 @@
+﻿@using Bauhaus.Models
+@model Shipment
+
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-5">
+            <div id="vehiclesGridP">
+                @Html.Action("GetVehiclesGrid", new { id = Model.Carrier.ID, page = 1, elements = 5 })
+            </div>
+            <div id="pagination">
+                <button id="previousPage" type="button" class="btn btn-default">
+                    <i class="fa fa-angle-left"></i>
+                </button>
+                <button id="currentPage" type="button" class="btn btn-default" disabled="disabled">
+                    1
+                </button>
+                <button id="nextPage" type="button" class="btn btn-default">
+                    <i class="fa fa-angle-right"></i>
+                </button>
+            </div>
+        </div>
+        <div class="col-md-5">
+            <div class="row" style="margin-bottom:10px">
+                <button class="btn btn-default" type="button" id="registerVeh">
+                    <i class="fa fa-plus"></i>
+                    Register Vehicle
+                </button>
+                <button class="btn btn-danger" type="button" id="deleteVeh">
+                    <i class="fa fa-times"></i>
+                    Delete Vehicle
+                </button>
+            </div>
+            @if (Model.Vehicle != null)
+            {
+                <div id="vehicleInfo">
+
+                    <input type="hidden" id="vehId" />
+                    <div class="row" style="margin-bottom:10px">
+                        <div class="col-md-2">
+                            <strong class="text-info">Plate</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" id="plate" style="width:200%" value="@Model.Vehicle.Plate" />
+                        </div>
+                    </div>
+                    <div class="row" style="margin-bottom:10px">
+                        <div class="col-md-2">
+                            <strong class="text-info">Type</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="type" id="type">
+                                <option value="VE01">VE01</option>
+                                <option value="VE02">VE02</option>
+                                <option value="VE03">VE03</option>
+                                <option value="VE04">VE04</option>
+                                <option value="VE05">VE05</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row" style="margin-bottom:10px">
+                        <div class="col-md-2">
+                            <strong class="text-info">Status</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="status" style="margin-bottom:10px; width:130px" id="status">
+                                <option value=0>Suspended</option>
+                                <option selected="selected" value=1>Active</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row" style="margin-bottom:10px">
+                        <div class="col-md-2">
+                            <strong class="text-info">Driver</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" id="name" style="width:200%" value="@Model.Vehicle.Driver.Name" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2">
+                            <strong class="text-info">Telephone</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" id="tel" style="width:200%" value="@Model.Vehicle.Driver.Telephone" />
+                        </div>
+                    </div>
+                </div>
+            }
+            else
+            {
+                <div id="vehicleInfo" style="display:none">
+                    <input type="hidden" id="vehId" />
+                    <div class="row" style="margin-bottom:10px">
+                        <div class="col-md-2">
+                            <strong class="text-info">Plate</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" id="plate" style="width:200%" />
+                        </div>
+                    </div>
+                    <div class="row" style="margin-bottom:10px">
+                        <div class="col-md-2">
+                            <strong class="text-info">Type</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="type" id="type">
+                                <option value="VE01">VE01</option>
+                                <option value="VE02">VE02</option>
+                                <option value="VE03">VE03</option>
+                                <option value="VE04">VE04</option>
+                                <option value="VE05">VE05</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row" style="margin-bottom:10px">
+                        <div class="col-md-2">
+                            <strong class="text-info">Status</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <select name="status" style="margin-bottom:10px; width:130px" id="status">
+                                <option value=0>Suspended</option>
+                                <option value=1>Active</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row" style="margin-bottom:10px">
+                        <div class="col-md-2">
+                            <strong class="text-info">Driver</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" id="name" style="width:200%" />
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-2">
+                            <strong class="text-info">Telephone</strong>
+                        </div>
+                        <div class="col-md-3">
+                            <input type="text" id="tel" style="width:200%" />
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+        <!--End of Vehicle Form-->
+    </div>
+</div>
+
+<script>
+    // Register New Vehicle.
+    $("#registerVeh").click(function () {
+        if ($("#plate").val() == "" || $("#name").val() == "" || $("#tel").val() == "" || $("#vehId").val() != "") {
+            if ($("#vehId").val() != "")
+                resetForm();
+            $("#vehicleInfo").show("slow");
+        }
+        else {
+            $.post("@Url.Action("RegisterVehicle")", {
+                carrier: "@Model.Carrier.ID",
+                plate: $("#plate").val(),
+                type: $("#type").val(),
+                driversName: $("#name").val(),
+                driversTelephone: $("#tel").val()
+            }, function (data) {
+                if (data.Status == 0)
+                    displayAlert("info", data.Message);
+                else {
+                    $("#vehicleInfo").hide("slow");
+                    $("#vehiclesGridP").load("@Url.Action("GetVehiclesGrid", new {id = Model.Carrier.ID ,page = 1, elements = 5})");
+                }
+
+            });
+        }
+    })
+
+    //Save & Assign (Edit) Vehicle
+    $("#assign").click(function () {
+        // ASSIGN ONLY
+        if ($("#vehId").val() != "") {
+            $.post("@Url.Action("AssignVehicle")", {
+                ShipmentId: $("#shipN").text(),
+                VehicleId: $("#vehId").val()
+            }, function (data) {
+                if (data.Status != 1)
+                    displayAlert("warning", data.Message);
+                else {
+                    $("button[value=" + $("#shipN").text() + "]")
+                        .parent("div")
+                        .html("<small>" + $("#plate").val() + "</small> <button type='button' class='btn btn-xs btn-default editVehicle' value='" + $("#vehId").val()
+                        + "' data-toggle='modal' data-target='#vehModal'><i class='fa fa-edit'></i></button>");
+                }
+            })
+        }
+            // SAVE AND ASSIGN
+        else {
+            $.post("@Url.Action("SaveAssignVehicle")", {
+                ShipmentId: $("#shipN").text(),
+                carrier: "@Model.Carrier.ID",
+                plate: $("#plate").val(),
+                type: $("#type").val(),
+                driversName: $("#name").val(),
+                driversTelephone: $("#tel").val()
+            }, function (data) {
+                if (data.Status != 1)
+                    displayAlert("warning", data.Message);
+                else {
+                    $("#vehiclesGridP").load("@Url.Action("GetVehiclesGrid", new {id = Model.Carrier.ID ,page = 1, elements = 5})");
+                    $("button[value=" + $("#shipN").text() + "]")
+                        .parent("div")
+                        .html("<small>" + $("#plate").val() + "</small> <button type='button' class='btn btn-default btn-xs editVehicle' value='" + $("#vehId").val()
+                        + "' data-toggle='modal' data-target='#vehModal'><i class='fa fa-edit'></i></button>");
+                }
+            })
+            
+
+        }
+    });
+
+    //Delete Vehicle
+    $("#deleteVeh").click(function () {
+        alert($("small:contains('"+$("#plate").val()+"')").text());
+        if ($("#vehId").val() != "") {
+            $.post("@Url.Action("DeleteVehicle")", {
+                id: $("#vehId").val()
+            }, function (data) {
+                if(data.Status != 1)
+                {
+                    displayAlert("warning", data.Message);
+                }
+                else
+                {
+                    $("#vehiclesGridP").load("@Url.Action("GetVehiclesGrid", new {id = Model.Carrier.ID ,page = 1, elements = 5})").fadeIn("slow");
+                    $("#vehicleInfo").hide("slow");
+                    $("small:contains('" + $("#plate").val() + "')").parent("div").html("<button type='button' class='btn btn-default btn-xs selectVehicle' value='@Model.ID' data-toggle='modal' data-target='#vehModal'><i class='fa fa-plus'></i></button>");
+
+                }
+            });
+        }
+        else {
+            displayAlert("warning", "You must choose a Vehicle to delete.")
+        }
+    });
+
+    // Clear all form text inputs
+    function resetForm() {
+        $("#vehId").val("");
+        $("#plate").val("");
+        $("#name").val("");
+        $("#tel").val("");
+    };
+
+    // Changing Pages
+    $("#previousPage").click(function () {
+        if ($("#currentPage").text() != 1) {
+            $("#vehiclesGridP").load("@Url.Action("GetVehiclesGrid")", {
+                id: "@Model.Carrier.ID",
+                page: parseInt($("#currentPage").text()) - 1,
+                elements: 5
+            }, function () {
+                $("#currentPage").text(parseInt($("#currentPage").text()) - 1);
+            });
+        }
+    });
+
+    $("#nextPage").click(function () {
+        $("#vehiclesGridP").load("@Url.Action("GetVehiclesGrid")", {
+            id: "@Model.Carrier.ID",
+            page: parseInt($("#currentPage").text()) + 1,
+            elements: 5
+        }, function () {
+            $("#currentPage").text(parseInt($("#currentPage").text()) + 1);
+        });
+    });
+</script>

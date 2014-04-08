@@ -1,0 +1,79 @@
+﻿@using GridMvc
+@using GridMvc.Filtering
+@using GridMvc.Html
+@using GridMvc.Sorting
+@using Bauhaus.Models
+@model IEnumerable<Shipment>
+
+@Html.Grid(Model).Named("shipmentsGrid").Columns(columns =>
+    {
+
+        columns.Add(item => item.ID)
+            .Titled("Shipment");
+        columns.Add(item => item.Date)
+            .Format("{0:dd/MM/yyyy}");
+        columns.Add()
+            .Titled("Customers")
+            .Encoded(false)
+            .Sanitized(false)
+            .RenderValueAs(o =>
+                @<div>
+                    @{List<String> total = new List<string> { };
+                    List<String> done = new List<string> { };
+
+                    foreach (Order ord in o.Orders)
+                    {
+                        if (!total.Contains(ord.Customer.Name))
+                        {
+                            total.Add(ord.Customer.Name);
+                        }
+
+                        if (ord.Status.Stage == 5)
+                        {
+                            if (!done.Contains(ord.Customer.Name))
+                            {
+                                done.Add(ord.Customer.Name);
+                            }
+
+                        }
+                    }
+                    }
+                    <strong> @done.Count/@total.Count Customer(s) Delivered.</strong>
+                    <button class="btn btn-xs btn-default expand" type="button" ><i class="fa fa-level-down"></i></button>
+                    <table class="table table-condensed " style="display:none">
+                        @foreach(String customer in total)
+                        { 
+                            <tr>
+                                <td>
+                                    @customer
+                                </td>
+                            </tr>
+                        }
+                    </table>
+                </div>
+        );
+        columns.Add()
+                   .Titled("Vehicle")
+                   .Encoded(false)
+                   .Sanitized(false)
+                   .RenderValueAs(o =>
+                    @<div class="editDiv">
+                        @if (o.Vehicle != null)
+                        {
+                           <small>@o.Vehicle.Plate</small> 
+
+                        }
+                            <button type="button" class="btn btn-xs btn-default btn-xs selectVehicle" value="@o.ID" data-toggle="modal" data-target="#vehModal">
+                                @if(o.Vehicle != null)
+                                {
+                                    <i class="fa fa-edit"></i>
+                                }
+                                else
+                                {
+                                    <i class="fa fa-plus"></i>
+                                }
+                            </button>
+                    </div>
+                       );
+
+    }).SetLanguage("En").WithPaging(10).Sortable().Filterable().WithMultipleFilters()

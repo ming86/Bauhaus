@@ -1,0 +1,284 @@
+﻿@using Bauhaus.Models
+@model Bauhaus.Models.Shipment
+<script src="//netdna.bootstrapcdn.com/bootstrap/3.0.2/js/bootstrap.js"></script>
+
+<table class="table">
+    <tr>
+        <td colspan="2">
+            <strong>Driver</strong>
+            @if (Model.Vehicle != null)
+            {
+
+                @Model.Vehicle.Driver.Name
+                @Model.Vehicle.Driver.Telephone
+
+            }
+            else
+            {
+                <p class="text-danger">Assign a Vehicle</p>
+            }
+        </td>
+    </tr>
+
+    <tr>
+        <td colspan="2" class="active">
+            <strong>Customers</strong>
+        </td>
+    </tr>
+    @{
+        List<String> Customers = new List<string> { };
+        foreach (Order ord in Model.Orders)
+        {
+            if (!Customers.Contains(ord.Customer.Name) && ord.Status.Stage != 5)
+            {
+                Customers.Add(ord.Customer.Name);
+
+                <tr>
+                    <td style="max-width:146px">
+                        <strong>@ord.Customer.Name</strong>
+                        <button type="button" class="btn btn-link" data-container="body" data-toggle="popover" data-placement="left" data-content="@ord.Customer.MainCSROM.Name, @ord.Customer.MainCSROM.Telephone">
+                            <i class="fa fa-phone"></i>
+                        </button>
+                    </td>
+
+                    <td>
+                        <div class="btn-group center" id="statusDiv">
+
+                            @{
+                                <input class="customer" type="hidden" id="customer" value="@ord.Customer.ID" />
+                                <input class="shipment" type="hidden" id="shipment" value="@ord.Shipment.ID" />
+
+                string radio0 = "";
+                string radio1 = "";
+                string radio2 = "";
+                string radio3 = "";
+
+                switch (ord.Status.Stage)
+                {
+                    case 2:
+                        radio0 = "active";
+                        break;
+                    case 3:
+                        radio1 = "active";
+                        break;
+                    case 4:
+                        radio2 = "active";
+                        break;
+                    case 5:
+                        radio0 = "disabled";
+                        radio1 = "disabled";
+                        radio2 = "disabled";
+                        radio3 = "active disabled";
+                        break;
+                    default:
+                        break;
+                }
+                <button type="button" class="btn btn-default btn-xs special @radio0" data-toggle="button" id="radio0" name="DC" value="2">
+                    <i class="fa fa-truck"></i>
+                </button>
+                                <button type="button" class="btn btn-default btn-xs special @radio1" data-toggle="button" id="radio1" name="Transit" value="3">
+                                    <i class="fa fa-road"></i>
+                                </button>
+                                <button type="button" class="btn btn-default btn-xs special @radio2" data-toggle="button" id="radio2" name="Customer" value="4">
+                                    <i class="fa fa-building-o"></i>
+                                </button>
+                                <button type="button" class="btn btn-default btn-xs special @radio3" data-toggle="button" id="radio3" name="Delivered" value="5">
+                                    <i class="fa fa-check"></i>
+                                </button>
+
+                            }
+                        </div>
+                        <small class="text-left">@Html.ReasonResolver(ord.Status.Stage, ord.Status.State, ord.Status.Reason)</small>
+                    </td>
+                </tr>
+
+            }
+        }
+
+        if (!Customers.Any())
+        {
+            <tr>
+                <td>
+                    <p class="text-success">All Customers Delivered</p>
+                </td>
+            </tr>
+
+        }
+    }
+    <tr>
+        <td colspan="2" class="active">
+            <button class="btn btn-default btn-sm toogles" type="button" id="issueToogle">
+                <span class="fa fa-exclamation-triangle text-info"></span> Report Issue
+            </button>
+        </td>
+    </tr>
+    <tr id="inputControls" style="display:none">
+        <td colspan="2">
+            <select id="stage">
+                <option value="0">Select Status</option>
+                <option value="2">En DC.</option>
+                <option value="3">En Tránsito</option>
+                <option value="4">En Cliente</option>
+            </select>
+            <br>
+            <select id="reason" style="margin-top:10px"></select>
+
+            <textarea style="max-width:250px; margin-top:10px" id="comment"></textarea>
+            @if (Model.TransitData != null && Model.TransitData.Any())
+            {
+                <p class="text-muted">
+                    @Model.TransitData.Last().Time.ToString("dd/MM/yyyy h:mm tt")
+                </p>
+            }
+
+            <button class="btn btn-default" style="margin-top:10px" id="saveUpdate">
+                <span class="fa fa-save fa-x2"></span>
+                Update
+            </button>
+        </td>
+    </tr>
+</table>
+
+<script type="text/javascript">
+    // Control Toogler
+    $("#issueToogle").click(function () {
+        $("#inputControls").fadeToggle();
+    });
+
+    // Update Status Methods
+    $("#saveUpdate").click(function () {
+        $.post('@Url.Action("UpdateReason","Carrier")',
+            {
+                shipment: $('#shipment').val(),
+                customer: $('#customer').val(),
+                stage: $('#stage').val(),
+                reason: $('#reason').val(),
+                comment: $('#comment').val()
+            },
+            function (data) {
+                if (data.Status != 1) {
+                    displayAlert("warning", data.Message);
+                }
+                else {
+                    $.post("/Carrier/GetShipment?id=" + $('#shipment').val(), function (data) {
+                        if (data.Status <= 0) {
+                            alert(data.Message);
+                            return;
+                        }
+                        $("#shipment-content").html(data.Content);
+                    });
+                }
+            });
+
+    });
+
+
+    // Navigation Status Controls
+    // Attach listener to every button.
+    controls = document.getElementsByClassName("special");
+    for (var i = 0; i < controls.length; i++) {
+        controls[i].addEventListener('click', redirect, false);
+    }
+
+    // Update Stages
+    function redirect() {
+        $(this).siblings().removeClass('active');
+        $(this).addClass('active');
+        var stage = $(this).val();
+        $.post('@Url.Action("UpdateStage","Carrier")',
+            {
+                shipment: $(this).parent().find('#shipment').val(),
+                customer: $(this).parent().find('#customer').val(),
+                stage: $(this).val()
+            }, function (data) {
+                if (data.Status != 1) {
+                    displayAlert("warning", data.Message);
+                }
+                else {
+
+                    $.post("/Carrier/GetShipment?id=" + $('#shipment').val(), function (data) {
+                        if (data.Status <= 0) {
+                            alert(data.Message);
+                            return;
+                        }
+                        $("#shipment-content").html(data.Content);
+                    });
+                }
+            });
+    }
+
+    // Function to Fill drop list on select
+    jQuery(function ($) {
+        var options = {
+            '2': ['1|No Viajo por Auditoría en BDC',
+                  '2|Falta de paletas',
+                  '3|Retraso en operación en BDC',
+                  '4|Por atraso en recepción de rechazo',
+                  '5|Problemas de facturación',
+                  '6|Problemas con SAP',
+                  '7|Pedido Pospuesto',
+                  '8|Disponibilidad de Vehículo',
+                  '9|No Show',
+                  '10|Disponibilidad de Chuto',
+                  '11|Vehículo Ponchado',
+                  '12|Problemas con el Chofer',
+                  '13|Error creación del Plan',
+                  '14|Error en ruta/Redirección',
+                  '15|Escolta',
+                  '16|Pernocta por Adelanto de Carga',
+                  '17|Pernocta por Falta de producto',
+                  '18|Pernocta en BDC por carga tardia'],
+
+            '3': ['1|Salida Tarde del Centro',
+                  '2|Problema en Ruta',
+                  '3|Restricción de tránsito por Feriado',
+                  '4|Manifestación',
+                  '5|Vehículo Accidentado',
+                  '6|Re-envio Cliente sin capacidad',
+                  '7|Re-envio Salida tarde del centro',
+                  '8|Re-envio Cerrados por el Seniat',
+                  '9|Reenvio Otros',
+                  '10|Varias Sucursales',
+                  '11|Viajes los fines de Semana',
+                  '12|Vehículo cargado el sábado'],
+
+            '4': ['1|Rechazo Total',
+                  '2|Rechazo Parcial',
+                  '3|Rechazo Otros',
+                  '4|Rechazos Envíados a Clover',
+                  '5|Cliente sin capacidad de Recepción',
+                  '6|Falta de Caleteros',
+                  '7|Desacuerdo con # de Caleteros',
+                  '8|Cerradós por el Seniat',
+                  '9|Cliente no quiere recibir',
+                  '10|Otros Vehículos adelante de P&G',
+                  '11|Problemas Logísticos',
+                  '12|Lluvia retrasa la descarga',
+                  '13|Retraso en descarga por Calidad',
+                  '14|En Negociación CBD/CSO',
+                  '15|Retraso en descarga por Revisión',
+                  '16|No Posee Cita']
+
+        }
+
+        // Loads options on issue select dropdowns
+        $('#stage').change(function () {
+            var status = $(this).val(), sts = options[status] || [];
+
+            var html = $.map(sts, function (st) {
+                option = st.split("|");
+                return '<option value="' + option[0] + '">' + option[1] + '</option>'
+            }).join('');
+            $('#reason').html(html)
+        });
+
+        // Add number count to delivered customers.
+        $('button[name=Delivered').click(function () {
+            var strong = $('.grid-row-selected').find("strong").html();
+            var Array = strong.split("/");
+            Array[0] = parseInt(Array[0]) + 1;
+            $('.grid-row-selected').find("strong").html(Array[0] + "/" + Array[1]);
+        });
+
+    });
+</script>

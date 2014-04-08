@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd">
+  <metadata>
+    <id>SimpleMembershipAdministration</id>
+    <version>1.0.1</version>
+    <authors>Marcel Siegel</authors>
+    <owners>Marcel Siegel</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>A very simple Area for Administration of SimpleMembership-Provider for Asp.Net MVC4-Sites</description>
+    <releaseNotes>Some additional Informations on User-Page</releaseNotes>
+    <copyright>Copyright 2013</copyright>
+    <tags>Asp.Net MVC SimpleMembership</tags>
+  </metadata>
+</package>

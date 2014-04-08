@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<package xmlns="http://schemas.microsoft.com/packaging/2010/07/nuspec.xsd">
+  <metadata>
+    <id>Percentage_ProgressBar</id>
+    <version>1.0</version>
+    <title>Percentage ProgressBar</title>
+    <authors>AdamSpeight2008</authors>
+    <owners>AdamSpeight2008</owners>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <description>A professional looking progress bar  with percentage text.</description>
+    <summary>A professional looking progress bar  with percentage text.</summary>
+  </metadata>
+</package>

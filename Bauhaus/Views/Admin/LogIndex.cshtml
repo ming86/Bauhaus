@@ -1,0 +1,50 @@
+﻿@using GridMvc
+@using GridMvc.Filtering
+@using GridMvc.Html
+@using GridMvc.Sorting
+@using Bauhaus.Helpers
+@model IEnumerable<Bauhaus.Models.Log>
+@{
+    ViewBag.Title = "Manage Log";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+    
+    @{
+        
+        string message = "";
+        string type = "";
+        
+        if (TempData["Message"] != null)
+        {
+            message = TempData["Message"].ToString();
+            type = TempData["Type"].ToString();
+        }
+    } 
+<div class="row">
+    <div class="col-md-5">
+        <button type="button" class="btn btn-default" onclick="location.href='@Url.Action("DownloadVisitStadistics", "Admin")';return false;">
+            <i class="fa fa-download"></i> Visit Stadistics
+        </button>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-15">
+        @Html.Grid(Model).Named("LogGrid").Columns(columns =>
+    {
+        columns.Add(item => item.Date);
+        columns.Add(item => item.Source);
+        columns.Add(item => item.UserName);
+        columns.Add(item => item.Type);
+        columns.Add(item => item.Description);
+
+    }).SetLanguage("En").Sortable().WithPaging(8).Filterable().WithMultipleFilters()
+
+    </div>
+</div>
+
+<script>
+
+    $(function () {
+        displayAlert('@type','@message');
+    });
+</script>

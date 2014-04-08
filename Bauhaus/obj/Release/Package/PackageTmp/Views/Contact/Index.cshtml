@@ -1,0 +1,19 @@
+﻿@using GridMvc
+@using GridMvc.Filtering
+@using GridMvc.Html
+@using GridMvc.Sorting
+@model IEnumerable<Bauhaus.Models.Contact>
+
+@{
+    ViewBag.Title = "Contact List";
+}
+
+@Html.Grid(Model).Named("ContactGrid").Columns(columns =>
+           {
+               columns.Add(item => item.Area);
+               columns.Add(item => item.Name);
+               columns.Add(item => item.Telephone);
+               columns.Add(item => item.Email);
+
+           }).SetLanguage("En").WithPaging(15).Sortable().Filterable().WithMultipleFilters()
+            

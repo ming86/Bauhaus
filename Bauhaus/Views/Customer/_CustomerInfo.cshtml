@@ -1,0 +1,79 @@
+﻿@model Bauhaus.Models.Customer
+
+<table class="table table-condensed" style="table-layout:fixed">
+    <tr>
+        <td>
+            <strong>@Html.DisplayNameFor(item => item.Team)</strong>
+            @Html.DisplayFor(item => item.Team)
+        </td>
+    </tr>
+    <tr>
+        <td class="warning">
+            <strong>@Html.DisplayNameFor(item => item.Route.Name)</strong>
+            @if (Model.Route == null)
+            {
+                <p class="text-danger">Not Available</p>
+            }
+            else
+            {
+                @Html.DisplayFor(item => item.Route.Name)
+            }
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <strong>CSR OM</strong>
+            @Html.DisplayFor(item => item.MainCSROM.Name)
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <strong>CSR AR</strong>
+            @Html.DisplayFor(item => item.MainCSRAR.Name)
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <strong>CBD Rep.</strong>
+            @Html.DisplayFor(item => item.CBDRep.Name)
+        </td>
+    </tr>
+    <tr>
+        <td class="success">
+            <strong>@Html.DisplayNameFor(item => item.Orders)</strong>
+            @Html.DisplayFor(item => item.Orders.Count)
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <strong>@Html.DisplayNameFor(item => item.MaxVEH)</strong>
+            @Html.DisplayFor(item => item.MaxVEH)
+        </td>
+    </tr>
+    <tr>
+        <td class="active">
+            <strong>@Html.DisplayNameFor(item => item.Contacts)</strong>
+        </td>
+    </tr>
+
+
+    @foreach (Bauhaus.Models.Contact cont in Model.Contacts)
+    {
+        <tr>
+            <td style="word-wrap:break-word">
+                <small>
+                <strong>@cont.Area</strong><br />
+                @cont.Name<br />
+                @cont.Telephone<br />
+                @cont.Email<br />
+                </small>
+            </td>
+        </tr>
+    }
+    <tr>
+        <td>
+            <button type="button" class="btn btn-info"  onclick="location.href='@Url.Action("Details", "Customer", new { id = Model.ID })'">Details</button>
+        </td>
+    </tr>
+</table>
+

@@ -1,0 +1,214 @@
+﻿@using GridMvc
+@using GridMvc.Filtering
+@using GridMvc.Html
+@using GridMvc.Sorting
+@using Bauhaus.Models
+@using Bauhaus.Helpers
+@model Bauhaus.Models.Shipment
+
+@{List<CustomerStatus> Customers = new List<CustomerStatus> { };
+
+foreach (Order ord in Model.Orders)
+{
+    if (!Customers.Exists(x => x.CustomerName == ord.Customer.Name))
+    {
+        Customers.Add(new CustomerStatus { CustomerName = ord.Customer.Name, Stage = ord.Status.Stage, Status = ord.Status.State, Reason = ord.Status.Reason });
+
+    }
+}
+}
+<div class="row">
+    <div class="col col-justified">
+        <div class="panel panel-primary">
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-3">
+                        <h3 class="text-center">@Html.DisplayFor(model => model.ID)</h3>
+                        <table class="table">
+                            <tr>
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.Date)</strong>
+                                    @Html.DisplayFor(model => model.Date)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>Vehicle Type</strong>
+                                    @if (Model.Vehicle != null)
+                                    {
+                                        @Html.DisplayFor(model => model.Vehicle.Type)
+                                    }
+                                    else
+                                    {
+                                        if (Model.Orders.FirstOrDefault().VehicleType != "")
+                                        {
+                                            @Html.DisplayFor(model => model.Orders.FirstOrDefault().VehicleType)
+                                        }
+
+                                        else
+                                        {
+                                            <p class="text-danger">Not Available</p>
+                                        }
+
+
+                                    }
+                                </td>
+
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.Turn)</strong>
+                                    @if (!String.IsNullOrWhiteSpace(Model.Turn))
+                                    {
+                                        @Html.DisplayFor(model => model.Turn)
+                                    }
+                                    else
+                                    {
+                                        <p class="text-danger">Not Avaliable.</p>
+                                    }
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.Carrier)</strong><br>
+                                    @if (Model.Carrier != null)
+                                    {
+                                        @Html.DisplayFor(model => model.Carrier.Name)
+                                    }
+                                    else
+                                    {
+                                        <p class="text-danger">Not Avaliable.</p>
+                                    }
+
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.CarryFee)</strong><br>
+                                    @if (Model.CarryFee != null)
+                                    {
+                                        @Html.DisplayFor(model => model.CarryFee)
+                                    }
+                                    else
+                                    {
+                                        <p class="text-danger">Not Avaliable.</p>
+                                    }
+
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-5">
+                        <h3>Monitoring Data</h3>
+                        @Html.Grid(Customers).Named("CustomerStatuses").Columns(columns =>
+                       {
+                           columns.Add(item => item.CustomerName)
+                               .Titled("Cust. Name");
+                           columns.Add()
+                               .Titled("Stage")
+                               .Encoded(false)
+                               .Sanitized(false)
+                               .RenderValueAs(p =>
+                                       @Html.StageResolver(p.Stage)
+                                       );
+                           columns.Add()
+                               .Titled("Reason")
+                               .Encoded(false)
+                               .Sanitized(false)
+                               .RenderValueAs(p =>
+                                   @Html.ReasonResolver(p.Stage, p.Status, p.Reason));
+                       }).SetLanguage("En").WithPaging(3).Selectable(false)
+                    </div>
+                    <div class="col-md-4">
+                        <h3>Comments</h3>
+                        @if (Model.TransitData != null)
+                        {
+                            @Html.Grid(Model.TransitData).Named("transitData").Columns(Columns =>
+                           {
+                               Columns.Add(item => item.Time);
+                               Columns.Add()
+                                   .Titled("Status")
+                                   .Sanitized(false)
+                                   .Encoded(false)
+                                   .RenderValueAs(o => @Html.ReasonResolver(o.Stage, o.State, o.Reason));
+                               Columns.Add(item => item.Comment);
+                           });
+                        }
+                        else
+                        {
+                            <p class="text-danger">Not Avaliable.</p>
+                        }
+                    </div>
+                </div>
+                <div class="well">
+                    <h4>Shipment Orders</h4>
+                </div>
+                <div class="table">
+                    @Html.Grid(Model.Orders).Named("ShipmentOrdersGrid").Columns(columns =>
+           {
+               columns.Add(item => item.SapID)
+                   .Titled("Order Number");
+               columns.Add(item => item.Customer.Name)
+                   .Titled("Cust. Name");
+               columns.Add(item => item.CustomerPO);
+               columns.Add()
+                  .Titled("Delivery")
+                  .Encoded(false)
+                  .Sanitized(false)
+                  .RenderValueAs(o =>
+                    @<b>
+                        @if (o.Delivery != null)
+                        {
+                            <strong class="text-center">@o.Delivery.ID.ToString()</strong>
+                        }
+
+                    </b>
+              );
+               columns.Add()
+                   .Titled("Invoices")
+                   .Encoded(false)
+                   .Sanitized(false)
+                   .RenderValueAs(o =>
+                    @<b>
+                        @if (o.Invoices.Any())
+                        {
+                            foreach (Bauhaus.Models.Invoice inv in o.Invoices)
+                            {
+                                <strong>@inv.ID.ToString()</strong>
+                            }
+
+
+                        }
+
+                    </b>
+               );
+               columns.Add(item => item.Quantities.QtyCS)
+                   .Titled("Ord. CS");
+               columns.Add()
+                   .Titled("DSS CS")
+                   .Encoded(false)
+                   .Sanitized(false)
+                   .RenderValueAs(o =>
+                    @<b>
+                        @if (o.Delivery != null)
+                        {
+                            <strong>@o.Delivery.Quantities.QtyCS.ToString()</strong>
+                        }
+
+                    </b>
+               );
+               columns.Add()
+                   .Encoded(false)
+                   .Sanitized(false)
+                   .SetWidth(30)
+                   .RenderValueAs(d =>
+                    @<b>
+                        @Html.ActionLink("Details", "Details", "Order", new { id = d.SapID }, null)
+                    </b>);
+
+           }).SetLanguage("En").Sortable().Filterable().WithMultipleFilters()
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

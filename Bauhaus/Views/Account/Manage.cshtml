@@ -1,0 +1,56 @@
+﻿@model Bauhaus.Models.LocalPasswordModel
+@{
+    ViewBag.Title = "Manage Account";
+}
+<div class="container">
+    <div class="row">
+        <div class="col-md-4">
+            <button class="btn btn-default" id="changeStatus">
+                <i id="bulb" class=" fa fa-power-off fa-5x"></i>
+                <strong id="status"></strong><br />
+                Change Status
+            </button>
+        </div>
+        <div class="col-md-4">
+            <button class="btn btn-default" id="showProfile"><i class="fa fa-edit fa-5x"></i><br /> Edit Profile</button>
+            <div id="editProfileDiv" style="display:none">
+                @Html.Action("EditProfile", new { userName = User.Identity.Name })
+            </div>
+        </div>
+        <div class="col-md-4">
+            <button class="btn btn-default" id="showPassword"><i class="fa fa-lock fa-5x"></i><br /> Change Password</button>
+            <div id="changePasswordDiv" style="display:@ViewBag.Password">
+                <p class="message-success">@ViewBag.StatusMessage</p>
+                @Html.Partial("_ChangePasswordPartial")
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    $(function () {
+        displayAlert('@TempData["Type"]', '@TempData["Message"]');
+    });
+
+    $("#changeStatus").click(function () {
+        $.post("@Url.Action("toggleUserStatus")", function (data) {
+            if (data.Status != 1)
+                displayAlert("warning", data.Message)
+            else {
+                $("#bulb").toggleClass("text-success");
+                $("#status").text($("#status").text() == "Active" ? "Disabled" : "Active");
+            }
+        })
+    });
+
+    $("#showPassword").click(function () {
+        $("#editProfileDiv").hide("slow");
+        $("#changePasswordDiv").slideToggle("slow");
+    });
+
+    $("#showProfile").click(function () {
+        $("#changePasswordDiv").hide("slow");
+        $("#editProfileDiv").slideToggle("slow");
+    });
+
+
+</script>

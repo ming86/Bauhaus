@@ -1,0 +1,245 @@
+﻿@using GridMvc
+@using GridMvc.Filtering
+@using GridMvc.Html
+@using GridMvc.Sorting
+@using Bauhaus.Controllers
+@using Bauhaus.Helpers
+@model Bauhaus.Models.Order
+@{
+    ViewBag.Title = "Details";
+}
+    @{
+        
+        string message = "";
+        string type = "";
+        
+        if (TempData["Message"] != null)
+        {
+            message = TempData["Message"].ToString();
+            type = TempData["Type"].ToString();
+        }
+    }
+<div class="row">
+    <div class="col col-justified">
+        <div class="panel panel-primary">
+            <div class="panel-body">
+                <div class="row">
+                    <div class="col-md-4">
+
+                        <h3 class="text-center">@Html.DisplayFor(model => model.SapID)</h3>
+                        <h4>@Html.StageResolver(Model.Status.Stage)</h4>
+                        <h5 class="text-center text-muted">@Html.ReasonResolver(Model.Status.Stage,Model.Status.State,Model.Status.Reason)</h5>
+
+                        <table class="table">
+                            <tr>
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.CustomerPO)</strong>
+                                    @Html.DisplayFor(model => model.CustomerPO)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    @Html.ActionLink(Model.Customer.Name, "Details", "Customer", new { id = Model.Customer.ID }, null)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.DocDate)</strong>
+                                    @Html.DisplayFor(model => model.DocDate)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>Orig/DSS</strong>
+                                    @Html.DisplayFor(model => model.RDDF.Original) - @Html.DisplayFor(model => model.RDDF.DSSDate)
+                                    @if (Model.RDDF.Confirmed)
+                                    {
+                                        <i class="fa fa-check" title="Confirmed"></i>
+                                    }
+                                    else
+                                    {
+                                        <i class="fa fa-exclamation" title="Not Confirmed"></i>
+                                    }
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.Type)</strong>
+                                    @Html.DisplayFor(model => model.Type)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.Quantities.NetWeight)</strong>
+                                    @Html.DisplayFor(model => model.Quantities.NetWeight)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.Quantities.Volume)</strong>
+                                    @Html.DisplayFor(model => model.Quantities.Volume)
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-4">
+                        <table class="table">
+                            @*<tr>
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.VehicleType)</strong>
+                                    @Html.DisplayFor(model => model.VehicleType)
+                                </td>
+                            </tr>*@
+                            <tr>
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.Quantities.QtyCS)</strong>
+                                    @Html.DisplayFor(model => model.Quantities.QtyCS)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.Quantities.QtySU)</strong>
+                                    @Html.DisplayFor(model => model.Quantities.QtySU)
+                                </td>
+                            </tr>
+
+                            @if (Model.Delivery != null)
+                            {
+                                <tr>
+                                    <td class="active">
+                                        <strong>@Html.DisplayNameFor(model => model.Delivery.ID)</strong>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        @Html.DisplayFor(model => model.Delivery.ID)
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong>@Html.DisplayNameFor(model => model.Delivery.Date)</strong>
+                                        @Html.DisplayFor(model => model.Delivery.Date)
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong>@Html.DisplayNameFor(model => model.Delivery.Quantities.QtyCS)</strong>
+                                        @Html.DisplayFor(model => model.Delivery.Quantities.QtyCS)
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong>@Html.DisplayNameFor(model => model.Delivery.Quantities.QtySU)</strong>
+                                        @Html.DisplayFor(model => model.Delivery.Quantities.QtySU)
+                                    </td>
+                                </tr>
+                                
+                            }
+
+                        </table>
+                    </div>
+
+                    <div class="col-md-4">
+                        <table class="table">
+
+                            @if (Model.Shipment != null)
+                            {
+                                <tr>
+                                    <td class="active">
+                                        <strong>@Html.DisplayNameFor(model => model.Shipment.ID)</strong>                     </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        @Html.ActionLink(Model.Shipment.ID.ToString(), "Details", "Shipment", new { id = Model.Shipment.ID }, null)
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong>@Html.DisplayNameFor(model => model.Shipment.Date)</strong>
+                                        @Html.DisplayFor(model => model.Shipment.Date)
+                                    </td>
+                                </tr>
+                                if (Model.Shipment.Carrier != null)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@Html.DisplayNameFor(model => model.Shipment.Carrier.Name)</strong>
+                                            @Html.DisplayFor(model => model.Shipment.Carrier.Name)
+                                        </td>
+                                    </tr>
+                                
+                                    if (Model.Shipment.CarryFee != null)
+                                    {
+                                        <tr>
+                                            <td>
+                                                <strong>@Html.DisplayNameFor(model => model.Shipment.CarryFee)</strong>
+                                                @Html.DisplayFor(model => model.Shipment.CarryFee) Bs.
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            }
+                            @if (Model.Invoices.Any())
+                            {
+                                <tr>
+                                    <td class="active">
+                                        <strong>@Html.DisplayNameFor(model => model.Invoices)</strong>
+                                    </td>
+                                </tr>
+                                foreach (Bauhaus.Models.Invoice inv in Model.Invoices)
+                                {
+                                    <tr>
+                                        <td>
+                                            <strong>@inv.ID</strong>
+                                            @inv.Date.ToString("dd/MM/yy")
+                                        </td>
+                                    </tr>
+                                }
+
+                            }
+                            @if (Model.POD != null)
+                            {
+                                <tr>
+                                    <td class="success">
+                                        <strong>POD </strong>
+                                        @Html.DisplayFor(model => model.POD.Date)
+                                        <span class="glyphicon glyphicon-ok"></span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <strong class="text-left">CSOT</strong>
+                                        @if(Model.POD.CSOT.Value)
+                                        {
+                                            <p class="text-success">HIT</p>
+                                        }
+                                        else
+                                        {
+                                            <p class="text-danger">MISS</p>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                            @if(!String.IsNullOrWhiteSpace(Model.Status.Comment))
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@Html.DisplayNameFor(model=>model.Status.Comment)</strong>
+                                        @Html.DisplayFor(model=>model.Status.Comment)
+                                    </td>
+                                </tr>
+                                
+                            }
+
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    $(function () {
+        displayAlert('@type', '@message');
+     });
+</script>

@@ -1,0 +1,109 @@
+﻿@model Bauhaus.Models.Order
+
+@{
+    ViewBag.Title = "Delete";
+}
+
+<h2>Delete</h2>
+
+<h3>Are you sure you want to delete this?</h3>
+<fieldset>
+    <legend>Order</legend>
+
+    <div class="display-label">
+         @Html.DisplayNameFor(model => model.Status)
+    </div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.Status)
+    </div>
+
+    <div class="display-label">
+         @Html.DisplayNameFor(model => model.Type)
+    </div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.Type)
+    </div>
+
+    <div class="display-label">
+         @Html.DisplayNameFor(model => model.SoldTo)
+    </div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.SoldTo)
+    </div>
+
+    <div class="display-label">
+         @Html.DisplayNameFor(model => model.ShipTo)
+    </div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.ShipTo)
+    </div>
+
+    <div class="display-label">
+         @Html.DisplayNameFor(model => model.DocDate)
+    </div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.DocDate)
+    </div>
+
+    <div class="display-label">
+         @Html.DisplayNameFor(model => model.CusPODate)
+    </div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.CusPODate)
+    </div>
+    <div class="display-label">
+         @Html.DisplayNameFor(model => model.RDDF)
+    </div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.RDDF)
+    </div>
+
+    <div class="display-label">
+         @Html.DisplayNameFor(model => model.RDDT)
+    </div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.RDDT)
+    </div>
+
+    <div class="display-label">
+         @Html.DisplayNameFor(model => model.QtyCS)
+    </div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.QtyCS)
+    </div>
+
+    <div class="display-label">
+         @Html.DisplayNameFor(model => model.QtySU)
+    </div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.QtySU)
+    </div>
+
+    <div class="display-label">
+         @Html.DisplayNameFor(model => model.NewRDD)
+    </div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.NewRDD)
+    </div>
+
+    <div class="display-label">
+         @Html.DisplayNameFor(model => model.Blking)
+    </div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.Blking)
+    </div>
+
+    <div class="display-label">
+         @Html.DisplayNameFor(model => model.Value)
+    </div>
+    <div class="display-field">
+        @Html.DisplayFor(model => model.Value)
+    </div>
+</fieldset>
+@using (Html.BeginForm()) {
+    @Html.AntiForgeryToken()
+    <p>
+        <input type="submit" value="Delete" /> |
+        @Html.ActionLink("Back to List", "Index")
+    </p>
+}

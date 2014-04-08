@@ -1,0 +1,18 @@
+﻿@if (Request.IsAuthenticated)
+{
+     <p class="navbar-text navbar-right">
+        Signed In as @Html.ActionLink(User.Identity.Name, "Manage", "Account", routeValues: null, htmlAttributes: new { @class = "username", title = "Manage" })
+         @using (Html.BeginForm("LogOff", "Account", FormMethod.Post, new { id = "logoutForm" }))
+         {
+             @Html.AntiForgeryToken()
+             <button class="btn btn-link pull-right" type="submit"><i class="fa fa-sign-out"></i> </button>
+         }
+    </p>
+     
+} else {
+    <ul class="nav navbar-nav navbar-right">
+        <li>@Html.ActionLink("Register", "Register", "Account", routeValues: null, htmlAttributes: new { id = "registerLink" })</li>
+        <li>@Html.ActionLink("Log in", "Login", "Account", routeValues: null, htmlAttributes: new { id = "loginLink" })</li>
+    </ul>
+        
+}

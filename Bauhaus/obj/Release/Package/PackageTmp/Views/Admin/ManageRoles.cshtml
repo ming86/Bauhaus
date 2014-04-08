@@ -1,0 +1,59 @@
+﻿@model String[]
+@{
+    ViewBag.Title = "Manage Roles";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+<h2>Role Management Page</h2>
+
+<table>
+    <thead>
+        <tr>
+            <th>Role Name</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach(var role in Model)
+        {
+            <tr>
+                <td>
+                    @role
+                </td>
+                <td>
+                    @if(role!="Admin" && role!="CSR" && role!="Carrier" )
+                    {
+                        using (Html.BeginForm("DeleteRole","Admin"))
+                        {
+                            <input type="hidden" name="roleName" value="@role" />
+                            <button class="btn btn-default" type="submit">
+                                <span class="fa fa-minus fa-x2"></span>
+                            </button>
+                                        
+                        }
+                     }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@using (Html.BeginForm("AddRole","Admin"))
+{
+    <div class="row">
+        <div class="col-lg-3">
+            <div class="input-group">
+                <input type="text" name="roleName" class="form-control">
+                <span class="input-group-btn">
+                    <button class="btn btn-primary" type="submit">Add Role</button>
+                </span>
+            </div><!-- /input-group -->
+       
+        </div><!-- /.col-lg-6 -->
+    </div>
+}
+<div class="row">
+    <div class="col-sm-1">
+        <button style="margin-top:15px" class="btn btn-primary" onclick="location.href='@Url.Action("Index","Home")';return false;">
+            <span class="fa fa-arrow-left fa-x2"></span>
+        </button>
+    </div>

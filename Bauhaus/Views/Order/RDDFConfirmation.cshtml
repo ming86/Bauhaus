@@ -1,0 +1,163 @@
+﻿@using GridMvc
+@using GridMvc.Filtering
+@using GridMvc.Html
+@using GridMvc.Sorting
+@model IEnumerable<Bauhaus.Models.Order>
+
+@{
+    ViewBag.Title = "RDDFConfirmation";
+}
+<div class="row">
+    <div class="col-md-4">
+            <h3>Confirm Selected Orders</h3>
+    </div>
+
+    <div class="col-md-2 col-md-offset-3">
+
+        <div class="input-group">
+            <span class="input-group-btn">
+                <button class="btn btn-primary" type="button" id="ConfirmRDDF">
+                    <span class="glyphicon glyphicon-ok"></span>
+                </button>
+            </span>
+            <input type="text" id="NewRDDF" class="form-control" style="width:190px" />
+            <span class="input-group-addon">
+                <input type="checkbox" id="SelectAll">
+            </span>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12 grid">
+        @Html.Grid(Model).Named("OrdersGrid").Columns(columns =>
+           {
+               columns.Add(item => item.SapID)
+                   .Titled("Order Number");
+               columns.Add(item => item.Customer.Name)
+                   .Titled("Cust. Name");
+               columns.Add(item => item.CustomerPO)
+                   .Titled("Cust. PO");
+               columns.Add()
+                  .Titled("Delivery")
+                  .Encoded(false)
+                  .Sanitized(false)
+                  .RenderValueAs(o =>
+                      @<b>
+                          @if (o.Delivery != null)
+                          {
+                              <strong class="text-center">@o.Delivery.ID.ToString()</strong>
+                          }
+
+                      </b>
+              );
+               columns.Add(item => item.Quantities.QtyCS)
+                   .Titled("Ord. CS");
+               columns.Add()
+                   .Titled("DSS CS")
+                   .Encoded(false)
+                   .Sanitized(false)
+                   .RenderValueAs(o =>
+                       @<b>
+                           @if (o.Delivery != null)
+                           {
+                               <strong>@o.Delivery.Quantities.QtyCS.ToString()</strong>
+                           }
+
+                       </b>
+               );
+               columns.Add(item => item.RDDF.DSSDate)
+                   .Titled("RDDF")
+                   .Format("{0:dd/MM/yyyy}");
+               columns.Add(item => item.RDDF.Confirmed, true);
+               columns.Add()
+                   .Encoded(false)
+                   .Sanitized(false)
+                   .RenderValueAs(d =>
+                       @<b class="form-inline">
+                           <input type="checkbox" value="@d.SapID" />
+                            <button type="button" class="btn btn-link btn-xs" onclick="location.href='@Url.Action("Details", "Order", new { id = d.SapID })';return false;">
+                                <span class="fa fa-search-plus"></span>
+                            </button>
+                       </b>);
+
+           }).SetRowCssClasses(model=>model.RDDF.Confirmed ? "success":String.Empty).SetLanguage("En").Sortable().Filterable().WithMultipleFilters().Selectable(false).WithPaging(50)
+    </div>
+</div>
+
+<script type="text/javascript">
+    // Initialize Date Picker
+    $("#NewRDDF").datepicker({ dateFormat: "dd/mm/yy" });
+
+    // Paint Selected Rows Red.
+    $("input:checkbox").click(function () {
+        $(this).closest('tr').toggleClass('danger');
+    });
+
+    // Selects all Rows
+    $("#SelectAll").click(function () {
+        $('input:checkbox').not(this).prop('checked', this.checked);
+    });
+
+    // Post confirmation
+    $("#ConfirmRDDF").click(function () {
+        var orders = [];
+        $("input:checked").each(function () {
+            orders.push($(this).val());
+        });
+        $.post('@Url.Action("RDDFBulkConfirmation","Order")',
+            {
+                jsonData: JSON.stringify(orders),
+                newRDDF: $("#NewRDDF").val(),
+            }, function (data) {
+                if (data.Status != 1)
+                {
+                    displayAlert("warning", data.Message);
+                }
+                else
+                {
+                    $("input:checked").each(function () {
+                        $(this).prop('checked', false);
+                        $(this).closest('tr').removeClass('danger');
+                        if ($("#NewRDDF").val() != "")
+                        {
+                            $(this).closest('tr').children(".grid-cell[data-name|='RDDF']").text($("#NewRDDF").val());
+                        }
+                        $(this).closest('tr').addClass('success');
+                    });
+                }
+            });
+    });
+
+    function updateGrid(content) {
+        toastr.options = {
+            "closeButton": true,
+            "debug": false,
+            "positionClass": "toast-bottom-right",
+            "onclick": null,
+            "showDuration": "500",
+            "hideDuration": "1000",
+            "timeOut": "5000",
+            "extendedTimeOut": "1000",
+            "showEasing": "swing",
+            "hideEasing": "linear",
+            "showMethod": "fadeIn",
+            "hideMethod": "fadeOut"
+        }
+        $("input:checked").each(function () {
+            $(this).prop('checked', false);
+            $(this).prop('disabled', true);
+            $(this).closest('tr').removeClass('danger');
+            resultArray = content.split("|");
+            if (resultArray[0] == 0) {
+                var datearr = $('#NewRDDF').val().split("-");
+                var newDat = datearr[2] + "/" + datearr[1] + "/" + datearr[0];
+                $(this).closest('tr').children(".grid-cell[data-name|='RDDF']").text(newDat);
+                $(this).closest('tr').addClass('success');
+                toastr.success(resultArray[1]);
+            }
+            else {
+                toastr.warning(resultArray[1]);
+            }
+        });
+    };
+</script>

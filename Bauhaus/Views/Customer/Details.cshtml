@@ -1,0 +1,671 @@
+﻿@using GridMvc
+@using GridMvc.Filtering
+@using GridMvc.Html
+@using GridMvc.Sorting
+@model Bauhaus.Models.Customer
+
+<div class="row">
+    <div class="col col-justified">
+        <div class="panel panel-primary">
+            <div class="panel-body">
+                <div class="col-md-4">
+                    <h3 class="text-center">@Html.DisplayFor(model => model.Name)</h3>
+                    <table class="table">
+                        <tr>
+                            <td>
+                                <strong class="text-info">@Html.DisplayNameFor(model => model.ID)</strong>
+                                @Html.DisplayFor(model => model.ID)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <strong>@Html.DisplayNameFor(model => model.Route.Name)</strong>
+                                @if (Model.Route != null)
+                                {
+                                    @Html.DisplayFor(model => model.Route.Name)
+                                }
+                                else
+                                {
+                                    <p class="text-danger">Not Available.</p>
+                                }
+
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <strong>@Html.DisplayNameFor(model => model.SaleZone)</strong>
+                                @if(Model.SaleZone != null)
+                                {
+                                    @Html.DisplayFor(model => model.SaleZone)
+                                }
+                                else
+                                {
+                                    <p class="text-danger">Not Available</p>
+                                }
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <strong>@Html.DisplayNameFor(model => model.Address)</strong>
+                                @Html.DisplayFor(model=>model.Region),
+                                @Html.DisplayFor(model=>model.City),
+                                @Html.DisplayFor(model => model.Address)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <strong>@Html.DisplayNameFor(model => model.Team)</strong>
+                                @Html.DisplayFor(model => model.Team)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <strong>@Html.DisplayNameFor(model => model.Route.LeadTime)</strong>
+                                @if (Model.Route != null)
+                                {
+                                    @Html.DisplayFor(model => model.Route.LeadTime)
+                                }
+                                else
+                                {
+                                    <p class="text-danger">Not Available.</p>
+                                }
+
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <strong>@Html.DisplayNameFor(model => model.MaxVEH)</strong>
+                                @Html.DisplayFor(model => model.MaxVEH)
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+                <div class="col-md-4">
+                    <table class="table" style="table-layout:fixed">
+                        <tr>
+                            <td class="active">
+                                <strong>@Html.DisplayNameFor(model => model.Contacts)</strong>
+                                <button class="btn btn-link btn-xs" data-toggle="modal" data-target="#NewContactModal">Add</button>
+                            </td>
+                        </tr>
+                        @foreach (Bauhaus.Models.Contact cont in Model.Contacts)
+                        {
+                            <tr id="@cont.ID" class="contact">
+                                <td style="word-wrap:break-word">
+                                    <strong id="area">@cont.Area</strong>
+                                    <button value="@cont.ID" class="btn btn-link btn-xs EditContact" data-toggle="modal" data-target="#EditContactModal">Edit</button>
+                                    <button value="@cont.ID" class="btn btn-link btn-xs DeleteContact" data-toggle="modal" data-target="#DeleteContactModal">Del</button>
+                                    <br>
+                                    <p style="margin:0 0 0px" id="name">@cont.Name</p>
+                                    <p style="margin:0 0 0px" id="telephone">@cont.Telephone</p>
+                                    <p style="margin:0 0 0px" id="email">@cont.Email</p>
+                                </td>
+                            </tr>
+                        }
+                        <tr>
+                            <td>
+                                <strong>@Html.DisplayNameFor(model => model.Observation)</strong>
+                                <button class="btn btn-link btn-xs" data-toggle="modal" data-target="#ObservationModal">Edit</button>
+                                <p id="observation">@Html.DisplayFor(model => model.Observation)</p>
+
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <div class="col-md-4">
+                    <table class="table">
+                        <tr>
+                            <td>
+                                <strong>CSR OM</strong>
+                                @Html.DisplayFor(model => model.MainCSROM.Name)
+                                @Html.DisplayFor(model => model.MainCSROM.Telephone)
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <strong>Backup CSR OM</strong>
+                                @Html.DisplayFor(model => model.BackupCSROM.Name)
+                                @Html.DisplayFor(model => model.BackupCSROM.Telephone)
+                            </td>
+                        </tr>
+                        @if (Model.CBDRep != null)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>CBD Rep.</strong>
+                                    @Html.DisplayFor(model => model.CBDRep.Name)
+                                    @Html.DisplayFor(model => model.CBDRep.Telephone)
+                                </td>
+                            </tr>
+                        }
+                        @if (Model.GU != null)
+                        {
+                            <tr>
+                                <td>
+                                    <strong>GU</strong>
+                                    @Html.DisplayFor(model => model.GU.Name)
+                                    @Html.DisplayFor(model => model.GU.Telephone)
+                                </td>
+                            </tr>
+
+                        }
+
+                        <tr>
+                            <td class="active">
+                                <strong>Payment Info</strong><button id="showPay" type="button" class="btn btn-link btn-xs"><i class="fa fa-chevron-down"></i></button>
+                            </td>
+                        </tr>
+                        @if (Model.Payer == 0 || Model.Payer == Model.ID)
+                        {
+                            <tr class="payment" style="display:none">
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.PayTerm)</strong>
+                                    @if (!String.IsNullOrWhiteSpace(Model.PayTerm))
+                                    {
+
+                                        @Html.DisplayFor(model => model.PayTerm)
+
+                                    }
+                                    else
+                                    {
+                                        <p class="text-danger">Not Available.</p>
+                                    }
+                                </td>
+                            </tr>
+                            <tr class="payment" style="display:none">
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.PayType)</strong>
+                                    @if (!String.IsNullOrWhiteSpace(Model.PayType))
+                                    {
+                                        @Html.DisplayFor(model => model.PayType)
+                                    }
+                                    else
+                                    {
+                                        <p class="text-danger">Not Available.</p>
+                                    }
+
+                                </td>
+                            </tr>
+                            <tr class="payment" style="display:none">
+                                <td>
+                                    <strong>CSR AR</strong>
+                                    @Html.DisplayFor(model => model.MainCSRAR.Name)
+                                </td>
+                            </tr>
+                            <tr class="payment" style="display:none">
+                                <td>
+                                    <strong>Backup CSR AR</strong>
+                                    @Html.DisplayFor(model => model.BackupCSRAR.Name)
+                                </td>
+                            </tr>
+                        }
+                        else
+                        {
+                            <tr class="payment" style="display:none">
+                                <td>
+                                    @Html.DisplayFor(model => model.Payer)
+                                </td>
+                            </tr>
+                        }
+                    </table>
+
+                </div>
+            </div>
+            <div class="well">
+                <h3>Available Orders <a class="download" href="@Url.Action("DownloadCustomerOrders", new { id = Model.ID })"><span class="fa fa-download"></span></a></h3>
+            </div>
+            <div class="table">
+                @Html.Grid(Model.Orders).Named("CustOrdersGrid").Columns(columns =>
+           {
+               columns.Add(item => item.SapID)
+                   .Titled("Order Number");
+               columns.Add(item => item.CustomerPO)
+                   .Titled("Cust. PO");
+               columns.Add(item => item.DocDate)
+                   .Titled("Date")
+                   .Format("{0:dd/MM/yyyy}");
+               columns.Add()
+                   .Titled("Status")
+                   .Encoded(false)
+                   .Sanitized(false)
+                   .RenderValueAs(o =>
+                    @<div>
+                        @Html.StageResolver(o.Status.Stage)
+                    </div>
+                   );
+               columns.Add()
+               .Titled("Rea.")
+               .Encoded(false)
+               .Sanitized(false)
+               .RenderValueAs(o =>
+                @<div>
+                    @Html.ReasonResolver(o.Status.Stage, o.Status.State, o.Status.Reason)
+                </div>
+                   );
+               columns.Add()
+                  .Titled("Delivery")
+                  .Encoded(false)
+                  .Sanitized(false)
+                  .RenderValueAs(o =>
+                    @<div>
+                        @if (o.Delivery != null)
+                        {
+                            <strong class="text-center" data-toggle="tooltip" title="@o.Delivery.Date.ToString("dd/MM/yyyy")">@o.Delivery.ID.ToString()</strong>
+                        }
+                        else
+                        {
+                            <strong class="text-danger">N/A</strong>
+                        }
+
+                    </div>
+              );
+               columns.Add()
+                   .Titled("Shipment")
+                   .Encoded(false)
+                   .Sanitized(false)
+                   .RenderValueAs(o =>
+                    @<div>
+                        @if (o.Shipment != null)
+                        {
+                            <strong data-toggle="tooltip" title="@o.Shipment.Date.ToString("dd/MM/yyyy")">@o.Shipment.ID.ToString()</strong>
+                        }
+                        else
+                        {
+                            <strong class="text-danger">N/A</strong>
+                        }
+
+                    </div>
+               );
+               columns.Add()
+                   .Titled("Invoices")
+                   .Encoded(false)
+                   .Sanitized(false)
+                   .RenderValueAs(o =>
+                    @<b>
+                        @if (o.Invoices.Any())
+                        {
+                            foreach (Bauhaus.Models.Invoice inv in o.Invoices)
+                            {
+                                <strong data-toggle="tooltip" title="@o.Invoices.FirstOrDefault().Date.ToString("dd/MM/yyyy")">@inv.ID.ToString(),</strong>
+                            }
+
+
+                        }
+                        else
+                        {
+                            <strong class="text-danger">N/A</strong>
+                        }
+
+                    </b>
+               );
+               columns.Add(item => item.Quantities.QtyCS)
+                   .Titled("Ord. CS");
+               columns.Add()
+                   .Titled("DSS CS")
+                   .Encoded(false)
+                   .Sanitized(false)
+                   .RenderValueAs(o =>
+                    @<b>
+                        @if (o.Delivery != null)
+                        {
+                            <strong>@o.Delivery.Quantities.QtyCS.ToString()</strong>
+                        }
+                        else
+                        {
+                            <strong class="text-danger">N/A</strong>
+                        }
+
+                    </b>
+               );
+               columns.Add()
+                   .Encoded(false)
+                   .Sanitized(false)
+                   .SetWidth(30)
+                   .RenderValueAs(d =>
+                    @<b>
+                        @Html.ActionLink("Details", "Details", "Order", new { id = d.SapID }, null)
+                    </b>);
+
+           }).SetLanguage("En").Sortable().Filterable().WithMultipleFilters()
+            </div>
+        </div>
+    </div>
+</div>
+<!--Observation Modal -->
+<div class="modal fade" id="ObservationModal" tabindex="-1" role="dialog" aria-labelledby="ObservationModalLabel" aria-hidden="true">
+    <div class="modal-dialog" style="max-width:44%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="ObservationModalLabel">Observation Editing.</h4>
+            </div>
+            <div class="modal-body">
+                <textarea id="newObservation">
+                    @Model.Observation
+                </textarea>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal" id="SaveObservation">Save changes</button>
+            </div>
+        </div>
+        <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
+<!--Create Contact Modal -->
+<div class="modal fade" id="NewContactModal" tabindex="-1" role="dialog" aria-labelledby="NewContactModalLabel" aria-hidden="true">
+    <div class="modal-dialog" style="max-width:25%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="NewContactModalLabel"><i class="fa fa-plus fa-2x"></i> New Contact</h4>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-2">
+                        <strong class="text-info">Area</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" id="NewContactArea" size="11" maxlength="11" style="max-width: 150px" placeholder="Recepción/Compras" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-2">
+                        <strong class="text-info">Name</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" id="NewContactName" size="11" maxlength="11" style="max-width: 150px" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-2">
+                        <strong class="text-info">Tel.</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="tel" id="NewContactTelephone" size="11" maxlength="11" style="max-width: 150px" placeholder="(XXXX)-XXX-XXXX" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-2">
+                        <strong class="text-info">Email</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="email" id="NewContactEmail" size="20" maxlength="20" style="max-width: 150px" placeholder="XXX@XXX.com" />
+                    </div>
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal" id="SaveNewContact">Save Contact</button>
+            </div>
+        </div>
+        <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
+<!--Edit Contact Modal -->
+<div class="modal fade" id="EditContactModal" tabindex="-1" role="dialog" aria-labelledby="EditContactModalLabel" aria-hidden="true">
+    <div class="modal-dialog" style="max-width:25%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="EditContactModalLabel"><i class="fa fa-pencil fa-2x"></i> Edit Contact</h4>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-2">
+                        <strong class="text-info">Area</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" id="EditContactArea" size="11" maxlength="11" style="max-width: 150px" placeholder="Recepción/Compras" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-2">
+                        <strong class="text-info">Name</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" id="EditContactName" style="max-width: 150px" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-2">
+                        <strong class="text-info">Tel.</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="tel" id="EditContactTelephone" style="max-width: 150px" placeholder="(XXXX)-XXX-XXXX" />
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-2">
+                        <strong class="text-info">Email</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="email" id="EditContactEmail" style="max-width: 150px" placeholder="XXX@XXX.com" />
+                    </div>
+
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal" id="SaveContact">Save changes</button>
+            </div>
+        </div>
+        <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
+<!--Delete Contact Modal -->
+<div class="modal fade" id="DeleteContactModal" tabindex="-1" role="dialog" aria-labelledby="DeleteContactModalLabel" aria-hidden="true">
+    <div class="modal-dialog" style="max-width:25%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="DeleteContactModalLabel"><i class="fa fa-times fa-2x"></i>Delete Contact</h4>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-md-10">
+                        <h4>Are you sure you want to delete this contact?</h4>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-2">
+                        <strong class="text-info">Area</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <p id="DeleteContactArea"></p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-2">
+                        <strong class="text-info">Name</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <p id="DeleteContactName"></p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-2">
+                        <strong class="text-info">Tel.</strong>
+                    </div>
+                    <div class="col-md-7">
+                        <p id="DeleteContactTelephone"></p>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-2">
+                        <strong class="text-info">Email</strong>
+                    </div>
+                    <div class="col-md-3">
+                        <p id="DeleteContactEmail"></p>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal" id="DeleteContact">Delete Contact</button>
+            </div>
+        </div>
+        <!-- /.modal-content -->
+    </div>
+    <!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
+<script>
+    //Show all tooltips
+    $('[data-toggle="tooltip"]').tooltip({
+        'placement': 'top'
+    });
+
+    // Attach listener to every contact.
+    delContacts = document.getElementsByClassName("DeleteContact");
+    for (var i = 0; i < delContacts.length; i++) {
+        delContacts[i].addEventListener('click', function () {
+            $("#DeleteContact").val($(this).val());
+            $("#DeleteContactArea").text($(this).parent().find("#area").text());
+            $("#DeleteContactName").text($(this).parent().find("#name").text());
+            $("#DeleteContactTelephone").text($(this).parent().find("#telephone").text());
+            $("#DeleteContactEmail").text($(this).parent().find("#email").text());
+        }, false);
+    }
+
+    // Delete contact saving function
+    $("#DeleteContact").click(function () {
+        $.post("@Url.Action("Delete","Contact")", {
+            id: $(this).val(),
+        },
+        function (data) {
+            if (data.Status == 1) {
+                id = $("#DeleteContact").val();
+                $(".contact[id='" + id + "']").remove().animate({ opacity: 0 });
+            }
+            else {
+                toastr.warning("Contact could not be eliminated.");
+            }
+        })
+    });
+
+
+    // Global Contact Id Rememberer
+    var ID, Area, Name, Tel, Email;
+
+    // Attach listener to every contact.
+    editContacts = document.getElementsByClassName("EditContact");
+    for (var i = 0; i < editContacts.length; i++) {
+        editContacts[i].addEventListener('click', loadContactEditInfo, false);
+    }
+    // Load Contact data to Editor.
+    function loadContactEditInfo() {
+        $("#SaveContact").val($(this).val());
+        $("#EditContactArea").val($(this).parent().find("#area").text());
+        $("#EditContactName").val($(this).parent().find("#name").text());
+        $("#EditContactTelephone").val($(this).parent().find("#telephone").text());
+        $("#EditContactEmail").val($(this).parent().find("#email").text());
+    }
+
+    // Save Contact After Editing Function
+    $("#SaveContact").click(function () {
+        $.post('@Url.Action("Update","Contact")',
+            {
+                id: $(this).val(),
+                area: $("#EditContactArea").val(),
+                name: $("#EditContactName").val(),
+                telephone: $("#EditContactTelephone").val(),
+                email: $("#EditContactEmail").val(),
+            }, UpdateContact);
+
+        ID = $(this).val(),
+        Area = $("#EditContactArea").val();
+        Name = $("#EditContactName").val();
+        Tel = $("#EditContactTelephone").val();
+        Email = $("#EditContactEmail").val();
+
+    });
+
+    // Shows Result of COntact Updating
+    function UpdateContact() {
+        //alert($("#" + contactID).children("#name").text());
+        location.href = '@Url.Action("Details","Customer",new { id=@Model.ID})';
+
+
+
+        resultArray = content.split("|");
+        if (resultArray[0] == 0)
+            toastr.success(resultArray[1]);
+        else
+            toastr.warning(resultArray[1]);
+
+    };
+
+    // Register new Contact on Customer
+    $("#SaveNewContact").click(function () {
+        $.post('@Url.Action("Create","Contact")',
+            {
+                customer: "@Model.ID",
+                area: $("#NewContactArea").val(),
+                name: $("#NewContactName").val(),
+                telephone: $("#NewContactTelephone").val(),
+                email: $("#NewContactEmail").val(),
+            }, showResult)
+    });
+
+    // Refresh Whole Page for User
+    function showResult() {
+        location.href = '@Url.Action("Details","Customer",new { id=@Model.ID})';
+    };
+
+    // Saves new Observation
+    $("#SaveObservation").click(function () {
+        $.post('@Url.Action("UpdateObservation", "Customer")',
+            {
+                ID: "@Model.ID",
+                newObservation: $("#newObservation").val(),
+            },
+            showObsUpdate
+            )
+    });
+
+    // Propagates update throug page
+    function showObsUpdate(content) {
+
+        $("#observation").text($("#newObservation").val());
+
+        toastr.options = {
+            "closeButton": true,
+            "debug": false,
+            "positionClass": "toast-bottom-right",
+            "onclick": null,
+            "showDuration": "500",
+            "hideDuration": "1000",
+            "timeOut": "5000",
+            "extendedTimeOut": "1000",
+            "showEasing": "swing",
+            "hideEasing": "linear",
+            "showMethod": "fadeIn",
+            "hideMethod": "fadeOut"
+        }
+
+        resultArray = content.split("|");
+        if (resultArray[0] == 0)
+            toastr.success(resultArray[1]);
+        else
+            toastr.warning(resultArray[1]);
+    }
+
+    // Alert the user that his download is being prepared.
+    $(".download").click(function () {
+        toastr.info("Please Wait. Your Download is being prepared.");
+    });
+
+    // Toggle Payment Information
+    $("#showPay").click(function () {
+        $(".payment").fadeToggle("slow");
+    });
+</script>

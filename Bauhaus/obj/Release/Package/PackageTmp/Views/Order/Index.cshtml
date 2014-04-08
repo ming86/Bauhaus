@@ -1,0 +1,66 @@
+﻿@using GridMvc
+@using GridMvc.Filtering
+@using GridMvc.Html
+@using GridMvc.Sorting
+@model IEnumerable<Bauhaus.Models.Order>
+   @{
+        string message = "";
+        string type = "";
+        
+        if (TempData["Message"] != null)
+        {
+            message = TempData["Message"].ToString();
+            type = TempData["Type"].ToString();
+        }
+    } 
+
+<div class="row">
+    <div class="col-md-3 col-md-offset-9">
+            <div id="details" class="panel panel-primary" style="width:230px">
+                <div class="panel-heading">
+                    <h3 class="panel-title" style="color:white"><strong>Order Details</strong></h3>
+                </div>
+                <div class="panel-body"  id="order-content">
+                    <p class="muted">
+                            Select order to display detailed infomation
+                    </p>
+                </div>
+            </div>
+    </div>
+    <div class="col-md-9">
+        
+        @Html.Partial("_OrdersGrid", Model)
+
+    </div>
+</div>
+<script>
+
+    $(function () {
+        var top = $('#details').offset().top - parseFloat($('#details').css('marginTop').replace(/auto/, 0));
+        $(window).scroll(function (event) {
+            // what the y position of the scroll is
+            var y = $(this).scrollTop();
+
+            // whether that's below the form
+            if (y >= top) {
+                // if so, ad the fixed class
+                $('#details').addClass('fixed');
+            } else {
+                // otherwise remove it
+                $('#details').removeClass('fixed');
+            }
+        });
+        displayAlert('@type','@message');
+        pageGrids.ordersGrid.onRowSelect(function (e) {
+           $.post("/Order/GetOrder?id=" + e.row.SapID, function (data) {
+                if (data.Status <= 0) {
+                    alert(data.Message);
+                    return;
+                }
+                $("#order-content").html(data.Content);
+            });
+        });
+    });
+
+
+</script>

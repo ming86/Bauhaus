@@ -1,0 +1,106 @@
+﻿@using GridMvc
+@using GridMvc.Filtering
+@using GridMvc.Html
+@using GridMvc.Sorting
+@using Bauhaus.Models
+@model IEnumerable<Bauhaus.Models.UserProfile>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var roles = ((string[])ViewBag.Roles).OrderBy(x => x);
+}
+<div class="container">
+    <div class="row">
+        <div class="col-md-10">
+            @Html.Grid(Model).Named("usersGrid").Columns(columns =>
+           {
+               columns.Add(item => item.UserName)
+                   .Titled("User Name");
+               columns.Add(item => item.FullName)
+                   .Titled("Full Name");
+               columns.Add(item => item.Email);
+               columns.Add()
+                   .Titled("Role")
+                   .Encoded(false)
+                   .Sanitized(false)
+                   .RenderValueAs(o =>
+                    @<div>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" value="@o.UserName">
+                                @System.Web.Security.Roles.GetRolesForUser(@o.UserName).FirstOrDefault() <span class="caret"></span>
+                            </button>
+                            <ul class="dropdown-menu" role="menu">
+                                @foreach (String role in ViewBag.Roles)
+                                {
+                                    String disabled = "roleChange";
+                                    if (System.Web.Security.Roles.IsUserInRole(o.UserName, role))
+                                    {
+                                        disabled = "disabled";
+                                    }
+                                    <li><a class="@disabled" href="#">@role</a></li>
+                                }
+                            </ul>
+                        </div>
+                    </div>
+               );
+               columns.Add()
+                   .Titled("Activate/Delete")
+                   .Encoded(false)
+                   .Sanitized(false)
+                   .RenderValueAs(o =>
+                    @<div id="@o.UserName">
+                        @{
+                            String war = (o.Active) ? "btn-success" : "btn-default";
+                            <button type="button" class="btn btn-sm @war toggleStatus"><i class="fa fa-power-off "></i></button>
+                        }
+
+                        <button type="button" class="btn btn-sm btn-default deleteUser"><i class="fa fa-times fa-x2"></i></button>
+                    </div>
+            );
+           }
+                            ).SetLanguage("En").Sortable().Filterable().Selectable(false).WithPaging(6)
+        </div>
+    </div>
+</div>
+<script>
+    $(function () {
+        var userName;
+        var roleName;
+        $(".dropdown-toggle").click(function () {
+            userName = $(this).val();
+        });
+        $(".roleChange").click(function () {
+            roleName = $(this).text();
+            $.post("@Url.Action("UserToRole")", {
+                roleName: $(this).text(),
+                userName: userName
+            }, function (data) {
+                $("button[value='" + userName + "']").html(roleName + ' <span class="caret"></span>');
+            });
+        });
+        $(".deleteUser").click(function () {
+            userName = $(this).closest("div").attr("id");
+            $.post("@Url.Action("DeleteUser")", {
+                userName: $(this).closest("div").attr("id"),
+            }, function (data) {
+                displayAlert(data.Type, data.Message);
+                $("div[id='" + userName + "']").closest(".grid-row").remove().animate({ opacity: 0 });
+            }
+            );
+        });
+
+        $(".toggleStatus").click(function () {
+            var button = $(this);
+            userName = $(this).closest("div").attr("id");
+            $.post("@Url.Action("toggleUserStatus","Account")", {
+                userName: $(this).closest("div").attr("id"),
+            }, function (data) {
+                if (data.Status != 1)
+                    displayAlert("warning", data.Message)
+                else {
+                    button.toggleClass("btn-success btn-default");
+                }
+            })
+        });
+
+    });
+</script>

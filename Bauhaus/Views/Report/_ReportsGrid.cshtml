@@ -1,0 +1,71 @@
+﻿@using GridMvc
+@using GridMvc.Filtering
+@using GridMvc.Html
+@using GridMvc.Sorting
+@model IEnumerable<Bauhaus.Models.Report>
+
+
+@Html.Grid(Model).Named("reportsGrid").Columns(columns =>
+    {
+        columns.Add(item => item.ReportID, true);
+        columns.Add(item => item.Name);
+        columns.Add(item => item.CreationDate)
+            .Titled("Creation Date");
+        columns.Add()
+                   .Titled("Status")
+                   .Encoded(false)
+                   .Sanitized(false)
+                   .RenderValueAs(o =>
+                       @<div>
+                           @switch (o.Status)
+                           {
+                               case 0:
+                               <i class="fa fa-clock-o"></i>
+                                   break;
+                               case 1:
+                               <i class="fa fa-check-circle"></i>
+                                   break;
+                               case 2:
+                               <div class="proc" id="@o.ReportID">
+                                   <i class="fa fa-cog fa-spin"></i>
+                                   <small>@o.Remark</small>
+                               </div>
+                               if (o.CreationDate.AddMinutes(20) <= TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById("Venezuela Standard Time")))
+                                {
+                                   <button type="button" class="btn btn-link" onclick="location.href='@Url.Action("Abort", new { id = o.ReportID })';return false;">
+                                       <i class="fa fa-unlink"></i>
+                                   </button>
+                                }
+                                   break;
+                               case 3:
+                               <i class="fa fa-exclamation-circle"></i>
+                               <small>@o.Remark</small>
+                                   break;
+                               default:
+                               <i class="fa fa-bug"></i>
+                               <small>@o.Remark</small>
+                                   break;
+                           }
+                       </div>
+               );
+        columns.Add(item => item.Uploader);
+
+
+    }).SetLanguage("En").Sortable().WithPaging(10).Filterable().WithMultipleFilters().Selectable(false)
+
+<script>
+    $(function () {
+        $(".proc").each(function () {
+            setInterval(function () {
+                $(".proc").animate({ opacity: 0 });
+                    $.post('@Url.Action("RefreshProgress", "Report")',
+                        {
+                            id: $(".proc").attr('id'),
+                        },
+                        function (Content) {
+                            $(".proc").html(Content).animate({opacity:1});
+                        });
+            }, 10000);
+        });
+    });
+</script>

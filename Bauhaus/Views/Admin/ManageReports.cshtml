@@ -1,0 +1,75 @@
+﻿@using Bauhaus.Helpers
+@model IEnumerable<Bauhaus.Models.Report>
+@{
+    ViewBag.Title = "ManageReports";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<h2>Manage Reports</h2>
+
+@using(Html.BeginForm("UploadReport","Admin",FormMethod.Post,new{enctype="multipart/form-data"}))
+{ @Html.ValidationSummary()
+    <table>
+        <tr>
+            <td>
+                <label>Please Select a Report to Upload :</label>
+            </td>
+            <td>
+                <input type="file" id="fileUpload" name="fileUpload" accept="application/vnd.ms-excel,
+                    application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <input type="submit" id="submit" name="Submit" value="Submit" />
+            </td>
+        </tr>
+    </table>
+}
+<table>
+
+    <tr>
+        <th>
+            @Html.DisplayNameFor(model => model.Name)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.CreationDate)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Processed)
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model.Uploader)
+        </th>
+    </tr>
+
+@foreach (var item in Model) {
+    <tr>
+        <td>
+            @Html.DisplayFor(modelItem => item.Name)
+        </td>
+        <td>
+            @Html.DisplayFor(modelItem => item.CreationDate)
+        </td>
+        <td>
+            @Html.ResolveProcessed(item.Processed)
+        </td>
+        <td>
+            @Html.DisplayFor(modelItem => item.Uploader)
+        </td>
+        <td>
+            @using (Html.BeginForm("ProcessReport", "Admin"))
+            {
+                <input type="hidden" name="id" value="@item.ReportID" />
+                <input type="submit" disabled="@item.Processed" value="Process" />
+            }
+        </td>
+    </tr>
+}
+
+</table>
+
+<h2><a href="~/Admin/Index">Back</a></h2>
+
+<script>
+    $("input[disabled=true][type=submit]").css
+({
+    'background': 'yellow',
+    'color': 'blue'
+});
+</script>

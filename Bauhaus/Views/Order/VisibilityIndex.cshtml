@@ -1,0 +1,266 @@
+﻿@using GridMvc
+@using GridMvc.Filtering
+@using GridMvc.Html
+@using GridMvc.Sorting
+@using Bauhaus.Helpers
+@model IEnumerable<Bauhaus.Models.Order>
+@{
+
+    string message = "";
+    string type = "";
+
+    if (TempData["Message"] != null)
+    {
+        message = TempData["Message"].ToString();
+        type = TempData["Type"].ToString();
+    }
+}
+
+<div class="row">
+
+
+    @Html.Grid(Model).Named("OrderVisibilityGrid").Columns(columns =>
+{
+    columns.Add(item => item.SapID);
+    columns.Add(item => item.Customer.Name)
+        .Titled("Cust.");
+    columns.Add(item => item.CustomerPO)
+        .Titled("Cust. PO");
+    columns.Add()
+               .Encoded(false)
+               .Sanitized(false)
+               .Titled("SAP")
+               .RenderValueAs(d =>
+                @<div>
+
+                    @if (d.Status.Stage == 0)
+                    {
+                        if (d.Status.State == 1)
+                        {
+                            @Html.ProgressBarState(3, d.DocDate.ToString("dd/MM/yy"))
+                        }
+                        else
+                        {
+                            @Html.ProgressBarState(2, d.DocDate.ToString("dd/MM/yy"))
+                        }
+                    }
+                    else
+                    {
+                        @Html.ProgressBarState(1, d.DocDate.ToString("dd/MM/yy"))
+                    }
+                </div>
+    );
+    columns.Add()
+               .Encoded(false)
+               .Sanitized(false)
+               .Titled("DSS")
+               .RenderValueAs(d =>
+                @<div>
+                    @if (d.Status.Stage <= 1)
+                    {
+                        if (d.Status.Stage == 1)
+                        {
+                            if (d.Status.State == 1)
+                            {
+                                @Html.ProgressBarState(3, d.Delivery.Date.ToString("dd/MM/yy"))
+                            }
+                            else
+                            {
+                                @Html.ProgressBarState(2, d.Delivery.Date.ToString("dd/MM/yy"))
+                            }
+                        }
+                        else
+                        {
+                            @Html.ProgressBarState(0)
+                        }
+                    }
+                    else
+                    {
+                        @Html.ProgressBarState(1, d.Delivery.Date.ToString("dd/MM/yy"))
+                    }
+                </div>
+    );
+    columns.Add()
+               .Encoded(false)
+               .Sanitized(false)
+               .Titled("DC")
+               .RenderValueAs(d =>
+                @<div>
+                    @if (d.Status.Stage <= 2)
+                    {
+                        if (d.Status.Stage == 2)
+                        {
+                            if (d.Status.State == 1)
+                            {
+                                @Html.ProgressBarState(3, d.Shipment.Date.ToString("dd/MM/yy"))
+                            }
+                            else
+                            {
+                                @Html.ProgressBarState(2, d.Shipment.Date.ToString("dd/MM/yy"))
+                            }
+                        }
+                        else
+                        {
+                            @Html.ProgressBarState(0)
+                        }
+                    }
+                    else
+                    {
+                        if(d.Shipment!=null)
+                        {
+                            @Html.ProgressBarState(1, d.Shipment.Date.ToString("dd/MM/yy"))   
+                        }
+                        else
+                        {
+                            @Html.ProgressBarState(1,"N/A")
+                        }
+                        
+                    }
+                </div>
+    );
+    columns.Add()
+               .Encoded(false)
+               .Sanitized(false)
+               .Titled("Transit")
+               .RenderValueAs(d =>
+                @<div>
+                     @if (d.Status.Stage <= 3)
+                     {
+                         if (d.Status.Stage == 3)
+                         {
+                             if (d.Status.State == 1)
+                             {
+                                 @Html.ProgressBarState(3, d.Invoices.First().Date.ToString("dd/MM/yy"))
+                             }
+                             else
+                             {
+                                 @Html.ProgressBarState(2, d.Invoices.First().Date.ToString("dd/MM/yy"))
+                             }
+                         }
+                         else
+                         {
+                             @Html.ProgressBarState(0)
+                         }
+                     }
+                     else
+                     {
+                         @Html.ProgressBarState(1, d.Invoices.First().Date.ToString("dd/MM/yy"))
+                     }
+                </div>
+    );
+    columns.Add()
+               .Encoded(false)
+               .Sanitized(false)
+               .Titled("Cust.")
+               .RenderValueAs(d =>
+                @<div>
+                     @if (d.Status.Stage <= 4)
+                     {
+                         if (d.Status.Stage == 4)
+                         {
+                             if (d.Status.State == 1)
+                             {
+                                 @Html.ProgressBarState(3)
+                             }
+                             else
+                             {
+                                 @Html.ProgressBarState(2)
+                             }
+                         }
+                         else
+                         {
+                             @Html.ProgressBarState(0)
+                         }
+                     }
+                     else
+                     {
+                         @Html.ProgressBarState(1)
+                     }
+                </div>
+    );
+    columns.Add()
+               .Encoded(false)
+               .Sanitized(false)
+               .Titled("Del.")
+               .RenderValueAs(d =>
+                @<div>
+                     @if (d.Status.Stage <= 5)
+                     {
+                         if (d.Status.Stage == 5)
+                         {
+                             if (d.Status.State == 1)
+                             {
+                                 @Html.ProgressBarState(3, d.POD.Date.ToString("dd/MM/yy"))
+                             }
+                             else
+                             {
+                                 @Html.ProgressBarState(2, d.POD.Date.ToString("dd/MM/yy"))
+                             }
+                         }
+                         else
+                         {
+                             @Html.ProgressBarState(0)
+                         }
+                     }
+                     else
+                     {
+                         @Html.ProgressBarState(1, d.POD.Date.ToString("dd/MM/yy"))
+                     }
+                </div>
+    );
+    columns.Add()
+        .Sanitized(false)
+        .Encoded(false)
+        .Titled("Status")
+        .RenderValueAs(d =>
+
+            @<div>
+                @Html.ReasonResolver(d.Status.Stage, d.Status.State, d.Status.Reason)
+                <button class="btn btn-link btn-xs" onclick="location.href='@Url.Action("Details",new {id = d.SapID})';return false;"><i class="fa fa-search fa-x2"></i></button>
+            </div>
+            
+     );
+}).SetLanguage("En").Selectable(false).WithPaging(10).Sortable().Filterable().WithMultipleFilters()
+
+</div>
+
+<script>
+    $(function () {
+        var jmessage = '@message';
+        var jtype = '@type';
+        toastr.options = {
+            "closeButton": true,
+            "debug": false,
+            "positionClass": "toast-bottom-right",
+            "onclick": null,
+            "showDuration": "500",
+            "hideDuration": "1000",
+            "timeOut": "5000",
+            "extendedTimeOut": "1000",
+            "showEasing": "swing",
+            "hideEasing": "linear",
+            "showMethod": "fadeIn",
+            "hideMethod": "fadeOut"
+        }
+        if (jmessage != "") {
+            switch (jtype) {
+                case "info":
+                    toastr.info(jmessage);
+                    break;
+                case "success":
+                    toastr.success(jmessage);
+                    break;
+                case "warning":
+                    toastr.warning(jmessage);
+                    break;
+                case "danger":
+                    toastr.error(jmessage);
+                    break;
+                default:
+                    toastr.info(jmessage);
+                    break;
+            }
+        }
+
+    });
+</script>

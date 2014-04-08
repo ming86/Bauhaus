@@ -1,0 +1,126 @@
+﻿@model Bauhaus.Models.Order
+
+@{
+    ViewBag.Title = "Edit";
+}
+
+<h2>Edit</h2>
+
+@using (Html.BeginForm()) {
+    @Html.AntiForgeryToken()
+    @Html.ValidationSummary(true)
+
+    <fieldset>
+        <legend>Order</legend>
+
+        @Html.HiddenFor(model => model.SapID)
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.Status)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.Status)
+            @Html.ValidationMessageFor(model => model.Status)
+        </div>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.SoldTo)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.SoldTo)
+            @Html.ValidationMessageFor(model => model.SoldTo)
+        </div>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.ShipTo)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.ShipTo)
+            @Html.ValidationMessageFor(model => model.ShipTo)
+        </div>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.DocDate)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.DocDate)
+            @Html.ValidationMessageFor(model => model.DocDate)
+        </div>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.CusPODate)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.CusPODate)
+            @Html.ValidationMessageFor(model => model.CusPODate)
+        </div>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.RDDF)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.RDDF)
+            @Html.ValidationMessageFor(model => model.RDDF)
+        </div>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.RDDT)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.RDDT)
+            @Html.ValidationMessageFor(model => model.RDDT)
+        </div>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.QtyCS)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.QtyCS)
+            @Html.ValidationMessageFor(model => model.QtyCS)
+        </div>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.QtySU)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.QtySU)
+            @Html.ValidationMessageFor(model => model.QtySU)
+        </div>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.NewRDD)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.NewRDD)
+            @Html.ValidationMessageFor(model => model.NewRDD)
+        </div>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.Blking)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.Blking)
+            @Html.ValidationMessageFor(model => model.Blking)
+        </div>
+
+        <div class="editor-label">
+            @Html.LabelFor(model => model.Value)
+        </div>
+        <div class="editor-field">
+            @Html.EditorFor(model => model.Value)
+            @Html.ValidationMessageFor(model => model.Value)
+        </div>
+
+        <p>
+            <input type="submit" value="Save" />
+        </p>
+    </fieldset>
+}
+
+<div>
+    @Html.ActionLink("Back to List", "Index")
+</div>
+
+@section Scripts {
+    @Scripts.Render("~/bundles/jqueryval")
+}

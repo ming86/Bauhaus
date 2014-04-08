@@ -1,0 +1,16 @@
+﻿@using GridMvc
+@using GridMvc.Filtering
+@using GridMvc.Html
+@using GridMvc.Sorting
+@model IEnumerable<Bauhaus.Models.Customer>
+
+@Html.Grid(Model).Named("customersGrid").Columns(columns =>
+    {
+
+        columns.Add(item => item.ID)
+            .Titled("Ship To");
+        columns.Add(item => item.Name);
+        columns.Add(item => item.MainCSROM.Name)
+            .Titled("CSR");
+
+    }).SetLanguage("En").WithPaging(15).Sortable().Filterable().WithMultipleFilters()

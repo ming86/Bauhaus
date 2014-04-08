@@ -1,0 +1,55 @@
+﻿@model Bauhaus.Models.Vehicle
+
+@{
+    ViewBag.Title = "Editvehicle";
+}
+
+<h2>Edit Vehicle</h2>
+
+<div class="row">
+    <div class="col-md-6">
+        @using (Html.BeginForm("EditVehicle","Carrier")) {
+            @Html.AntiForgeryToken()
+            @Html.ValidationSummary(true)
+
+            <input type="hidden" name="vehicleId" value="@Model.ID" />
+            <label>Vehicle Plate</label><br />
+            <input type="text" name="plate" style="margin-bottom:10px; width:130px" value="@Model.Plate"/> <br />
+            <label>Vehicle Type</label> <br />
+            <select name="type" style="margin-bottom:10px" id="vehicleTypeSelect">
+                <option value="VE01">VE01</option>
+                <option value="VE02">VE02</option>
+                <option value="VE03">VE03</option>
+                <option value="VE04">VE04</option>
+                <option value="VE05">VE05</option>
+            </select> <br />
+            <label>Vehicle Status</label> <br />
+            <select name="vehicleStatus" style="margin-bottom:10px; width:130px" id="vehicleStatusSelect">
+                <option value=0>Suspendido</option>
+                <option value=1>Activo</option>
+            </select> <br />
+            <label>Driver's Name</label> <br />
+            <input type="text" name="driversName" style="margin-bottom:10px; width:130px" value="@Model.Driver.Name" /> <br />
+            <label>Driver's Telephone</label> <br />
+            <input type="text" name="driversTelephone" style="margin-bottom:10px; width:130px" value="@Model.Driver.Telephone" /> <br />
+            <button class="btn btn-primary" type="submit"> Save Changes</button>
+        }
+
+    </div>
+</div>
+
+<script>
+    function setSelectedIndex(s, valsearch) {
+        // Loop through all the items in drop down list
+        for (i = 0; i < s.options.length; i++) {
+            if (s.options[i].value == valsearch) {
+                // Item is found. Set its property and exit
+                s.options[i].selected = true;
+                break;
+            }
+        }
+        return;
+    }
+    setSelectedIndex(document.getElementById("vehicleTypeSelect"), "@Model.Type");
+    setSelectedIndex(document.getElementById("vehicleStatusSelect"), "@Model.Status");
+</script>

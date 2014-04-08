@@ -1,0 +1,20 @@
+﻿@{
+    ViewBag.Title = "AutoEnrole";
+}
+
+<h2>AutoEnrole</h2>
+
+@using (Html.BeginForm("MasterKeyCheck","Home"))
+{
+    <div class="row">
+        <div class="col-lg-4">
+            <div class="input-group">
+                <input type="password" name="masterKey" class="form-control" placeholder="Enter the Master Key">
+                <span class="input-group-btn">
+                    <button class="btn btn-primary" type="submit">Verify</button>
+                </span>
+            </div><!-- /input-group -->
+       
+        </div><!-- /.col-lg-6 -->
+    </div>
+}

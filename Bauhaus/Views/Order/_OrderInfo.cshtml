@@ -1,0 +1,139 @@
+﻿@model Bauhaus.Models.Order
+
+<h5> @Html.StageResolver(Model.Status.Stage)</h5>
+<small>@Html.ReasonResolver(Model.Status.Stage,Model.Status.State,Model.Status.Reason)</small>
+
+
+<table class="table table-condensed">
+
+    <tr>
+        <td>
+            @Html.ActionLink(Model.Customer.Name, "Details", "Customer", new { id = Model.Customer.ID }, null)
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <strong>@Html.DisplayNameFor(item => item.DocDate)</strong>
+            @Html.DisplayFor(item => item.DocDate)
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <strong>@Html.DisplayNameFor(item => item.Customer.Route.Name)</strong>
+            @Html.DisplayFor(item => item.Customer.Route.Name)
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <strong>@Html.DisplayNameFor(item => item.Quantities.QtyCS)</strong>
+            @Html.DisplayFor(item => item.Quantities.QtyCS)
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <strong>@Html.DisplayNameFor(item => item.Quantities.QtySU)</strong>
+            @Html.DisplayFor(item => item.Quantities.QtySU)
+        </td>
+    </tr>
+     
+        <tr>
+            <td>
+                <strong>@Html.DisplayNameFor(item => item.RDDF.Original)</strong>
+                @Html.DisplayFor(item => item.RDDF.Original)
+                @if (Model.RDDF.Confirmed)
+                {
+                    <i class="fa fa-check" title="Confirmed Date."></i>
+                }
+                else
+                {
+                    <i class="fa fa-exclamation" title="Date not Confirmed."></i>
+                }
+
+            </td>
+        </tr>
+    
+    @if (Model.Delivery != null)
+    {
+        <tr>
+            <td class="warning">
+                <strong>@Html.DisplayNameFor(item => item.Delivery.ID)</strong>
+                @Html.DisplayFor(item => item.Delivery.ID)
+            </td>
+        </tr>
+        <tr>
+            <td class="warning">
+                <strong>@Html.DisplayNameFor(item => item.Delivery.Date)</strong>
+                @Html.DisplayFor(item => item.Delivery.Date)
+            </td>
+        </tr>
+        <tr>
+            <td class="warning">
+                <strong>@Html.DisplayNameFor(item => item.Delivery.Quantities.QtyCS)</strong>
+                @Html.DisplayFor(item => item.Delivery.Quantities.QtyCS)
+            </td>
+        </tr>
+        <tr>
+            <td class="warning">
+                <strong>@Html.DisplayNameFor(item => item.Delivery.Quantities.QtySU)</strong>
+                @Html.DisplayFor(item => item.Delivery.Quantities.QtySU)
+            </td>
+        </tr>
+    }
+    @if (Model.Shipment != null)
+    {
+        <tr>
+            <td class="success">
+                <strong>@Html.DisplayNameFor(item => item.Shipment.ID)</strong>
+                @Html.ActionLink(Model.Shipment.ID.ToString(), "Details", "Shipment", new { id = Model.Shipment.ID }, null)
+            </td>
+        </tr>
+        if (Model.Shipment.Date != null)
+        {
+        <tr>
+            <td class="success">
+                <strong>@Html.DisplayNameFor(item => item.Shipment.Date)</strong>
+                @Html.DisplayFor(item => item.Shipment.Date)
+            </td>
+        </tr>
+        }
+    }
+    @if (Model.Invoices.Any())
+    {
+        <tr>
+            <td class="active">
+                <strong>@Html.DisplayNameFor(item => item.Invoices)</strong>
+
+                @foreach (Bauhaus.Models.Invoice inv in Model.Invoices)
+                {
+                    @Html.ActionLink(inv.ID.ToString(), "Details", "Order", new { id = Model.SapID }, null)  
+                }
+            </td>
+        </tr>
+        
+    }
+    @if (Model.POD != null)
+    {
+        <tr>
+            <td class="info">
+                <strong>POD </strong>
+                @Html.DisplayFor(item => item.POD.Date)
+                <span class="glyphicon glyphicon-ok"></span>
+            </td>
+        </tr>
+    }
+    @if (Model.Status.OpenItem)
+    {
+        <tr>
+            <td>
+                <strong class="text-danger">Warning
+                </strong>
+                <p>This Order Seems to be an Open Item. Information is not accurate</p>
+            </td>
+        </tr>
+    }
+    <tr>
+        <td>
+            <button type="button" class="btn btn-info" onclick="location.href='@Url.Action("Details", "Order", new { id = Model.SapID })'">Details</button>
+        </td>
+    </tr>
+</table>

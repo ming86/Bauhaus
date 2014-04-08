@@ -1,0 +1,115 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>@ViewBag.Title - P&G Bauhaus</title>
+    <link href="~/BauhausMoonSmall.ico" rel="shortcut icon" type="image/x-icon" />
+    <meta name="viewport" content="width=device-width" />
+    @Styles.Render("~/Content/css")
+    @Scripts.Render("~/bundles/modernizr")
+    <meta name="viewport" content="width=device-width" />
+    <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css" rel="stylesheet">
+    <link href="@Url.Content("~/Content/Gridmvc.css")" rel="stylesheet" />
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css" rel="stylesheet">
+    @* <link href="@Url.Content("~/Content/bootstrap/bootstrap.min.css")" rel="stylesheet" />*@
+    <link href="@Url.Content("~/Content/toastr.min.css")" rel="stylesheet" />
+    <link href="@Url.Content("~/Content/toastr.css")" rel="stylesheet" />
+    <link href="@Url.Content("~/Content/themes/base/jquery.ui.all.css")" rel="stylesheet" />
+    <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
+    <link rel="stylesheet" href="http://cdn.oesmith.co.uk/morris-0.4.3.min.css" />
+
+
+    <script src="@Url.Content("~/Scripts/jquery-2.0.3.min.js")"></script>
+    <script src="@Url.Content("~/Scripts/jquery-ui-1.10.3.min.js")"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.2/js/bootstrap.js"></script>
+    <script src="@Url.Content("~/Scripts/toastr.js")"></script>
+    <script src="@Url.Content("~/Scripts/gridmvc.min.js")"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js"></script>
+    <script src="http://cdn.oesmith.co.uk/morris-0.4.3.min.js"></script>
+    <script src="@Url.Content("~/Scripts/helpers.js")"></script>
+
+    <meta name="google-translate-customization" content="34504c74728c6283-0152bb7b4f86d6d9-ga46b4e809db4e92e-10" />
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="content-wrapper">
+                <div class="float-left">
+                    <img src="~/Images/PGLogo.jpg" />
+                    <p class="site-title">@Html.ActionLink("Bauhaus", "Index", "Home")</p>
+                </div>
+                <div id="google_translate_element" class="text-right">
+                    <script type="text/javascript">
+                        function googleTranslateElementInit() {
+                            new google.translate.TranslateElement(
+                                {
+                                    pageLanguage: 'en', includedLanguages: 'en,es', layout: google.translate.TranslateElement.InlineLayout.SIMPLE, autoDisplay: false
+
+                                }, 'google_translate_element');
+                        }
+                    </script>
+                    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit">
+
+                    </script>
+                </div>
+                <div class="float-right" style="margin-top:15px">
+                    <section id="login">
+                        @Html.Partial("_LoginPartial")
+                    </section>
+                    <nav>
+                        <ul id="menu">
+                            <li>@Html.ActionLink("Home", "Index", "Home")</li>
+                            <li>@Html.ActionLink("About", "About", "Home")</li>
+                            <li>@Html.ActionLink("Contact", "Contact", "Home")</li>
+                        </ul>
+                    </nav>
+
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="body">
+        @RenderSection("featured", required: false)
+
+        <section class="content-wrapper main-content clear-fix">
+            <div id="feddbackContainer" style="position:fixed;left:0;bottom:0;z-index:1000;">
+                <button class="btn btn-primary btn-md" id="feedbackToggle">
+                    <i class="fa fa-bullhorn"></i>
+                </button>
+                <div id="feedbackForm" class="panel panel-primary" style="display:none">
+                    <div class="panel-heading">Give your Feedback</div>
+                    <div class="panel-body">
+                        <textarea id="feedbackMessage"></textarea>
+                        <button id="submitFeedback" class="btn btn-primary"><i class="fa fa-rss"></i> Send</button>
+                    </div>
+                </div>
+            </div>
+            @RenderBody()
+        </section>
+    </div>
+    <footer>
+        <div class="content-wrapper">
+            <div class="float-left">
+                <p>&copy; @DateTime.Now.Year - P&G Bauhaus. All Rights Reserved </p>
+            </div>
+        </div>
+    </footer>
+
+    @Scripts.Render("~/bundles/jquery")
+    @RenderSection("scripts", required: false)
+</body>
+</html>
+<script>
+    $("#feedbackToggle").click(function () {
+        $("#feedbackForm").slideToggle();
+    });
+
+    $("#submitFeedback").click(function () {
+        $.post("@Url.Action("SendFeedback","Home")", {
+            message: $("#feedbackMessage").val()
+        }, function () {
+            displayAlert("success", "Thanks for giving Feedback!. We will work on it as soon as possible.")
+            $("#feedbackForm").slideDown();
+        })
+    });
+</script>

@@ -1,0 +1,71 @@
+﻿@using Bauhaus.Models
+@using GridMvc
+@using GridMvc.Filtering
+@using GridMvc.Html
+@using GridMvc.Sorting
+@model Shipment
+@{
+    ViewBag.Title = "ListVehicles";
+}
+
+<h2>ListVehicles</h2>
+
+<div class="row">
+    <div class="col-md-1">
+        <button class="btn btn-primary" onclick="location.href='@Url.Action("Index", "Carrier")';return false;">
+            <span class="fa fa-arrow-left fa-x2"></span>
+        </button>
+    </div>
+    <div class="col-md-3">
+        <button class="btn btn-primary" onclick="location.href='@Url.Action("RegisterVehicle", "Carrier", new { id = Model.ID })';return false;">
+            <span class="fa fa-plus"></span> Add Vehicle
+        </button>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-9">
+        @if(Model!=null)
+        {
+
+            @Html.Grid(Model.Carrier.Vehicles).Named("vehiclesGrid").Columns(columns =>
+            {
+                columns.Add(item => item.Plate);
+                columns.Add(item => item.Status);
+                columns.Add(item => item.Type);
+                columns.Add(item => item.Driver.Name)
+                    .Titled("Driver's Name");
+                columns.Add(item => item.Driver.Telephone)
+                    .Titled("Driver's Phone");
+                columns.Add()
+                    .Encoded(false)
+                    .Sanitized(false)
+                    .RenderValueAs(o =>
+                        @<p>
+                            <small>
+                                @Html.ActionLink("Select", "AssignVehicle", "Carrier", new { vehicleID = o.ID , shipmentID = Model.ID }, null) |
+                                @Html.ActionLink("Edit", "EditVehicle", "Carrier", new { id = o.ID }, null) |
+                                @Html.ActionLink("Delete", "DeleteVehicle", "Carrier", new { id = o.ID }, null)
+                            </small>
+                         </p>
+                );
+                columns.Add()
+                    .Encoded(false)
+                    .Sanitized(false)
+                    .RenderValueAs(o =>
+                        @<p>
+                            
+                         </p>
+                );
+                columns.Add()
+                    .Encoded(false)
+                    .Sanitized(false)
+                    .RenderValueAs(o =>
+                        @<p>
+                            
+                         </p>
+                );
+            });
+        }
+        
+    </div>
+</div>

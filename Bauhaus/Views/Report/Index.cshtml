@@ -1,0 +1,61 @@
+﻿@using GridMvc
+@using GridMvc.Filtering
+@using GridMvc.Html
+@using GridMvc.Sorting
+@using Bauhaus.Helpers
+@model IEnumerable<Bauhaus.Models.Report>
+@{
+    ViewBag.Title = "Manage Reports";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+<div class="row" style="margin-bottom:10px">
+    
+    @using(Html.BeginForm("UploadReport","Report",FormMethod.Post,new{enctype="multipart/form-data"}))
+    {@Html.ValidationSummary()
+    <div class="col-md-2">
+        <h4>Select Report:</h4>
+    </div>
+    <div class="col-md-3">
+            <input type="file" id="fileUpload" name="fileUpload" accept="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+    </div>
+    <div class="col-md-2">
+        <button id="upload" class="btn btn-default" type="submit">
+              Upload
+              <span class="fa fa-cloud-upload fa-x2"></span>
+          </button>
+    </div>
+    }
+    @{
+        
+        string message = "";
+        string type = "";
+        
+        if (TempData["Message"] != null)
+        {
+            message = TempData["Message"].ToString();
+            type = TempData["Type"].ToString();
+        }
+    }
+
+</div>
+<div class="row">
+    <div class="col-md-12">
+        <div id="reportsGrid">
+            @Html.Partial("_ReportsGrid", Model)
+        </div>
+    </div>
+</div>
+
+<script>
+    $("#fresh").click(function () {
+        alert("Pressed");
+        $.post('@Url.Action("RefreshRemarks2")',{}, function (Content) {
+            $("#reportsGrid").html(Content);
+            alert
+        });
+    });
+
+    $(function () {
+        displayAlert('@type','@message');
+    });
+</script>
