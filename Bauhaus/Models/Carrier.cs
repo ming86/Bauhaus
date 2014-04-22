@@ -14,7 +14,7 @@ namespace Bauhaus.Models
         [Display(Name="Carrier")]
         public string Name { get; set; }
         public virtual ICollection<Vehicle> Vehicles { get; set; }
-        public virtual ICollection<Driver> Drivers { get; set; }
+        public virtual ICollection<Contact> Drivers { get; set; }
         public virtual ICollection<CarryFee> CarryFees { get; set; }
     }
 }

@@ -23,6 +23,35 @@ namespace Bauhaus.Models
         public virtual Carrier Carrier { get; set; }
         public virtual Vehicle Vehicle { get; set; }
         public virtual ICollection<Order> Orders { get; set; }
-        public int OrdersToGo { get; set; }
+
+        /// <summary>
+        /// Given a Volume quantity it returns a Vehicle description
+        /// with the right capacity to carry it.
+        /// </summary>
+        /// <param name="volume">Order Volume</param>
+        /// <returns>Vehicle Type</returns>
+        internal void CalculateVehicle()
+        {
+            if(this.Vehicle==null)
+            {
+                this.Vehicle = new Models.Vehicle();
+                this.Vehicle.Plate = "N/A";
+            }
+                
+            double volume = this.Orders.Sum(x => x.Products.Sum(y => y.Qty.Volume));
+            if (volume <= 10000)
+                this.Vehicle.Type = "VE01";
+            else
+                if (volume <= 19000)
+                    this.Vehicle.Type = "VE02";
+                else
+                    if (volume <= 29000)
+                        this.Vehicle.Type = "VE03";
+                    else
+                        if (volume <= 43000)
+                            this.Vehicle.Type = "VE04";
+                        else
+                            this.Vehicle.Type = "VE05";
+        }
     }
 }

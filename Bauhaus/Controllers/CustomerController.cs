@@ -101,7 +101,6 @@ namespace Bauhaus.Controllers
         /// </summary>
         public void DownloadCustomerOrders(long id)
         {
-            CodeHelpers code = new CodeHelpers();
             Customer cust = db.Customers.Find(id);
             var orders = from x in cust.Orders
                          select new
@@ -109,11 +108,11 @@ namespace Bauhaus.Controllers
                              x.SapID,
                              DocDate = x.DocDate.ToString("dd/MM/yy"),
                              x.CustomerPO,
-                             OrderCS = x.Quantities.QtyCS,
+                             OrderCS = x.Products.Sum(prod=>prod.Qty.CS),
                              Delivery = (x.Delivery == null)? "Sin Asignar":x.Delivery.ID.ToString(),
-                             DeliveryCS = (x.Delivery == null)? "Sin Asignar":x.Delivery.Quantities.QtyCS.ToString(),
+                             DeliveryCS = (x.Delivery == null)? "Sin Asignar":x.Products.Sum(prod=>prod.DSSQty.CS).ToString(),
                              Shipment = (x.Shipment == null)? "Sin Asignar":x.Shipment.ID.ToString(),
-                             Status = code.StageResolver(x.Status.Stage) + " " + code.ReasonResolver(x.Status.Stage, x.Status.State, x.Status.Reason),
+                             Status = x.Status.StageDescription() + " " + x.Status.ReasonDescription(),
                             
                          };
 

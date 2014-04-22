@@ -118,5 +118,23 @@ namespace Bauhaus.Models
                 ShipmentStatus = "status";
         }
     }
+
+    public class CarryFees: ReportLayout
+    {
+        public String CarrierNumber { get; set; }
+        public String CarrierName { get; set; }
+        public String Route { get; set; }
+        public String VehicleType { get; set; }
+        public String Fee { get; set; }
+
+        public CarryFees()
+        {
+            CarrierNumber = "carrier";
+            CarrierName = "carriername";
+            Route = "route";
+            VehicleType = "vehtype";
+            Fee = "fee";
+        }
+    }
      
 }

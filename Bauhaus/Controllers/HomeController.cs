@@ -72,7 +72,7 @@ namespace Bauhaus.Controllers
         }
 
         [Authorize]
-        public ActionResult AutoEnrole()
+        public ActionResult AutoEnroll()
         {
             return View();
         }
@@ -110,25 +110,16 @@ namespace Bauhaus.Controllers
             }
             catch (SmtpException e)
             {
-                Log log = new Log();
-                log.Source = Request.UserHostAddress;
-                log.UserName = User.Identity.Name;
-                log.Type = "FeedBack";
-                log.Description = message;
-                log.Date = TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById("Venezuela Standard Time"));
-                db.Logs.Add(log);
-                db.SaveChanges();
                 String inner = (e.InnerException.Message != null) ? e.InnerException.Message : "";
+                Log log = new Log(Request.UserHostAddress,User.Identity.Name,"FeedBack",message);
+                Log log2 = new Log(Request.UserHostAddress, User.Identity.Name, "Error", e.Message + ". " + inner);
+                db.Logs.Add(log);
+                db.Logs.Add(log2);
+                db.SaveChanges();
                 return Json(new { Status = 0, Message = e.Message + ". " + inner });
             }
 
-            Log log2 = new Log();
-            log2.Source = Request.UserHostAddress;
-            log2.UserName = User.Identity.Name;
-            log2.Type = "FeedBack";
-            log2.Description = message;
-            log2.Date = TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById("Venezuela Standard Time"));
-            db.Logs.Add(log2);
+            Log log3 = new Log(Request.UserHostAddress, User.Identity.Name, "FeedBack", message);
             db.SaveChanges();
             return Json(new { Status = 1, Message = "FeedBack Sent." });
         }

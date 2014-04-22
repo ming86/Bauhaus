@@ -12,10 +12,10 @@ namespace Bauhaus.Models
     {
         [Key]
         public int ID { get; set; }
-        [Display(Name = "Qty CS")]
-        public double QtyCS { get; set; }
-        [Display(Name = "Qty SU")]
-        public double QtySU { get; set; }
+        [Display(Name = "CS")]
+        public int CS { get; set; }
+        [Display(Name = "SU")]
+        public double SU { get; set; }
         [Display(Name = "Net WT")]
         public double NetWeight { get; set; }
         public double Volume { get; set; }

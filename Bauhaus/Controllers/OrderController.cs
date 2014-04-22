@@ -426,6 +426,14 @@ namespace Bauhaus.Controllers
                     ViewBag.Title = "Delivered Orders";
                     break;
 
+                case "pending":
+                    orders = (from x in db.Orders
+                              where x.Status.Stage == 1 &&
+                              x.Status.State == 0
+                              select x);
+                    ViewBag.Title = "Pending Orders";
+                    break;
+
                 case "vfr":
                     orders = (from x in db.Orders
                               where x.Status.Stage == 1 && 
@@ -615,7 +623,6 @@ namespace Bauhaus.Controllers
         public void DownloadOrders(String desc, Boolean filter = false)
         {
             IQueryable<Order> final = SelectOrders(desc,filter);
-            CodeHelpers code = new CodeHelpers();
             var ordersF = from x in final
                           select new
                           {
@@ -624,15 +631,15 @@ namespace Bauhaus.Controllers
                               ShipTo = x.Customer.ID,
                               x.Customer.Name,
                               x.CustomerPO,
-                              OrderCS = x.Quantities.QtyCS,
-                              OrderSU = x.Quantities.QtySU,
+                              OrderCS = x.Products.Sum(prod=>prod.Qty.CS),
+                              OrderSU = x.Products.Sum(prod => prod.Qty.SU),
                               Delivery = (x.Delivery == null) ? "N/A" : x.Delivery.ID.ToString(),
                               DeliveryDate = (x.Delivery == null) ? "N/A" : x.Delivery.Date.ToShortDateString(),
-                              DeliveryCS = (x.Delivery == null) ? "N/A" : x.Delivery.Quantities.QtyCS.ToString(),
-                              DeliverySU = (x.Delivery == null) ? "N/A" : x.Delivery.Quantities.QtySU.ToString(),
+                              DeliveryCS = (x.Delivery == null) ? "N/A" : x.Products.Sum(prod => prod.DSSQty.CS).ToString(),
+                              DeliverySU = (x.Delivery == null) ? "N/A" : x.Products.Sum(prod => prod.DSSQty.SU).ToString(),
                               Shipment = (x.Shipment == null) ? "N/A" : x.Shipment.ID.ToString(),
                               Invoices = (x.Invoices == null || !x.Invoices.Any()) ? "N/A" : x.Invoices.First().ID.ToString(),
-                              Status = code.StageResolver(x.Status.Stage) + " " + code.ReasonResolver(x.Status.Stage, x.Status.State, x.Status.Reason),
+                              Status = x.Status.StageDescription() + " " + x.Status.ReasonDescription(),
                           };
             using (ExcelPackage pck = new ExcelPackage())
             {
@@ -670,7 +677,10 @@ namespace Bauhaus.Controllers
         {
             IQueryable<Order> orders = SelectOrders(desc,filter);
             int count = orders.Count();
-            double sus = Math.Round(orders.Sum(x => x.Quantities.QtySU),2);
+            double sus = Math.Round((from order in orders
+                              from product in order.Products
+                              select (double?)product.Qty.SU).Sum() ?? 0,2);
+                
             return Json(new { Count = count, SU = sus });
         }
 
@@ -723,59 +733,91 @@ namespace Bauhaus.Controllers
         {
             IQueryable<Order> orders = SelectOrders("appointmentConfirmation", filter);
             int appointment = orders.Count();
-            double appointmentSU = Math.Round(orders.Sum(x => x.Quantities.QtySU), 2);
+            double appointmentSU = Math.Round((from order in orders
+                                               from product in order.Products
+                                               select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("planned", filter);
-            double plannedSU = Math.Round(orders.Sum(x => x.Quantities.QtySU), 2);
+            double plannedSU = Math.Round((from order in orders
+                                           from product in order.Products
+                                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
+
+            orders = SelectOrders("pending", filter);
+            int pending = orders.Count();
+            double pendingSU = Math.Round((from order in orders
+                                           from product in order.Products
+                                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("customerCapacity", filter);
             int customerCapacity = orders.Count();
-            double customerCapacitySU = Math.Round(orders.Sum(x => x.Quantities.QtySU), 2);
+            double customerCapacitySU = Math.Round((from order in orders
+                                                    from product in order.Products
+                                                    select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("postponed", filter);
             int postponed = orders.Count();
-            double postponedSU = Math.Round(orders.Sum(x => x.Quantities.QtySU), 2);
+            double postponedSU = Math.Round((from order in orders
+                                             from product in order.Products
+                                             select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("vehicle", filter);
             int vehicle = orders.Count();
-            double vehicleSU = Math.Round(orders.Sum(x => x.Quantities.QtySU), 2);
+            double vehicleSU = Math.Round((from order in orders
+                                           from product in order.Products
+                                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("inventoryLack", filter);
             int inventoryLack = orders.Count();
-            double inventoryLackSU = Math.Round(orders.Sum(x => x.Quantities.QtySU), 2);
+            double inventoryLackSU = Math.Round((from order in orders
+                                                 from product in order.Products
+                                                 select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("minimun", filter);
             int minimun = orders.Count();
-            double minimunSU = Math.Round(orders.Sum(x => x.Quantities.QtySU), 2);
+            double minimunSU = Math.Round((from order in orders
+                                           from product in order.Products
+                                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("minimunMakro", filter);
             int minimunMakro = orders.Count();
-            double minimunMakroSU = Math.Round(orders.Sum(x => x.Quantities.QtySU), 2);
+            double minimunMakroSU = Math.Round((from order in orders
+                                                from product in order.Products
+                                                select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("vfr", filter);
             int vfr = orders.Count();
-            double vfrSU = Math.Round(orders.Sum(x => x.Quantities.QtySU), 2);
+            double vfrSU = Math.Round((from order in orders
+                                       from product in order.Products
+                                       select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("vfrMakro", filter);
             int vfrMakro = orders.Count();
-            double vfrMakroSU = Math.Round(orders.Sum(x => x.Quantities.QtySU), 2);
+            double vfrMakroSU = Math.Round((from order in orders
+                                            from product in order.Products
+                                            select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("deleted", filter);
             int deleted = orders.Count();
-            double deletedSU = Math.Round(orders.Sum(x => x.Quantities.QtySU), 2);
+            double deletedSU = Math.Round((from order in orders
+                                           from product in order.Products
+                                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("zsplit", filter);
             int zsplit = orders.Count();
-            double zsplitSU = Math.Round(orders.Sum(x => x.Quantities.QtySU), 2);
+            double zsplitSU = Math.Round((from order in orders
+                                          from product in order.Products
+                                          select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("others", filter);
             int others  = orders.Count();
-            double othersSU = Math.Round(orders.Sum(x => x.Quantities.QtySU), 2);
+            double othersSU = Math.Round((from order in orders
+                                          from product in order.Products
+                                          select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
-            int allDistribution = appointment + customerCapacity + postponed + vehicle + inventoryLack + minimun +
+            int allDistribution = pending + appointment + customerCapacity + postponed + vehicle + inventoryLack + minimun +
                 minimunMakro + vfr + vfrMakro + deleted + zsplit + others;
 
-            double allDistributionSU = Math.Round(appointmentSU + customerCapacitySU + postponedSU + vehicleSU +
+            double allDistributionSU = Math.Round(pendingSU + appointmentSU + customerCapacitySU + postponedSU + vehicleSU +
                 inventoryLackSU + minimunSU + minimunMakroSU + vfrSU + vfrMakroSU + deletedSU + zsplitSU + othersSU,2);
 
             return Json(new

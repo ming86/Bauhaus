@@ -4,6 +4,7 @@
 @using GridMvc.Sorting
 @using Bauhaus.Controllers
 @using Bauhaus.Helpers
+@using Bauhaus.Models
 @model Bauhaus.Models.Order
 @{
     ViewBag.Title = "Details";
@@ -68,40 +69,24 @@
                                     @Html.DisplayFor(model => model.Type)
                                 </td>
                             </tr>
-                            <tr>
-                                <td>
-                                    <strong>@Html.DisplayNameFor(model => model.Quantities.NetWeight)</strong>
-                                    @Html.DisplayFor(model => model.Quantities.NetWeight)
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <strong>@Html.DisplayNameFor(model => model.Quantities.Volume)</strong>
-                                    @Html.DisplayFor(model => model.Quantities.Volume)
-                                </td>
-                            </tr>
                         </table>
                     </div>
                     <div class="col-md-4">
                         <table class="table">
-                            @*<tr>
-                                <td>
-                                    <strong>@Html.DisplayNameFor(model => model.VehicleType)</strong>
-                                    @Html.DisplayFor(model => model.VehicleType)
-                                </td>
-                            </tr>*@
                             <tr>
-                                <td>
-                                    <strong>@Html.DisplayNameFor(model => model.Quantities.QtyCS)</strong>
-                                    @Html.DisplayFor(model => model.Quantities.QtyCS)
+                                <td class="active">
+                                    <strong>Products</strong>
                                 </td>
                             </tr>
-                            <tr>
-                                <td>
-                                    <strong>@Html.DisplayNameFor(model => model.Quantities.QtySU)</strong>
-                                    @Html.DisplayFor(model => model.Quantities.QtySU)
-                                </td>
-                            </tr>
+                            @foreach(Product product in Model.Products)
+                            {
+                                <tr>
+                                    <td>
+                                        <strong>@product.Description</strong>
+                                        <p>@product.Qty.CS CS @product.Qty.SU SU</p>
+                                    </td>
+                                </tr>
+                            }
 
                             @if (Model.Delivery != null)
                             {
@@ -119,18 +104,6 @@
                                     <td>
                                         <strong>@Html.DisplayNameFor(model => model.Delivery.Date)</strong>
                                         @Html.DisplayFor(model => model.Delivery.Date)
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <strong>@Html.DisplayNameFor(model => model.Delivery.Quantities.QtyCS)</strong>
-                                        @Html.DisplayFor(model => model.Delivery.Quantities.QtyCS)
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td>
-                                        <strong>@Html.DisplayNameFor(model => model.Delivery.Quantities.QtySU)</strong>
-                                        @Html.DisplayFor(model => model.Delivery.Quantities.QtySU)
                                     </td>
                                 </tr>
                                 

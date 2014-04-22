@@ -28,14 +28,13 @@ namespace Bauhaus.Controllers
                 UserProfile user = db.UserProfiles.Find(WebSecurity.CurrentUserId);
 
                 shipments = (from x in db.Shipments
-                             where x.Carrier.Name == user.FullName &&
-                             x.OrdersToGo > 0
+                             where x.Carrier.Name == user.FullName
                              select x).ToList().AsQueryable();
 
             }
             else
             {
-                shipments = db.Shipments.Where(x => x.OrdersToGo > 0).ToList().AsQueryable();
+                shipments = db.Shipments.ToList().AsQueryable();
             }
 
             return View(shipments);
@@ -92,10 +91,11 @@ namespace Bauhaus.Controllers
                 return Json(new { Status = 0, Message = "Carrier not Found." });
 
 
-            Driver Ndriver = carr.Drivers.Where(item => item.Name == driversName).FirstOrDefault();
+            Contact Ndriver = carr.Drivers.Where(item => item.Name == driversName).FirstOrDefault();
             if ( Ndriver == null)
             {
-                Ndriver = new Driver();
+                Ndriver = new Contact();
+                Ndriver.Area = "Driver";
                 Ndriver.Name = driversName;
                 Ndriver.Telephone = driversTelephone;
                 carr.Drivers.Add(Ndriver);
@@ -113,7 +113,6 @@ namespace Bauhaus.Controllers
                 Veh.Driver = Ndriver;
                 Veh.Plate = plate;
                 Veh.Type = type;
-                Veh.Status = 1;
                 carr.Vehicles.Add(Veh);
             }
             db.SaveChanges();
@@ -163,10 +162,11 @@ namespace Bauhaus.Controllers
                     return Json(new { Status = 0, Message = "Carrier not Found." });
 
 
-                Driver Ndriver = carr.Drivers.Where(item => item.Name == driversName).FirstOrDefault();
+                Contact Ndriver = carr.Drivers.Where(item => item.Name == driversName).FirstOrDefault();
                 if (Ndriver == null)
                 {
-                    Ndriver = new Driver();
+                    Ndriver = new Contact();
+                    Ndriver.Area = "Driver";
                     Ndriver.Name = driversName;
                     Ndriver.Telephone = driversTelephone;
                     carr.Drivers.Add(Ndriver);
@@ -187,7 +187,6 @@ namespace Bauhaus.Controllers
                     Veh.Driver = Ndriver;
                     Veh.Plate = plate;
                     Veh.Type = type;
-                    Veh.Status = 1;
                     carr.Vehicles.Add(Veh);
                 }
                 shpmt.Vehicle = Veh;
@@ -211,15 +210,13 @@ namespace Bauhaus.Controllers
         /// <returns>Json with Status and Message</returns>
         [HttpPost]
         [Authorize(Roles = "Carrier , Admin")]
-        public JsonResult EditVehicle(int id, string plate,
-                                        int status, string type,
+        public JsonResult EditVehicle(int id, string plate, string type,
                                         string driversName, string driversTelephone )
         {
             Vehicle auxVehicle = db.Vehicles.Find(id);
             if (auxVehicle != null)
             {
                 auxVehicle.Plate = plate;
-                auxVehicle.Status = status;
                 auxVehicle.Type = type;
                 auxVehicle.Driver.Name = driversName;
                 auxVehicle.Driver.Telephone = driversTelephone;
@@ -291,21 +288,6 @@ namespace Bauhaus.Controllers
                 return Json(new { Status = 0, Message = "Invalid Stage." });
             }
 
-            if(stage == 4)
-            {
-                if(orders.FirstOrDefault().Status.Stage == 5)
-                {
-                    Shipment shpmt = db.Shipments.Find(shipment);
-                    shpmt.OrdersToGo += orders.Count();                
-                }
-            }
-
-            if (stage == 5)
-            {
-                Shipment shpmt = db.Shipments.Find(shipment);
-                shpmt.OrdersToGo -= orders.Count();
-            }
-
             foreach (Order ord in orders)
             {
                 if(stage == 5)
@@ -314,7 +296,7 @@ namespace Bauhaus.Controllers
                     {
                         ord.POD = new POD();
                         ord.POD.Date = DateTime.Today;
-                        ord.calculateIndicators();
+                        //ord.calculateIndicators();
                     }
                 }
                 ord.Status.Stage = stage;
@@ -339,7 +321,6 @@ namespace Bauhaus.Controllers
         [Authorize(Roles = "Carrier , Admin")]
         public JsonResult UpdateReason(long shipment, int stage, int reason, string comment)
         {
-            CodeHelpers code = new CodeHelpers();
             Shipment shpmt = db.Shipments.Find(shipment);
             if(shpmt == null)
             {

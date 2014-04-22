@@ -16,5 +16,16 @@ namespace Bauhaus.Models
         public String Description { get; set; }
         [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "{0:dd/MM/yyyy}")]
         public DateTime Date { get; set; }
+
+        public Log(string source, string user, string type, string desc)
+        {
+            this.Source = source;
+            this.UserName = user;
+            this.Type = type;
+            this.Description = desc;
+            this.Date = TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById("Venezuela Standard Time"));
+        }
+
+
     }
 }

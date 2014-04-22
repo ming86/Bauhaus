@@ -236,7 +236,6 @@
     <Compile Include="Controllers\ContactController.cs" />
     <Compile Include="Controllers\CSRController.cs" />
     <Compile Include="Controllers\CustomerController.cs" />
-    <Compile Include="Controllers\GUController.cs" />
     <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Controllers\OrderController.cs" />
     <Compile Include="Controllers\PlannerController.cs" />
@@ -260,12 +259,12 @@
     <Compile Include="Models\Contact.cs" />
     <Compile Include="Models\Customer.cs" />
     <Compile Include="Models\Delivery.cs" />
-    <Compile Include="Models\Driver.cs" />
     <Compile Include="Models\Invoice.cs" />
     <Compile Include="Models\Log.cs" />
     <Compile Include="Models\Order.cs" />
     <Compile Include="Models\OrderStatusPackage.cs" />
     <Compile Include="Models\POD.cs" />
+    <Compile Include="Models\Product.cs" />
     <Compile Include="Models\Quantity.cs" />
     <Compile Include="Models\RDDF.cs" />
     <Compile Include="Models\Report.cs" />
@@ -273,7 +272,6 @@
     <Compile Include="Models\ReportStructure.cs" />
     <Compile Include="Models\Route.cs" />
     <Compile Include="Models\Shipment.cs" />
-    <Compile Include="Models\ShipmentPackage.cs" />
     <Compile Include="Models\Status.cs" />
     <Compile Include="Models\Vehicle.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -465,7 +463,7 @@
     <Content Include="Views\Admin\Index.cshtml" />
     <Content Include="Views\Admin\ManageUsers.cshtml" />
     <Content Include="Views\Admin\ManageRoles.cshtml" />
-    <Content Include="Views\Home\AutoEnrole.cshtml" />
+    <Content Include="Views\Home\AutoEnroll.cshtml" />
     <Content Include="Views\Report\Index.cshtml" />
     <Content Include="Views\Order\Index.cshtml" />
     <Content Include="Views\Order\_OrdersGrid.cshtml" />
@@ -501,7 +499,6 @@
     <Content Include="Views\CBD\Index.cshtml" />
     <Content Include="Views\Account\_EditProfile.cshtml" />
     <Content Include="Views\Shared\_NavBarContent.cshtml" />
-    <Content Include="Views\GU\Index.cshtml" />
     <Content Include="Views\Planner\Index.cshtml" />
   </ItemGroup>
   <ItemGroup>

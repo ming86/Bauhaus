@@ -25,14 +25,14 @@
     </tr>
     <tr>
         <td>
-            <strong>@Html.DisplayNameFor(item => item.Quantities.QtyCS)</strong>
-            @Html.DisplayFor(item => item.Quantities.QtyCS)
+            <strong>Qty CS</strong>
+            @Model.Products.Sum(x=>x.Qty.CS)
         </td>
     </tr>
     <tr>
         <td>
-            <strong>@Html.DisplayNameFor(item => item.Quantities.QtySU)</strong>
-            @Html.DisplayFor(item => item.Quantities.QtySU)
+            <strong>Qty SU</strong>
+            @Model.Products.Sum(x => x.Qty.SU)
         </td>
     </tr>
      
@@ -68,14 +68,14 @@
         </tr>
         <tr>
             <td class="warning">
-                <strong>@Html.DisplayNameFor(item => item.Delivery.Quantities.QtyCS)</strong>
-                @Html.DisplayFor(item => item.Delivery.Quantities.QtyCS)
+                <strong>DSS CS</strong>
+                @Model.Products.Sum(x => x.DSSQty.CS)
             </td>
         </tr>
         <tr>
             <td class="warning">
-                <strong>@Html.DisplayNameFor(item => item.Delivery.Quantities.QtySU)</strong>
-                @Html.DisplayFor(item => item.Delivery.Quantities.QtySU)
+                <strong>DSS SU</strong>
+                @Model.Products.Sum(x => x.Qty.SU)
             </td>
         </tr>
     }

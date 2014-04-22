@@ -59,10 +59,10 @@ namespace Bauhaus.Controllers
                                         Request.Files["fileUpload"].FileName);
 
                 // Check File Extension
-                if(Path.GetExtension(path)!= ".xlsx")
+                if (Path.GetExtension(path) != ".xlsx" && Path.GetExtension(path) != ".txt")
                 {
                     TempData["Type"] = "warning";
-                    TempData["Message"] = "Incorrect Formar, please use '.xlsx' files.";
+                    TempData["Message"] = "Incorrect Format, please use '.xlsx' or '.txt' files.";
                     return RedirectToAction("Index");
                 }
 
@@ -90,15 +90,22 @@ namespace Bauhaus.Controllers
                         System.IO.File.Delete(path);
                 }
 
-                // Registering Log Action
-                Log log = new Log();
-                log.Source = Request.UserHostAddress;
-                log.UserName = User.Identity.Name;
-                log.Type = "Information";
-                log.Description = "Uploaded Report '" + Request.Files["fileUpload"].FileName;
-                log.Date = TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById("Venezuela Standard Time"));
-                db.Logs.Add(log);
+                // Try to Process Report Automatically
+                var processing = (from x in db.Reports
+                                  where x.Status == 2
+                                  select x).FirstOrDefault();
 
+                // Another Report Processing at the moment.
+                if (processing != null)
+                {
+                    TempData["Type"] = "warning";
+                    TempData["Message"] = "There is another report Processing Right Now. Please try to process Manually in a few Minutes.";
+                    return RedirectToAction("Index");
+                }
+
+                // Registering Log Action
+                Log log = new Log(Request.UserHostAddress, User.Identity.Name, "Information", "Uploaded Report '" + Request.Files["fileUpload"].FileName);
+                db.Logs.Add(log);
 
                 Request.Files["fileUpload"].SaveAs(path);
 
@@ -108,39 +115,13 @@ namespace Bauhaus.Controllers
                 stReport = new Report();
                 stReport.Name = Request.Files["fileUpload"].FileName;
                 stReport.CreationDate = TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById("Venezuela Standard Time"));
-                stReport.Status = 0;
+                stReport.Status = 2;
                 stReport.Uploader = User.Identity.Name;
                 stReport.Path = path;
                 db.Reports.Add(stReport);
-
-
-                // Clean and Update Date Procedures.
-
-                if (!CleanReport(stReport))
-                {
-                    TempData["Type"] = "danger";
-                    TempData["Message"] = "Report Couldn't be Formatted Properly, Please Review Layout and/or Sheet Name to be the same as report.";
-                    stReport.Status = 3;
-                    stReport.Remark = "Report Couldn't be Formatted Properly.";
-                    db.SaveChanges();
-                    return RedirectToAction("Index");
-                }
-
-                // Try to Process Report Automatically
-                var processing = (from x in db.Reports
-                                  where x.Status == 2
-                                  select x).FirstOrDefault();
-
-                if (processing != null)
-                {
-                    TempData["Type"] = "warning";
-                    TempData["Message"] = "There is another report Processing Right Now. Please try to process Manually in a few Minutes.";
-                    return RedirectToAction("Index");
-                }
-
-
-                stReport.Status = 2;
                 db.SaveChanges();
+                //////////////////////////////// FINISHED UPLOADING //////////////////////////////////////
+                // Decide wich procedure handles report.
 
                 //Thread Report processing.
 
@@ -148,18 +129,28 @@ namespace Bauhaus.Controllers
                     {
                         try
                         {
-                            ProcessReport(stReport.ReportID);
-                            if (stReport.Name == "ZSKU.xlsx")
-                                CleanOrders(stReport.ReportID);
+
+                            if (Path.GetExtension(path) != ".txt")
+                            {
+                                ProcessReportExcel(stReport.ReportID);
+                            }
+                            else
+                            {
+                                ProcessReportTxt(stReport.ReportID);
+                            }
                             sw.Stop();
+                            stReport.ProcessTime = sw.Elapsed.TotalMinutes;
+
+                            if (stReport.Name.Contains("ZSKU"))
+                                CleanOrders(stReport.ReportID);
+
                             CalculateKPIs();
-                            System.Diagnostics.Debug.WriteLine("Time Taken Cust Method: {0}ms", sw.Elapsed.TotalMilliseconds);
                         }
                         catch (Exception e)
                         {
                             db.Dispose();
                             db = new BauhausEntities();
-                            LogError("ZSKU", 0, "Critical", e.ToString());
+                            LogError("ZSKU", "Critical", e.Message);
                             stReport.Remark = e.Message;
                             stReport.Status = 3;
                             db.SaveChanges();
@@ -180,70 +171,667 @@ namespace Bauhaus.Controllers
                 TempData["Message"] = "It Seems to be a Problem with Upload Request. Contact your IT administrator.";
             }
 
-
             return RedirectToAction("Index");
         }
 
-        /* Method: ReportCleaning
-         * Desc: Handles the formating of all reports uploaded to the system.
-         * Args: Report: Report to be cleaned.
-         */
-        [Authorize]
-        private bool CleanReport(Report report)
+        /// <summary>
+        /// Process a txt report with the given ID
+        /// </summary>
+        /// <param name="id">Report Id to be processed.</param>
+        public int ProcessReportTxt(int id)
         {
-            bool result = false;
-            var reportFile = new FileInfo(report.Path);
-
-            using (var package = new ExcelPackage(reportFile))
+            System.Diagnostics.Debug.WriteLine("Processing TXT");
+            Report report = db.Reports.Find(id);
+            if (report == null)
+                return 1;
+            switch (report.Name)
             {
-                // Get the Workbook in the stored File.
-                var workbook = package.Workbook;
-                if (workbook != null)
+                case "ZSKU.txt":
+                    ParseZSKUTxt(report);
+                    break;
+
+                default:
+                    return 2;
+            }
+
+            return 0;
+        }
+
+        /// <summary>
+        /// Parses ZSKU.txt report and Stores Orders in DB
+        /// </summary>
+        /// <param name="report"></param>
+        public void ParseZSKUTxt(Report report)
+        {
+            System.Diagnostics.Debug.WriteLine("Parsing ZSKU.txt");
+            string[] allLines = System.IO.File.ReadAllLines(report.Path);
+            string[] splitedLine;
+            ReportStructureTXT zsku = new ReportStructureTXT();
+            zsku.ZSKU();
+            long previous = 0;
+            Order order = null;
+
+            foreach (string line in allLines)
+            {
+                splitedLine = line.Split('|');
+                long sapID;
+
+                if (splitedLine.Length <= 2)
                 {
-                    if (workbook.Worksheets.Count > 0)
+                    System.Diagnostics.Debug.WriteLine("Line Skipped: " + line);
+                    continue;
+                }
+                    
+                if (!long.TryParse(splitedLine[zsku.OrderNumber], out sapID))
+                {
+                    System.Diagnostics.Debug.WriteLine("Order# not parsed, line: "+line);
+                    continue;
+                }
+                System.Diagnostics.Debug.WriteLine("Order " + sapID);
+
+                // Another Product
+                if (sapID == previous && order != null)
+                    order.CheckProduct(splitedLine[zsku.Material],
+                    splitedLine[zsku.MaterialDesc],
+                    splitedLine[zsku.Brand],
+                    splitedLine[zsku.Category],
+                    splitedLine[zsku.OrderQtyCS],
+                    splitedLine[zsku.OrderQtySU],
+                    splitedLine[zsku.DeliveryQtyCS],
+                    splitedLine[zsku.DeliveryQtySU],
+                    splitedLine[zsku.OrderWeight],
+                    splitedLine[zsku.OrderVolume]);
+
+                // Another Order
+                else
+                {
+                    order = db.Orders.Find(sapID);
+
+                    // Old Order
+                    if (order != null)
                     {
+                        UpdateOrder(order, splitedLine, zsku);
+                        order.Status.Report = report.ReportID;
+                    }
+                    // New Order
+                    else
+                    {
+                        order = RegisterOrder(splitedLine, zsku);
+                        if(order!=null)
+                            order.Status.Report = report.ReportID;
+                    }
 
-                        foreach (ExcelWorksheet cWs in workbook.Worksheets)
+                }
+            }
+
+            report.Status = 1;
+            SaveChanges(db);
+        }
+
+        /// <summary>
+        /// Register new ZSKU Order
+        /// </summary>
+        /// <param name="splitedLine">Current line</param>
+        /// <param name="zsku">Report Layout</param>
+        /// <param name="db">Current Context</param>
+        /// <returns>New Order</returns>
+        private Order RegisterOrder(string[] splitedLine, ReportStructureTXT zsku)
+        {
+            try
+            {
+                // New Structure
+                Order order = new Order();
+                CultureInfo culture = new CultureInfo("en-US");
+                long ID;
+                if (long.TryParse(splitedLine[zsku.OrderNumber], out ID))
+                    order.SapID = ID;
+                else
+                {
+                    LogError("ZSKU", "NumberFormat", "Couldn't Parse Order Sap Number");
+                    return null;
+                }
+
+                DateTime auxDate;
+                if (DateTime.TryParseExact(
+                                splitedLine[zsku.OrderDate], "dd'.'MM'.'yyyy",
+                                CultureInfo.InvariantCulture,
+                                DateTimeStyles.AssumeLocal,
+                                out auxDate))
+                    order.DocDate = auxDate;
+                else
+                {
+                    LogError("ZSKU", "DateFormat", "Couldn't Parse Document Date");
+                    return null;
+                }
+                order.Type = (!String.IsNullOrWhiteSpace(splitedLine[zsku.OrderType])) ?
+                    splitedLine[zsku.OrderType] : "Manual";
+                order.CustomerPO = splitedLine[zsku.CustomerPONumber];
+                order.PayTerm = splitedLine[zsku.PaymentTerm];
+
+                // Add Status
+                int auxInt;
+                order.Status = new Status();
+                if (int.TryParse(splitedLine[zsku.Status], out auxInt))
+                    order.Status.Code = auxInt;
+                else
+                {
+                    LogError("ZSKU", "NumberFormat", "Couldn't Parse Order Status");
+                    return null;
+                }
+                switch (order.Status.Code)
+                {
+                    case 10:
+                        order.Status.Stage = 0;
+                        order.Status.State = 1;
+                        order.Status.Reason = 1;
+                        break;
+                    case 20:
+                        order.Status.Stage = 0;
+                        order.Status.State = 0;
+                        order.Status.Reason = 0;
+                        break;
+                    case 30:
+                        if (!String.IsNullOrWhiteSpace(splitedLine[zsku.ShipmentNumber]))
                         {
-                            String sheetName = cWs.Name.ToLower();
+                            order.Status.Stage = 2;
+                            order.Status.State = 0;
+                            order.Status.Reason = 0;
+                        }
+                        else
+                        {
+                            order.Status.Stage = 1;
+                            order.Status.State = 0;
+                            order.Status.Reason = 0;
+                        }
 
-                            switch (sheetName)
+                        break;
+                    case 40:
+                        order.Status.Stage = 2;
+                        order.Status.State = 0;
+                        order.Status.Reason = 0;
+                        break;
+                    case 50:
+                        order.Status.Stage = 3;
+                        order.Status.State = 0;
+                        order.Status.Reason = 0;
+                        break;
+                    default:
+                        break;
+                }
+
+                order.Status.OpenItem = false;
+
+                // Add Customer
+                System.Diagnostics.Debug.WriteLine("Adding Customer : " + splitedLine[zsku.ShipTo] + " to new Order ");
+                long ShipTo;
+                if (long.TryParse(splitedLine[zsku.ShipTo], out ShipTo))
+                    order.Customer = db.Customers.Find(ShipTo);
+                else
+                {
+                    LogError("ZSKU", "Format Error", "Could not Parse Shipto Number " + splitedLine[zsku.ShipTo]);
+                    return null;
+                }
+                if (order.Customer == null)
+                {
+                    LogError("ZSKU", "Entity Not Found", "COuld not find Shipto " + ShipTo);
+                    return null;
+                }
+                // Add Product
+                if(order.CheckProduct(splitedLine[zsku.Material],
+                    splitedLine[zsku.MaterialDesc],
+                    splitedLine[zsku.Brand],
+                    splitedLine[zsku.Category],
+                    splitedLine[zsku.OrderQtyCS],
+                    splitedLine[zsku.OrderQtySU],
+                    splitedLine[zsku.DeliveryQtyCS],
+                    splitedLine[zsku.DeliveryQtySU],
+                    splitedLine[zsku.OrderWeight],
+                    splitedLine[zsku.OrderVolume]) != 0)
+                {
+                    LogError("ZSKU", "Product Error", "Error ocurred while checking product.");
+                    return null;
+                }
+
+                //Add RDDF
+                order.RDDF = new RDDF();
+
+                if (DateTime.TryParseExact(splitedLine[zsku.RDDF],
+                    "dd'.'MM'.'yyyy", CultureInfo.InvariantCulture, DateTimeStyles.AllowWhiteSpaces, out auxDate))
+                {
+                    order.RDDF.Original = auxDate;
+                    order.RDDF.DSSDate = auxDate;
+                }
+                else
+                {
+                    LogError("ZSKU", "DateFormat", "Couldn't Parse RDDF " + splitedLine[zsku.RDDF]);
+                    return null;
+                }
+
+
+                // Delivery
+                if (!String.IsNullOrWhiteSpace(splitedLine[zsku.DeliveryNumber]))
+                {
+                    order.Delivery = new Delivery();
+                    order.Delivery.ID = long.Parse(splitedLine[zsku.DeliveryNumber]);
+                    System.Diagnostics.Debug.WriteLine("With Delivery :" + order.Delivery.ID);
+                    if (DateTime.TryParseExact(
+                                splitedLine[zsku.DeliveryDate], "dd'.'MM'.'yyyy",
+                                CultureInfo.InvariantCulture,
+                                DateTimeStyles.AssumeLocal,
+                                out auxDate))
+                        order.Delivery.Date = auxDate;
+                    else
+                    {
+                        LogError("ZSKU", "Date Format", "Couldn't Parse Delivery Date " + splitedLine[zsku.DeliveryDate]);
+                        return null;
+                    }
+
+                   
+                    //Register DSS suggested RDDF
+                    if (order.Customer.Route != null && order.Customer.Route.LeadTime != null)
+                        order.RDDF.DSSDate = order.Delivery.Date.AddBusinessDays(order.Customer.Route.LeadTime.Days);
+                }
+
+                // Shipment
+                if (!String.IsNullOrWhiteSpace(splitedLine[zsku.ShipmentNumber]))
+                {
+                    long ShpN;
+
+                    if (long.TryParse(splitedLine[zsku.ShipmentNumber], out ShpN))
+                    {
+                        order.Shipment = db.Shipments.Find(ShpN);
+
+                        if (order.Shipment == null)
+                        {
+                            order.Shipment = new Shipment();
+                            order.Shipment.ID = ShpN;
+                            if (DateTime.TryParseExact(
+                                splitedLine[zsku.ShipmentDate], "dd'.'MM'.'yyyy",
+                                CultureInfo.InvariantCulture,
+                                DateTimeStyles.AssumeLocal,
+                                out auxDate))
+                                order.Shipment.Date = auxDate;
+                            else
                             {
-                                case "lead times":
-                                    result = true;
-                                    break;
-                                case "toda la data de activos":
-                                    result = true;
-                                    break;
-                                case "info om-transporte":
-                                    result = true;
-                                    break;
-                                case "zsku":
-                                    cWs.DeleteRow(1, 3, true); // Delete Heading.
-                                    cWs.DeleteRow(2, 1, true); // Delete 2nd Row.
-                                    result = true;
-                                    break;
-                                case "pendiente":
-                                    result = true;
-                                    break;
-                                case "caletas":
-                                    result = true;
-                                    break;
-                                case "zvorf":
-                                    result = true;
-                                    break;
-                                default:
-                                    break;
+                                LogError("ZSKU", "Date Format", "Couldn't Parse Shipment Date");
+                                return null;
+                            }
+                            long CarrN;
+                            order.Shipment.Carrier = (long.TryParse(splitedLine[zsku.CarrierNumber], out CarrN)) ?
+                                db.Carriers.Find(CarrN) : null;
+                            order.Shipment.TransitData = new List<Input> { };
+                            order.Shipment.Orders = new List<Order> { };
+                            order.Shipment.Orders.Add(order);
+                            // Add to DB.
+                            db.Shipments.Add(order.Shipment);
+                        }
+                        else
+                        {// Add Order to shipment list
+                            if (!order.Shipment.Orders.Contains(order))
+                            {
+                                order.Shipment.Orders.Add(order);
+                                order.Shipment.CalculateVehicle();
                             }
                         }
                     }
                 }
 
-                //Save Excel File
-                package.Save();
-            }
+                // Invoice
+                order.Invoices = new List<Invoice>();
+                if (!String.IsNullOrWhiteSpace(splitedLine[zsku.InvoiceNumber]))
+                {
+                    Invoice invo = new Invoice();
+                    invo.ID = Int64.Parse(splitedLine[zsku.InvoiceNumber]);
+                    if (DateTime.TryParseExact(
+                                splitedLine[zsku.InvoiceDate], "dd'.'MM'.'yyyy",
+                                CultureInfo.InvariantCulture,
+                                DateTimeStyles.AssumeLocal,
+                                out auxDate))
+                        invo.Date = auxDate;
+                    else
+                    {
+                        LogError("ZSKU", "Date Format", "Couldn't Parse Invoice Date");
+                        return null;
+                    }
+                    order.Invoices.Add(invo);
+                }
 
-            return result;
+
+                // Register POD
+                if (!String.IsNullOrWhiteSpace(splitedLine[zsku.PODDate]))
+                {
+                    order.POD = new POD();
+                    if (DateTime.TryParseExact(
+                                splitedLine[zsku.PODDate], "dd'.'MM'.'yyyy",
+                                CultureInfo.InvariantCulture,
+                                DateTimeStyles.AssumeLocal,
+                                out auxDate))
+                        order.POD.Date = auxDate;
+                    else
+                    {
+                        LogError("ZSKU", "Date Format", "Couldn't Parse POD Date");
+                        return null;
+                    }
+
+                    // UPdate Status
+                    order.Status.Stage = 5;
+                    order.Status.State = 0;
+                    order.Status.Reason = 0;
+
+                    // KPI Generation TO DOOOOOOOOOOOOOOOOOOOO
+
+                }
+                db.Orders.Add(order);
+
+                return order;
+
+            }
+            catch (Exception e)
+            {
+                LogError("ZSKU", "Critical", "Order " + splitedLine[zsku.OrderNumber] + " " + e.ToString());
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// Takes an Order and updates common fields
+        /// </summary>
+        /// <param name="order">Order structure to be updated</param>
+        /// <param name="splitedLine">Line that contains updated data</param>
+        /// <param name="zsku">Report Structure</param>
+        private void UpdateOrder(Order order, string[] splitedLine, ReportStructureTXT zsku)
+        {
+            try
+            {
+                System.Diagnostics.Debug.WriteLine("Updating orderer: " + splitedLine[zsku.OrderNumber]);
+                CultureInfo culture = new CultureInfo("en-US");
+
+                // Add Status
+                int aux;
+                if (int.TryParse(splitedLine[zsku.OrderNumber], out aux))
+                    order.Status.Code = aux;
+                else
+                {
+                    LogError("ZSKU", "Number Format", "Could not parse orderer Number" + splitedLine[zsku.OrderNumber]);
+                    return;
+                }
+
+                switch (order.Status.Code)
+                {
+                    case 10:
+                        order.Status.Stage = 0;
+                        order.Status.State = 1;
+                        order.Status.Reason = 1;
+                        break;
+                    case 20:
+                        order.Status.Stage = 0;
+                        order.Status.State = 0;
+                        order.Status.Reason = 0;
+                        break;
+                    case 30:
+                        if (order.Status.Stage < 1)
+                        {
+                            order.Status.Stage = 1;
+                            order.Status.State = 0;
+                            order.Status.Reason = 0;
+                        }
+                        if (!String.IsNullOrWhiteSpace(splitedLine[zsku.ShipmentNumber]))
+                        {
+                            order.Status.Stage = 2;
+                            order.Status.State = 0;
+                            order.Status.Reason = 0;
+                        }
+                        break;
+                    case 40:
+                        goto case 30;
+                    case 50:
+                        if (order.Status.Stage < 3)
+                        {
+                            order.Status.Stage = 3;
+                            order.Status.State = 0;
+                            order.Status.Reason = 0;
+                        }
+                        break;
+                    default:
+                        break;
+                }
+                // Add Product
+                if (order.CheckProduct(splitedLine[zsku.Material],
+                    splitedLine[zsku.MaterialDesc],
+                    splitedLine[zsku.Brand],
+                    splitedLine[zsku.Category],
+                    splitedLine[zsku.OrderQtyCS],
+                    splitedLine[zsku.OrderQtySU],
+                    splitedLine[zsku.DeliveryQtyCS],
+                    splitedLine[zsku.DeliveryQtySU],
+                    splitedLine[zsku.OrderWeight],
+                    splitedLine[zsku.OrderVolume]) != 0)
+                {
+                    LogError("ZSKU", "Product Error", "Error ocurred while checking product.");
+                    return;
+                }
+
+                // Delivery
+                if (!String.IsNullOrWhiteSpace(splitedLine[zsku.DeliveryNumber]))
+                {
+                    if (order.Delivery == null)
+                    {
+                        order.Delivery = new Delivery();
+                        long aux3;
+                        if (long.TryParse(splitedLine[zsku.DeliveryNumber], out aux3))
+                            order.Delivery.ID = aux3;
+                        else
+                        {
+                            LogError("ZSKU", "Number Format", "Could not parse Delivery Number");
+                            return;
+                        }
+                    }
+                    DateTime auxDate;
+                    if (DateTime.TryParseExact(
+                        splitedLine[zsku.DeliveryDate], "dd'.'MM'.'yyyy",
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.AssumeLocal,
+                        out auxDate))
+                        order.Delivery.Date = auxDate;
+                    else
+                    {
+                        LogError("ZSKU", "Date Format", "Could not Parse Delivery Date");
+                        return;
+                    }
+
+                    // Correcting DSS Default Date
+                    if (order.Customer.Route != null && order.Customer.Route.LeadTime != null)
+                        order.RDDF.DSSDate = order.Delivery.Date.AddBusinessDays(order.Customer.Route.LeadTime.Days);
+
+                }
+                else
+                {
+                    // orderer Downgraded - Remove Delivery
+                    if (order.Delivery != null)
+                    {
+                        db.Deliveries.Remove(order.Delivery);
+                        order.Delivery = null;
+                        order.Status.Stage = 0;
+                        order.Status.State = 0;
+                        order.Status.Reason = 0;
+                        foreach(Product prod in order.Products.ToList())
+                        {
+                            prod.DSSQty = null;
+                        }
+                    }
+                }
+
+                // Shipment
+                if (!String.IsNullOrWhiteSpace(splitedLine[zsku.ShipmentNumber]))
+                {
+                    long aux3;
+                    if(long.TryParse(splitedLine[zsku.ShipmentNumber],out aux3))
+                    {
+                        if(order.Shipment == null || order.Shipment.ID != aux3)
+                        {
+                            order.Shipment = db.Shipments.Find(aux3);
+
+                            if (order.Shipment == null)
+                            {
+                                order.Shipment = new Shipment();
+                                order.Shipment.ID = aux3;
+                                DateTime auxDate;
+                                if (DateTime.TryParseExact(
+                                    splitedLine[zsku.ShipmentDate], "dd'.'MM'.'yyyy",
+                                    CultureInfo.InvariantCulture,
+                                    DateTimeStyles.AssumeLocal,
+                                    out auxDate))
+                                    order.Shipment.Date = auxDate;
+                                else
+                                {
+                                    LogError("ZSKU", "Date Format", "Couldn't Parse Shipment Date");
+                                    return;
+                                }
+                                order.Shipment.TransitData = new List<Input> { };
+                                order.Shipment.Orders = new List<Order> { };
+                                order.Shipment.Orders.Add(order);
+                            }
+                            
+                        }
+
+                        // Add order to Shipment
+                        if (!order.Shipment.Orders.Contains(order))
+                            order.Shipment.Orders.Add(order);
+                    }
+
+                    long auxCarr;
+
+                    // If Carrier Number Present. Assign.
+                    if (long.TryParse(splitedLine[zsku.CarrierNumber], out auxCarr))
+                    {
+                        if (order.Shipment.Carrier == null || order.Shipment.Carrier.ID != auxCarr)
+                        {
+                            order.Shipment.Carrier = db.Carriers.Find(auxCarr);
+                            if (order.Shipment.Carrier == null)
+                            {
+                                order.Shipment.Carrier = new Carrier();
+                                order.Shipment.Carrier.ID = auxCarr;
+                                order.Shipment.Carrier.Name = "Unknown";
+                            }
+                        }
+                    }
+
+                    // Carry Fee Assignment
+                    if (order.Shipment.CarryFee == null &&
+                        order.Shipment.Vehicle != null &&
+                        !String.IsNullOrWhiteSpace(order.Shipment.Vehicle.Type) &&
+                        order.Customer.Route != null)
+                    {
+
+                        order.Shipment.CarryFee = (from x in order.Shipment.Carrier.CarryFees
+                                                   where x.Route == order.Customer.Route.Name &&
+                                                   x.VehicleType == order.Shipment.Vehicle.Type
+                                                   select x.Cost).FirstOrDefault();
+                    }
+                }
+
+                // Invoices
+                if (!String.IsNullOrWhiteSpace(splitedLine[zsku.InvoiceNumber]))
+                {
+                    AddInvoice(splitedLine,order,zsku);
+                }
+
+                // Update POD
+                if (!String.IsNullOrWhiteSpace(splitedLine[zsku.PODDate]))
+                {
+                     DateTime auxDate;
+                        if (!DateTime.TryParseExact(
+                                splitedLine[zsku.PODDate], "dd'.'MM'.'yyyy",
+                                CultureInfo.InvariantCulture,
+                                DateTimeStyles.AssumeLocal,
+                                out auxDate))
+                        {
+                            LogError("ZSKU", "Date Format", "Couldn't Parse POD Date");
+                            return;
+                        }
+                    if (order.POD == null)
+                    {
+                        order.POD = new POD();
+                        order.POD.Date = auxDate;
+                        order.Status.Stage = 5;
+                        order.Status.State = 0;
+                        order.Status.Reason = 0;
+                    }
+                    else
+                    {
+                        // Update POD if Different
+                        if (order.POD.Date != auxDate)
+                                order.POD.Date = auxDate;
+
+                    }
+                    // KPI Generation
+                    if (order.POD.CSOT == null || order.POD.OT == null)
+                    {
+                        if (order.CalculateIndicators() != 0)
+                        {
+                            LogError("ZSKU",  "Indicator", "Failed to Calculate Indicators");
+                        }
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                LogError("ZSKU", e.Message, e.ToString());
+                return;
+            }
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="splitedLine"></param>
+        /// <param name="order"></param>
+        /// <param name="zsku"></param>
+        /// <returns></returns>
+        private Boolean AddInvoice(string[] splitedLine, Order order, ReportStructureTXT zsku)
+        {
+            CultureInfo culture = new CultureInfo("en-US");
+            Invoice invoice = null;
+            bool added = false;
+
+            long invID;
+            if(long.TryParse(splitedLine[zsku.InvoiceNumber],out invID))
+            {
+                if (order.Invoices.Any())
+                {
+                    invoice = (from x in order.Invoices
+                               where x.ID == invID
+                               select x).FirstOrDefault();
+                }
+
+                if (invoice == null)
+                {
+                    invoice = new Invoice();
+                    invoice.ID = invID;
+                    DateTime auxDate;
+                    if (DateTime.TryParseExact(
+                                    splitedLine[zsku.InvoiceDate], "dd'.'MM'.'yyyy",
+                                    CultureInfo.InvariantCulture,
+                                    DateTimeStyles.AssumeLocal,
+                                    out auxDate))
+                        invoice.Date = auxDate;
+                    else
+                    {
+                        LogError("ZSKU", "Invoice Date Format", "Date could not be parsed, check report data.");
+                        return false;
+                    }
+                    order.Invoices.Add(invoice);
+                    added = true;
+                }
+
+                return added;
+            }
+            else
+            {
+                LogError("ZSKU", "Number Format", "Invoice Number could not be parsed");
+                return false;
+            }
+            
         }
 
         /// <summary>
@@ -252,9 +840,8 @@ namespace Bauhaus.Controllers
         /// <param name="id">ID of Report to be Processed</param>
         /// <returns>Report Index View</returns>
         [Authorize]
-        public void ProcessReport(int id)
+        public void ProcessReportExcel(int id)
         {
-
             System.Diagnostics.Debug.WriteLine("Processing");
 
             Report stReport = db.Reports.Find(id);
@@ -281,15 +868,13 @@ namespace Bauhaus.Controllers
                             if (ready)
                                 break;
 
-                            
-
                             // Casing Procedures Due report Name
-                            String sheetName = cWs.Name.ToLower();
+                            String sheetName = RemoveSimbols(RemoveDiacritics(cWs.Name.ToLower()),1);
                             System.Diagnostics.Debug.WriteLine(sheetName);
                             switch (sheetName)
                             {
                                 // Routes information
-                                case "lead times":
+                                case "leadtimes":
                                     if (ProcessRoutes(cWs, stReport) == 0)
                                     {
                                         stReport.Status = 1;
@@ -299,21 +884,22 @@ namespace Bauhaus.Controllers
                                         stReport.Status = 3;
                                     }
                                     break;
-                                // MAESTRO
-                                case "toda la data de activos":
-                                    if (ProcessCustomerData(cWs, stReport) == 0)
-                                    {
-                                        stReport.Status = 1;
-                                    }
-                                    else
-                                    {
-                                        stReport.Status = 3;
-                                    }
-                                    db.SaveChanges();
-                                    break;
+
+                                //// MAESTRO
+                                //case "toda la data de activos":
+                                //    if (ProcessCustomerData(cWs, stReport) == 0)
+                                //    {
+                                //        stReport.Status = 1;
+                                //    }
+                                //    else
+                                //    {
+                                //        stReport.Status = 3;
+                                //    }
+                                //    db.SaveChanges();
+                                //    break;
 
                                 // Summary de Jose Tarazona
-                                case "info om-transporte":
+                                case "infoomtransporte":
                                     System.Diagnostics.Debug.WriteLine("Located Customers Report");
                                     if (ProcessCustomerData(cWs, stReport) == 0)
                                     {
@@ -352,13 +938,19 @@ namespace Bauhaus.Controllers
                                         stReport.Status = 1;
                                     break;
 
-                                case "caletas":
+                                case "carryfees":
                                     if (ProcessCarryFees(cWs, stReport) == 0)
                                         stReport.Status = 1;
                                     else
                                         stReport.Status = 0;
                                     break;
 
+                                case "carriercodes":
+                                    if (ProcessCarriers(cWs, stReport) == 0)
+                                        stReport.Status = 1;
+                                    else
+                                        stReport.Status = 0;
+                                    break;
                                 default:
                                     break;
                             }
@@ -395,7 +987,7 @@ namespace Bauhaus.Controllers
                                         ve.PropertyName, ve.ErrorMessage));
                                 }
                             }
-                            LogError(stReport.Name, 0, "Entity Validation", outputLines.ToString());
+                            LogError(stReport.Name, "Entity Validation", outputLines.ToString());
                         }
 
                     }
@@ -404,6 +996,11 @@ namespace Bauhaus.Controllers
                 package.Dispose();
                 RemoveReport(stReport.ReportID, 0);
             }
+        }
+
+        private int ProcessCarriers(ExcelWorksheet cWs, Report stReport)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>
@@ -434,39 +1031,70 @@ namespace Bauhaus.Controllers
         {
             int cCount = 350;
             Dictionary<String, String> Map = MapReport(cWs);
-
-            System.Diagnostics.Debug.WriteLine("Caletas");
-            ReportStructure columns = new ReportStructure();
-            columns.CarryFees();
+            System.Diagnostics.Debug.WriteLine("CarryFees");
+            CarryFees columns = new CarryFees();
+            String errors = columns.SelfCheck(Map);
+            // Check for missing Columns
+            if (!String.IsNullOrEmpty(errors))
+            {
+                System.Diagnostics.Debug.WriteLine("Aborting process due to missing columns");
+                LogError("Carry Fees", "Missing Columns", errors);
+                stReport.Remark = "An error ocurred, missing columns: " + errors;
+                return 1;
+            }
 
             for (int i = 2; i <= cWs.Dimension.End.Row; i++)
             {
-                long carrN = long.Parse(cWs.Cells[Map[columns.CarrierNumber] + i].Text);
-                Carrier auxCarrier = db.Carriers.Find(carrN);
+                long aux1;
+                if(!long.TryParse(cWs.Cells[Map[columns.CarrierNumber] + i].Text,out aux1))
+                {
+                    LogError("Carry Fees", "Number Format", "Could not parse Carrier number.");
+                        return 1;
+                }
 
+                Carrier auxCarrier = db.Carriers.Find(aux1);
+
+                // Add new Carrier
+                if(auxCarrier == null)
+                {
+                    Carrier newCarrier = new Carrier();
+                    newCarrier.ID = aux1;
+                    newCarrier.Name = cWs.Cells[Map[columns.CarrierName] + i].Text;
+                    newCarrier.Vehicles = new List<Vehicle>();
+                    newCarrier.Drivers = new List<Contact>();
+                    newCarrier.CarryFees = new List<CarryFee>();
+                    db.Carriers.Add(newCarrier);
+                }
+
+                // Carrier is Registered
                 if (auxCarrier != null)
                 {
                     String auxRoute = cWs.Cells[Map[columns.Route] + i].Text;
                     String auxVeh = cWs.Cells[Map[columns.VehicleType] + i].Text;
 
+                    if(auxCarrier.CarryFees == null)
+                        auxCarrier.CarryFees = new List<CarryFee>();
+
                     CarryFee newCarryFee = (from x in auxCarrier.CarryFees
                                             where x.Route == auxRoute &&
                                             x.VehicleType == auxVeh
                                             select x).FirstOrDefault();
+                    // Fee not defined
                     if (newCarryFee == null)
                     {
                         newCarryFee = new CarryFee();
                         newCarryFee.Route = auxRoute;
                         newCarryFee.VehicleType = auxVeh;
-                        newCarryFee.Cost = cWs.Cells[Map[columns.CarryFee] + i].Text;
-
+                        newCarryFee.Cost = cWs.Cells[Map[columns.Fee] + i].Text;
                         auxCarrier.CarryFees.Add(newCarryFee);
                     }
+                    // Fee Defined
                     else
                     {
-                        if (newCarryFee.Cost != cWs.Cells[Map[columns.CarryFee] + i].Text)
+                        // Update Cost
+                        if (newCarryFee.Cost != cWs.Cells[Map[columns.Fee] + i].Text)
                         {
-                            newCarryFee.Cost = cWs.Cells[Map[columns.CarryFee] + i].Text;
+                            newCarryFee.Cost = cWs.Cells[Map[columns.Fee] + i].Text;
                         }
                     }
 
@@ -555,7 +1183,7 @@ namespace Bauhaus.Controllers
             if (!String.IsNullOrWhiteSpace(errors))
             {
                 System.Diagnostics.Debug.WriteLine("Aborting process due to missing columns");
-                LogError("OEM", 0, "Missing Columns", errors);
+                LogError("OEM", "Missing Columns", errors);
                 stReport.Remark = "An error ocurred, missing columns: " + errors;
                 return 1;
             }
@@ -577,15 +1205,15 @@ namespace Bauhaus.Controllers
                 tempCust.Region = cWs.Cells[Mapping[columnsMaestro.Region] + i].Text;
                 tempCust.City = cWs.Cells[Mapping[columnsMaestro.City] + i].Text;
                 tempCust.Address = cWs.Cells[Mapping[columnsMaestro.Address] + i].Text;
-                tempCust.SaleZone = (cWs.Cells[Mapping[columnsMaestro.SaleZone] + i].Text != "") ? Convert.ToInt32(cWs.Cells[Mapping[columnsMaestro.SaleZone] + i].Text) : 0;
+                tempCust.SaleZone = (cWs.Cells[Mapping[columnsMaestro.SaleZone] + i].Text != "") ? int.Parse(cWs.Cells[Mapping[columnsMaestro.SaleZone] + i].Text) : 0;
                 tempCust.Team = cWs.Cells[Mapping[columnsMaestro.Team] + i].Text;
 
                 // REGISTER CBD REP
-                tempCust.CBDRep = updateContact(tempCust.CBDRep,"CBD",cWs.Cells[Mapping[columnsMaestro.CBDRep] + i].Text, cWs.Cells[Mapping[columnsMaestro.CBDRepTel] + i].Text, "");
+                tempCust.CBDRep = updateContact(tempCust.CBDRep, "CBD", cWs.Cells[Mapping[columnsMaestro.CBDRep] + i].Text, cWs.Cells[Mapping[columnsMaestro.CBDRepTel] + i].Text, "");
 
                 // REGISTER GU
                 tempCust.GU = updateContact(tempCust.GU, "GU", cWs.Cells[Mapping[columnsMaestro.GU] + i].Text, cWs.Cells[Mapping[columnsMaestro.GUTel] + i].Text, "");
-         
+
                 //tempCust.PayTerm = cWs.Cells[Mapping[columnsMaestro.PaymentTerm] + i].Text;
                 // tempCust.PayDescription = cWs.Cells[Mapping[columnsMaestro.PaymentTermDescription] + i].Text;
                 tempCust.MaxVEH = cWs.Cells[Mapping[columnsMaestro.MaxVehicle] + i].Text;
@@ -596,31 +1224,24 @@ namespace Bauhaus.Controllers
 
                 // REGISTER MAIN CSR OM
                 tempCust.MainCSROM = updateContact(tempCust.MainCSROM, "CSR OM", cWs.Cells[Mapping[columnsMaestro.MainOMCSR] + i].Text, "", "");
-                
+
                 // REGISTER BACKUP CSR OM
                 tempCust.BackupCSROM = updateContact(tempCust.BackupCSROM, "CSR OM", cWs.Cells[Mapping[columnsMaestro.BackupOMCSR] + i].Text, "", "");
-                
+
                 // REGISTER MAIN CSR AR
                 tempCust.MainCSRAR = updateContact(tempCust.MainCSRAR, "CSR AR", cWs.Cells[Mapping[columnsMaestro.MainARCSR] + i].Text, "", "");
-                
+
                 // REGISTER BACKUP CSR AR
                 tempCust.BackupCSRAR = updateContact(tempCust.BackupCSRAR, "CSR AR", cWs.Cells[Mapping[columnsMaestro.BackupARCSR] + i].Text, "", "");
-                
+
                 // Register || Update Initial Contacts
                 Contact cont;
-                if (nuevo)
-                {
-                    cont = updateContact(null,"Principal",tempCust.Name,cWs.Cells[Mapping[columnsMaestro.MainTelephone] + i].Text,cWs.Cells[Mapping[columnsMaestro.GeneralEmail] + i].Text);
-                    tempCust.Contacts.Add(cont);
-                    cont = updateContact(null, "Recepción",cWs.Cells[Mapping[columnsMaestro.ContactName] + i].Text ,cWs.Cells[Mapping[columnsMaestro.ContactTelephone] + i].Text, "");
-                    tempCust.Contacts.Add(cont);
-                }else
-                {
-                    cont = tempCust.Contacts.Where(x => x.Area == "Principal").First();
-                    cont = updateContact(cont,"Principal",tempCust.Name,cWs.Cells[Mapping[columnsMaestro.MainTelephone] + i].Text,cWs.Cells[Mapping[columnsMaestro.GeneralEmail] + i].Text);
-                    cont = tempCust.Contacts.Where(x => x.Area == "Recepción").First();
-                    cont = updateContact(cont, "Recepción", cWs.Cells[Mapping[columnsMaestro.ContactName] + i].Text, cWs.Cells[Mapping[columnsMaestro.ContactTelephone] + i].Text, "");
-                }
+                cont = tempCust.Contacts.Where(x => x.Area == "Principal").FirstOrDefault();
+                cont = updateContact(cont, "Principal", tempCust.Name, cWs.Cells[Mapping[columnsMaestro.MainTelephone] + i].Text, cWs.Cells[Mapping[columnsMaestro.GeneralEmail] + i].Text);
+                    
+                cont = tempCust.Contacts.Where(x => x.Area == "Recepción").FirstOrDefault();
+                cont = updateContact(cont, "Recepción", cWs.Cells[Mapping[columnsMaestro.ContactName] + i].Text, cWs.Cells[Mapping[columnsMaestro.ContactTelephone] + i].Text, "");
+                    
 
                 if (nuevo)
                     db.Customers.Add(tempCust);
@@ -652,14 +1273,14 @@ namespace Bauhaus.Controllers
         {
             if (!String.IsNullOrWhiteSpace(name))
             {
-                if(cont == null)
+                if (cont == null)
                 {
                     cont = new Contact();
                 }
 
                 if (cont.Name != name)
                 {
-                    Contact auxCont = db.Contacts.Where(x => x.Name == name).FirstOrDefault();
+                    Contact auxCont = db.Contacts.Where(x => x.Name == name || x.Telephone == tel).FirstOrDefault();
                     if (auxCont != null)
                     {
                         if (auxCont.Telephone != tel && !String.IsNullOrWhiteSpace(tel))
@@ -708,7 +1329,7 @@ namespace Bauhaus.Controllers
             if (!String.IsNullOrEmpty(errors))
             {
                 System.Diagnostics.Debug.WriteLine("Aborting process due to missing columns");
-                LogError("OEM", 0, "Missing Columns", errors);
+                LogError("OEM", "Missing Columns", errors);
                 stReport.Remark = "An error ocurred, missing columns: " + errors;
                 return 1;
             }
@@ -732,11 +1353,6 @@ namespace Bauhaus.Controllers
                             auxOrder.Customer.Route = db.Routes.Where(route => route.Name == routeName).FirstOrDefault();
                         }
 
-                        // Update Vehicle Type
-                        if (auxOrder.VehicleType != cWs.Cells[Mapping[columnsOEM.VehicleType] + i].Text)
-                        {
-                            auxOrder.VehicleType = cWs.Cells[Mapping[columnsOEM.VehicleType] + i].Text;
-                        }
 
                         string shipStatus = RemoveSimbols(RemoveDiacritics(cWs.Cells[Mapping[columnsOEM.ShipmentStatus] + i].Text.ToLower()), 1);
 
@@ -754,7 +1370,6 @@ namespace Bauhaus.Controllers
                                 long shpN;
                                 if (long.TryParse(cWs.Cells[Mapping[columnsOEM.ShipmentNumber] + i].Text, out shpN))
                                 {
-
                                     //New Shipment (Didnt Find it or Null from before.)
                                     if (auxOrder.Shipment == null || auxOrder.Shipment.ID != shpN)
                                     {
@@ -768,6 +1383,11 @@ namespace Bauhaus.Controllers
 
                                     }
 
+                                    // Update Vehicle Type
+                                    if (auxOrder.Shipment.Vehicle.Type != cWs.Cells[Mapping[columnsOEM.VehicleType] + i].Text)
+                                    {
+                                        auxOrder.Shipment.Vehicle.Type = cWs.Cells[Mapping[columnsOEM.VehicleType] + i].Text;
+                                    }
 
                                     // Check Turn
                                     //String turn = cWs.Cells[Mapping[columnsOEM.Turn] + i].Text;
@@ -807,13 +1427,13 @@ namespace Bauhaus.Controllers
 
                                     // Calculate CarryFee
                                     if (String.IsNullOrEmpty(auxOrder.Shipment.CarryFee) &&
-                                        !String.IsNullOrEmpty(auxOrder.VehicleType) &&
+                                        !String.IsNullOrEmpty(auxOrder.Shipment.Vehicle.Type) &&
                                         auxOrder.Customer.Route != null &&
                                         auxOrder.Shipment.Carrier != null)
                                     {
                                         auxOrder.Shipment.CarryFee = (from x in auxOrder.Shipment.Carrier.CarryFees
                                                                       where x.Route == auxOrder.Customer.Route.Name &&
-                                                                      x.VehicleType == auxOrder.VehicleType
+                                                                      x.VehicleType == auxOrder.Shipment.Vehicle.Type
                                                                       select x.Cost).FirstOrDefault();
                                     }
 
@@ -896,7 +1516,7 @@ namespace Bauhaus.Controllers
                                 break;
 
                             default:
-                                LogError("OEM", i, "Reason not Recognized", "The reason : " + cWs.Cells[Mapping[columnsOEM.ShipmentStatus] + i].Text + " is not registered");
+                                LogError("OEM", "Reason not Recognized", "The reason : " + cWs.Cells[Mapping[columnsOEM.ShipmentStatus] + i].Text + " is not registered");
                                 auxOrder.Status.Comment = cWs.Cells[Mapping[columnsOEM.ShipmentStatus] + i].Text;
                                 auxOrder.Status.Stage = 1;
                                 auxOrder.Status.State = 1;
@@ -1053,15 +1673,15 @@ namespace Bauhaus.Controllers
                     {
                         db.SaveChanges();
                     }
-                    catch (DbUpdateException ex)
+                    catch (Exception ex)
                     {
-                        if (ex.InnerException != null)
+                        if (ex is DbUpdateException || ex is UpdateException || ex is EntitySqlException)
                         {
-                            if (ex.InnerException.InnerException != null)
+                            if (ex.Message.Contains("Violation of PRIMARY KEY constraint"))
                             {
-                                LogError("ZSKU", i, "SQL", "Trying to add Order already in Database.");
+                                LogError("ZSKU", "SQL", "Line "+i+" Trying to add Order already in Database." + ex.Message);
                                 long badOrder;
-                                if (long.TryParse(Regex.Match(ex.InnerException.InnerException.Message, @"\d+").Value, out badOrder))
+                                if (long.TryParse(Regex.Match(ex.Message, @"\d+").Value, out badOrder))
                                 {
                                     db.Dispose();
                                     db = new BauhausEntities();
@@ -1111,7 +1731,7 @@ namespace Bauhaus.Controllers
                     tempOrder.SapID = auxInt;
                 else
                 {
-                    LogError("ZSKU", i, "NumberFormat", "Couldn't Parse Order Sap Number");
+                    LogError("ZSKU", "Number Format", "Couldn't Parse Order Sap Number");
                     return null;
                 }
                 System.Diagnostics.Debug.WriteLine("Registering Order: " + tempOrder.SapID);
@@ -1124,7 +1744,7 @@ namespace Bauhaus.Controllers
                     tempOrder.DocDate = auxDate;
                 else
                 {
-                    LogError("ZSKU", i, "DateFormat", "Couldn't Parse Document Date");
+                    LogError("ZSKU", "Date Format", "Couldn't Parse Document Date");
                     return null;
                 }
                 tempOrder.Type = (!String.IsNullOrWhiteSpace(cWs.Cells[columns.OrderType + i].Text)) ?
@@ -1138,7 +1758,7 @@ namespace Bauhaus.Controllers
                     tempOrder.Status.Code = auxInt;
                 else
                 {
-                    LogError("ZSKU", i, "NumberFormat", "Couldn't Parse Order Status");
+                    LogError("ZSKU", "Number Format", "Couldn't Parse Order Status");
                     return null;
                 }
                 switch (tempOrder.Status.Code)
@@ -1187,13 +1807,34 @@ namespace Bauhaus.Controllers
                 System.Diagnostics.Debug.WriteLine("Adding Customer : " + cWs.Cells[columns.ShipTo + i].Text + " to new Order ");
                 // Add Customer
                 tempOrder.Customer = tempCustomer;
-                tempOrder.Quantities = new Quantity();
 
-                //Auxiliar Variables to hold double values on TryParse
-                Double aux1, aux2;
+                int error = tempOrder.CheckProduct(cWs.Cells[columns.Material + i].Text,
+                                                   cWs.Cells[columns.MaterialDesc + i].Text,
+                                                   cWs.Cells[columns.Brand + i].Text,
+                                                   cWs.Cells[columns.Category + i].Text,
+                                                   cWs.Cells[columns.OrderQtyCS + i].Text,
+                                                   cWs.Cells[columns.OrderQtySU + i].Text,
+                                                   cWs.Cells[columns.DeliveryQtyCS + i].Text,
+                                                   cWs.Cells[columns.DeliveryQtySU + i].Text,
+                                                   cWs.Cells[columns.OrderWeight + i].Text,
+                                                   cWs.Cells[columns.OrderVolume + i].Text);
+                // Add Product
 
-                tempOrder.Quantities.QtyCS = (Double.TryParse(cWs.Cells[columns.OrderQtyCS + i].Text, NumberStyles.Number, culture, out aux1)) ? aux1 : 0;
-                tempOrder.Quantities.QtySU = (Double.TryParse(cWs.Cells[columns.OrderQtySU + i].Text, NumberStyles.Number, culture, out aux2)) ? aux2 : 0;
+                if (error != 0)
+                {
+                    switch(error)
+                    {
+                        case 1:
+                            LogError("ZSKU", "Format", "Error ocurred while checking product.");
+
+                            break;
+                        default:
+                            LogError("ZSKU", "Product", "Error ocurred while checking product.");
+                            break;
+                    }
+                    return null;
+                }
+                    
 
                 tempOrder.RDDF = new RDDF();
                 if (DateTime.TryParseExact(cWs.Cells[columns.RDDF + i].Text,
@@ -1206,12 +1847,9 @@ namespace Bauhaus.Controllers
 
                 else
                 {
-                    LogError("ZSKU", i, "DateFormat", "Couldn't Parse RDDF");
+                    LogError("ZSKU", "Date Format", "Couldn't Parse RDDF");
                     return null;
                 }
-
-                tempOrder.Quantities.NetWeight = (Double.TryParse(cWs.Cells[columns.OrderWeight + i].Text, NumberStyles.Number, culture, out aux1)) ? aux1 : 0;
-                tempOrder.Quantities.Volume = (Double.TryParse(cWs.Cells[columns.OrderVolume + i].Text, NumberStyles.Number, culture, out aux2)) ? aux2 : 0;
 
                 // Delivery
                 if (cWs.Cells[columns.DeliveryNumber + i].Text != "")
@@ -1227,13 +1865,10 @@ namespace Bauhaus.Controllers
                         tempOrder.Delivery.Date = auxDate;
                     else
                     {
-                        LogError("ZSKU", i, "DateFormat", "Couldn't Parse Delivery Date");
+                        LogError("ZSKU", "Date Format", "Couldn't Parse Delivery Date");
                         return null;
                     }
-                    tempOrder.Delivery.Quantities = new Quantity();
-                    tempOrder.Delivery.Quantities.QtyCS = (Double.TryParse(cWs.Cells[columns.DeliveryQtyCS + i].Text, NumberStyles.Number, culture, out aux1)) ? aux1 : 0;
-                    tempOrder.Delivery.Quantities.QtySU = (Double.TryParse(cWs.Cells[columns.DeliveryQtySU + i].Text, NumberStyles.Number, culture, out aux2)) ? aux2 : 0;
-
+                   
                     //Register DSS suggested RDDF
                     if (tempOrder.Customer.Route != null && tempOrder.Customer.Route.LeadTime != null)
                         tempOrder.RDDF.DSSDate = tempOrder.Delivery.Date.AddBusinessDays(tempOrder.Customer.Route.LeadTime.Days);
@@ -1260,7 +1895,7 @@ namespace Bauhaus.Controllers
                                 tempOrder.Shipment.Date = auxDate;
                             else
                             {
-                                LogError("ZSKU", i, "DateFormat", "Couldn't Parse Shipment Date");
+                                LogError("ZSKU", "Date Format", "Couldn't Parse Shipment Date");
                                 return null;
                             }
                             long CarrN;
@@ -1270,7 +1905,6 @@ namespace Bauhaus.Controllers
                             tempOrder.Shipment.TransitData = new List<Input> { };
                             tempOrder.Shipment.Orders = new List<Order> { };
                             tempOrder.Shipment.Orders.Add(tempOrder);
-                            tempOrder.Shipment.OrdersToGo = 1;
                             // Add to DB.
                             db.Shipments.Add(tempOrder.Shipment);
 
@@ -1281,7 +1915,6 @@ namespace Bauhaus.Controllers
                             if (!tempOrder.Shipment.Orders.Contains(tempOrder))
                             {
                                 tempOrder.Shipment.Orders.Add(tempOrder);
-                                tempOrder.Shipment.OrdersToGo += 1;
                             }
                         }
 
@@ -1304,15 +1937,13 @@ namespace Bauhaus.Controllers
                         invo.Date = auxDate;
                     else
                     {
-                        LogError("ZSKU", i, "DateFormat", "Couldn't Parse Invoice Date");
+                        LogError("ZSKU", "Date Format", "Couldn't Parse Invoice Date");
                         return null;
                     }
-                    invo.QtyCS = (Double.TryParse(cWs.Cells[columns.DeliveryQtyCS + i].Text, NumberStyles.Number, culture, out aux1)) ? aux1 : 0;
-                    invo.QtySU = (Double.TryParse(cWs.Cells[columns.DeliveryQtySU + i].Text, NumberStyles.Number, culture, out aux2)) ? aux2 : 0;
                     tempOrder.Invoices.Add(invo);
                 }
 
-                tempOrder.VehicleType = cWs.Cells[columns.VehicleType + i].Text;
+                tempOrder.Shipment.Vehicle.Type = cWs.Cells[columns.VehicleType + i].Text;
 
                 // Register POD
                 if (!String.IsNullOrWhiteSpace(cWs.Cells[columns.PODDate + i].Text))
@@ -1326,23 +1957,19 @@ namespace Bauhaus.Controllers
                         tempOrder.POD.Date = auxDate;
                     else
                     {
-                        LogError("ZSKU", i, "DateFormat", "Couldn't Parse POD Date");
+                        LogError("ZSKU", "Date Format", "Couldn't Parse POD Date");
                         return null;
                     }
-
-                    //Finish Shipment
-                    if (tempOrder.Shipment != null)
-                        tempOrder.Shipment.OrdersToGo -=1;
 
                     // UPdate Status
                     tempOrder.Status.Stage = 5;
                     tempOrder.Status.State = 0;
                     tempOrder.Status.Reason = 0;
 
-                    // KPI Generation
-                    if (tempOrder.calculateIndicators() != 0)
-                        LogError("ZSKU", i, "Error", "Failed to Calculate Indicators");
-                    
+                    // KPI Generation TOOOOOOODOOOOOOOOOOOOOOOOOOOO
+                    //if (tempOrder.calculateIndicators() != 0)
+                    //    LogError("ZSKU", "Error", "Failed to Calculate Indicators");
+
                 }
                 db.Orders.Add(tempOrder);
 
@@ -1351,7 +1978,7 @@ namespace Bauhaus.Controllers
             }
             catch (Exception e)
             {
-                LogError("ZSKU", i, "Critical", e.ToString());
+                LogError("ZSKU", "Critical", e.ToString());
                 return null;
             }
         }
@@ -1399,7 +2026,7 @@ namespace Bauhaus.Controllers
                 ord.POD.OT = new Indicator();
 
                 if (ord.POD.Date <= ord.RDDF.DSSDate || // Inside Time Window
-                    ord.Quantities.QtyCS < 200 || // Small Orders
+                    ord.Products.Sum(x=>x.Qty.CS) < 200 || // Small Orders
                     (ord.POD.Date.Day - ord.RDDF.DSSDate.Day < 4 && // Weekend and Time Window < 4
                     ord.POD.Date.DayOfWeek == DayOfWeek.Saturday || ord.POD.Date.DayOfWeek == DayOfWeek.Sunday))
                 {
@@ -1465,7 +2092,7 @@ namespace Bauhaus.Controllers
                 CSOT.Value = Math.Round(((double)((double)TotalHits / Total) * 100), 2);
             else
             {
-                LogError("CSOT Update Calculation", 0, "Critical", "There are 0 delivered Orders.");
+                LogError("CSOT Update Calculation", "Critical", "There are 0 delivered Orders.");
                 CSOT.Value = 0;
             }
 
@@ -1515,7 +2142,7 @@ namespace Bauhaus.Controllers
                 OT.Value = Math.Round(((double)((double)TotalHits / Total) * 100), 2);
             else
             {
-                LogError("OT Update Calculation", 0, "Critical", "There are 0 delivered Orders.");
+                LogError("OT Update Calculation", "Critical", "There are 0 delivered Orders.");
                 OT.Value = 0;
             }
 
@@ -1573,11 +2200,15 @@ namespace Bauhaus.Controllers
                             IEnumerable<Input> inputs = ord.Shipment.TransitData.Where(x => x.State == 1);
                             if (inputs != null)
                             {
-                                CodeHelpers ch1 = new CodeHelpers();
                                 // Concatenate Transit Issues as reasons.
                                 foreach (Input inp in inputs)
                                 {
-                                    ord.POD.CSOT.Reason += " " + ch1.ReasonResolver(inp.Stage, inp.State, inp.Reason);
+                                    Status status = new Status();
+                                    status.Stage = inp.Stage;
+                                    status.State = inp.State;
+                                    status.Reason = inp.Reason;
+
+                                    ord.POD.CSOT.Reason += " " + status.ReasonDescription();
                                 }
                                 ord.POD.CSOT.Confirmed = true;
                             }
@@ -1600,7 +2231,7 @@ namespace Bauhaus.Controllers
                     {
                         ord.POD.OT = new Indicator();
                         if (ord.POD.Date <= ord.RDDF.DSSDate || // Inside Time Window
-                            ord.Quantities.QtyCS < 200 || // Small Orders
+                            ord.Products.Sum(x=>x.Qty.CS) < 200 || // Small Orders
                             (ord.POD.Date.Day - ord.RDDF.DSSDate.Day < 4 && // Weekend and Time Window < 4
                             ord.POD.Date.DayOfWeek == DayOfWeek.Saturday || ord.POD.Date.DayOfWeek == DayOfWeek.Sunday))
                         {
@@ -1621,11 +2252,14 @@ namespace Bauhaus.Controllers
                             IEnumerable<Input> inputs = ord.Shipment.TransitData.Where(x => x.State == 1);
                             if (inputs != null)
                             {
-                                CodeHelpers ch = new CodeHelpers();
                                 // Concatenate Transit Issues as reasons.
                                 foreach (Input inp in inputs)
                                 {
-                                    ord.POD.OT.Reason += " " + ch.ReasonResolver(inp.Stage, inp.State, inp.Reason);
+                                    Status status = new Status();
+                                    status.Stage = inp.Stage;
+                                    status.State = inp.State;
+                                    status.Reason = inp.Reason;
+                                    ord.POD.OT.Reason += " " + status.ReasonDescription();
                                 }
                                 ord.POD.OT.Confirmed = true;
                             }
@@ -1647,7 +2281,7 @@ namespace Bauhaus.Controllers
         }
 
         /// <summary>
-        /// 
+        /// Handles Customer adding to db when not registered in order report
         /// </summary>
         /// <param name="cWs"></param>
         /// <param name="i"></param>
@@ -1693,14 +2327,9 @@ namespace Bauhaus.Controllers
                     tempInvoice.Date = auxDate;
                 else
                 {
-                    LogError("ZSKU", i, "Invoice DateFormat", "Date could not be parsed, check report data.");
+                    LogError("ZSKU", "Date Format", "Invoice Date could not be parsed.");
                     return false;
                 }
-
-
-                Double aux1, aux2;
-                tempInvoice.QtyCS = (Double.TryParse(cWs.Cells[columns.DeliveryQtyCS + i].Text, NumberStyles.Number, culture, out aux1)) ? aux1 : 0;
-                tempInvoice.QtySU = (Double.TryParse(cWs.Cells[columns.DeliveryQtySU + i].Text, NumberStyles.Number, culture, out aux2)) ? aux2 : 0;
                 tempOrder.Invoices.Add(tempInvoice);
                 added = true;
             }
@@ -1766,10 +2395,21 @@ namespace Bauhaus.Controllers
                     default:
                         break;
                 }
-                Double aux1, aux2;
-                ord.Quantities.QtyCS = (Double.TryParse(cWs.Cells[columns.OrderQtyCS + i].Text, NumberStyles.Number, culture, out aux1)) ? aux1 : 0;
-                ord.Quantities.QtySU = (Double.TryParse(cWs.Cells[columns.OrderQtySU + i].Text, NumberStyles.Number, culture, out aux2)) ? aux2 : 0;
-
+                // Add Product
+                if (ord.CheckProduct(cWs.Cells[columns.Material + i].Text,
+                    cWs.Cells[columns.MaterialDesc + i].Text,
+                    cWs.Cells[columns.Brand + i].Text,
+                    cWs.Cells[columns.Category + i].Text,
+                    cWs.Cells[columns.OrderQtyCS + i].Text,
+                    cWs.Cells[columns.OrderQtySU + i].Text,
+                    cWs.Cells[columns.DeliveryQtyCS + i].Text,
+                    cWs.Cells[columns.DeliveryQtySU + i].Text,
+                    cWs.Cells[columns.OrderWeight + i].Text,
+                    cWs.Cells[columns.OrderVolume + i].Text) != 0)
+                {
+                    LogError("ZSKU", "Product Error", "Error ocurred while checking product.");
+                    return 1;
+                }
                 DateTime auxDate;
                 if (DateTime.TryParseExact(cWs.Cells[columns.RDDF + i].Text, "dd'.'MM'.'yyyy",
                     CultureInfo.InvariantCulture,
@@ -1778,12 +2418,9 @@ namespace Bauhaus.Controllers
                     ord.RDDF.Original = auxDate;
                 else
                 {
-                    LogError("ZSKU", i, "DateFormat", "Couldn't Parse RDDF");
+                    LogError("ZSKU",  "Date Format", "Couldn't Parse RDDF");
                     return 1;
                 }
-
-                ord.Quantities.NetWeight = (Double.TryParse(cWs.Cells[columns.OrderWeight + i].Text, NumberStyles.Number, culture, out aux1)) ? aux1 : 0;
-                ord.Quantities.Volume = (Double.TryParse(cWs.Cells[columns.OrderVolume + i].Text, NumberStyles.Number, culture, out aux2)) ? aux2 : 0;
 
                 // Delivery
                 if (!String.IsNullOrWhiteSpace(cWs.Cells[columns.DeliveryNumber + i].Text))
@@ -1802,13 +2439,9 @@ namespace Bauhaus.Controllers
                         ord.Delivery.Date = auxDate;
                     else
                     {
-                        LogError("ZSKU", i, "DateFormat", "Couldn't Parse Delivery Date");
+                        LogError("ZSKU", "Date Format", "Couldn't Parse Delivery Date");
                         return 1;
                     }
-                    ord.Delivery.Quantities = new Quantity();
-
-                    ord.Delivery.Quantities.QtyCS = (Double.TryParse(cWs.Cells[columns.DeliveryQtyCS + i].Text, NumberStyles.Number, culture, out aux1)) ? aux1 : 0;
-                    ord.Delivery.Quantities.QtySU = (Double.TryParse(cWs.Cells[columns.DeliveryQtySU + i].Text, NumberStyles.Number, culture, out aux2)) ? aux2 : 0;
 
                     // Correcting DSS Default Date
                     if (ord.Customer.Route != null && ord.Customer.Route.LeadTime != null)
@@ -1848,18 +2481,16 @@ namespace Bauhaus.Controllers
                                 ord.Shipment.Date = auxDate;
                             else
                             {
-                                LogError("ZSKU", i, "DateFormat", "Couldn't Parse Shipment Date");
+                                LogError("ZSKU", "Date Format", "Couldn't Parse Shipment Date");
                                 return 1;
                             }
                             ord.Shipment.TransitData = new List<Input> { };
                             ord.Shipment.Orders = new List<Order> { };
-                            ord.Shipment.OrdersToGo = 1;
                             ord.Shipment.Orders.Add(ord);
                         }
                         else
                         {
                             if (!ord.Shipment.Orders.Contains(ord))
-                                ord.Shipment.OrdersToGo += 1;
                             ord.Shipment.Orders.Add(ord);
                         }
                     }
@@ -1883,13 +2514,13 @@ namespace Bauhaus.Controllers
 
                     // Carry Fee Assignment
                     if (ord.Shipment.CarryFee == null &&
-                        !String.IsNullOrWhiteSpace(ord.VehicleType) &&
+                        !String.IsNullOrWhiteSpace(ord.Shipment.Vehicle.Type) &&
                         ord.Customer.Route != null)
                     {
 
                         ord.Shipment.CarryFee = (from x in ord.Shipment.Carrier.CarryFees
                                                  where x.Route == ord.Customer.Route.Name &&
-                                                 x.VehicleType == ord.VehicleType
+                                                 x.VehicleType == ord.Shipment.Vehicle.Type
                                                  select x.Cost).FirstOrDefault();
                     }
                 }
@@ -1914,11 +2545,9 @@ namespace Bauhaus.Controllers
                             ord.POD.Date = auxDate;
                         else
                         {
-                            LogError("ZSKU", i, "DateFormat", "Couldn't Parse POD Date");
+                            LogError("ZSKU", "Date Format", "Couldn't Parse POD Date");
                             return 1;
                         }
-                        if (ord.Shipment != null)
-                            ord.Shipment.OrdersToGo = 0;
                         ord.Status.Stage = 5;
                         ord.Status.State = 0;
                         ord.Status.Reason = 0;
@@ -1939,26 +2568,26 @@ namespace Bauhaus.Controllers
                         }
                         else
                         {
-                            LogError("ZSKU", i, "DateFormat", "Couldn't Parse POD Date");
+                            LogError("ZSKU", "Date Format", "Couldn't Parse POD Date");
                             return 1;
                         }
 
                     }
-                    // KPI Generation
-                    if (ord.POD.CSOT == null || ord.POD.OT == null)
-                    {
-                        if(ord.calculateIndicators() != 0)
-                        {
-                            LogError("ZSKU", i, "Indicator", "Failed to Calculate Indicators");
-                        }
-                    }
+                    // KPI Generation TOOOOOOOOOOOOODOOOOOOOOOOOOOOOOOOOOOOOOOO
+                //    if (ord.POD.CSOT == null || ord.POD.OT == null)
+                //    {
+                //        if (ord.calculateIndicators() != 0)
+                //        {
+                //            LogError("ZSKU", i, "Indicator", "Failed to Calculate Indicators");
+                //        }
+                //    }
                 }
 
                 return 0;
             }
             catch (Exception e)
             {
-                LogError("ZSKU", i, e.Message, e.ToString());
+                LogError("ZSKU", e.Message, e.ToString());
                 return 1;
             }
         }
@@ -2100,7 +2729,7 @@ namespace Bauhaus.Controllers
                 if (ord.Shipment != null)
                 {
                     // Remove Inputs on transit Data
-                    foreach(Input inp in ord.Shipment.TransitData.ToList())
+                    foreach (Input inp in ord.Shipment.TransitData.ToList())
                     {
                         ord.Shipment.TransitData.Remove(inp);
                         db.Inputs.Remove(inp);
@@ -2146,12 +2775,7 @@ namespace Bauhaus.Controllers
 
             stReport.Status = 3;
             stReport.Remark = "Aborted Execution";
-            Log lg = new Log();
-            lg.Source = Request.UserHostAddress;
-            lg.Type = "Warning";
-            lg.Description = "Aborted Execution of " + stReport.Name + " Report";
-            lg.UserName = User.Identity.Name;
-            lg.Date = TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById("Venezuela Standard Time"));
+            Log lg = new Log(Request.UserHostAddress, User.Identity.Name, "Warning", "Aborted Execution of " + stReport.Name + " Report");
             db.Logs.Add(lg);
 
             if (current != null && current.IsAlive)
@@ -2220,18 +2844,44 @@ namespace Bauhaus.Controllers
         /// Save Error information to Log Database.
         /// </summary>
         /// <param name="reportName">Name of report where error generated</param>
-        /// <param name="line">Line of report where error generated</param>
         /// <param name="type">Error type. e.g.(Format,Missing,Critical)</param>
         /// <param name="message">Error description</param>
-        private void LogError(String reportName, int line, String type, String message)
+        private void LogError(String reportName, String type, String description)
         {
-            Log lg = new Log();
-            lg.Source = "System";
-            lg.Type = "Error";
-            lg.Description = "<<" + type + "," + line + ">> " + message;
-            lg.UserName = User.Identity.Name;
-            lg.Date = TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById("Venezuela Standard Time"));
+            System.Diagnostics.Debug.WriteLine("Error ocurred: " + type + " " + description);
+            Log lg = new Log("LocalHost", "System", "Error", reportName + " Report " + type + " exception :" + description);
             db.Logs.Add(lg);
+        }
+
+        /// <summary>
+        /// Wrapper for SaveChanges adding the Validation Messages to the generated exception
+        /// </summary>
+        /// <param name="context">The context.</param>
+        private void SaveChanges(DbContext context)
+        {
+            try
+            {
+                context.SaveChanges();
+            }
+            catch (DbEntityValidationException ex)
+            {
+                StringBuilder sb = new StringBuilder();
+
+                foreach (var failure in ex.EntityValidationErrors)
+                {
+                    sb.AppendFormat("{0} failed validation\n", failure.Entry.Entity.GetType());
+                    foreach (var error in failure.ValidationErrors)
+                    {
+                        sb.AppendFormat("- {0} : {1}", error.PropertyName, error.ErrorMessage);
+                        sb.AppendLine();
+                    }
+                }
+
+                throw new DbEntityValidationException(
+                    "Entity Validation Failed - errors follow:\n" +
+                    sb.ToString(), ex
+                ); // Add the original exception as the innerException
+            }
         }
 
     }

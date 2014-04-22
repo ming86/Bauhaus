@@ -5,13 +5,14 @@ using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Linq;
 using System.Web;
+using System.Globalization;
 
 namespace Bauhaus.Models
 {
     public class Order
     {
         [Key,DatabaseGenerated(DatabaseGeneratedOption.None)]
-        public int SapID { get; set; }
+        public long SapID { get; set; }
         [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "{0:dd/MM/yyyy}")]
         [Display(Name="Doc. Date")]
         public DateTime DocDate { get; set; }
@@ -22,11 +23,8 @@ namespace Bauhaus.Models
         [Display(Name="Cust. PO")]
         public string CustomerPO { get; set; }
         public virtual RDDF RDDF { get; set; }
-        public virtual Quantity Quantities { get; set; }
-        [Display(Name="VEH Type")]
-        public string VehicleType { get; set; }
-        [Display(Name="Canceled CS")]
-        public double CancelRejectCS { get; set; }
+        public int Plant { get; set; }
+        public virtual ICollection<Product> Products { get; set; }
         public virtual Delivery Delivery { get; set; }
         public virtual Status Status { get; set; }
         public virtual Shipment Shipment { get; set; }
@@ -35,45 +33,139 @@ namespace Bauhaus.Models
 
 
         /// <summary>
-        /// Calculates Indicators on orders with loaded POD
+        /// Calculates KPIs on Orders with POD
         /// </summary>
-        /// <returns>0 if Indicators Updated Correctly, 1 Otherwise.</returns>
-        public int calculateIndicators()
+        /// <returns>Return 0 if Normal Flow. 1 if Error encountered.</returns>
+        public int CalculateIndicators()
         {
             // Order Needs POD for indicators to be calculated
-            if(POD == null)
+            if (this.POD == null)
                 return 1;
             else
             {
-                if(POD.CSOT==null)
+                if (this.POD.CSOT == null)
                 {
-                    POD.CSOT = new Indicator();
-                    if (POD.Date <= RDDF.Original)   // Inside Time Window.
+                    this.POD.CSOT = new Indicator();
+                    if (this.POD.Date <= this.RDDF.Original)   // Inside Time Window.
                     {
-                        POD.CSOT.Value = true; // HIT
-                        POD.CSOT.Confirmed = true;
+                        this.POD.CSOT.Value = true; // HIT
+                        this.POD.CSOT.Confirmed = true;
                     }
                     else
                     {
-                        POD.CSOT.Value = false; // MISS
+                        this.POD.CSOT.Value = false; // MISS
                     }
                 }
 
-                if(POD.OT == null)
+                if (this.POD.OT == null)
                 {
-                    POD.OT = new Indicator();
-                    if (POD.Date <= RDDF.DSSDate || // Inside Time Window
-                        Quantities.QtyCS < 200)
+                    this.POD.OT = new Indicator();
+                    if (this.POD.Date <= this.RDDF.DSSDate || // Inside Time Window
+                        this.Products.Sum(x=>x.DSSQty.CS) < 200)
                     {
-                        POD.OT.Value = true;
-                        POD.OT.Confirmed = true;
+                        this.POD.OT.Value = true;
+                        this.POD.OT.Confirmed = true;
                     }
                     else
                     {
-                        POD.OT.Value = false;
+                        this.POD.OT.Value = false;
                     }
 
                 }
+
+                return 0;
+            }
+        }
+
+        /// <summary>
+        /// Add product to Order if product is Missing.
+        /// </summary>
+        /// <param name="Material">Material Code to add</param>
+        /// <param name="Description">Material Description</param>
+        /// <param name="Brand">Product Brand</param>
+        /// <param name="Category">Product Category</param>
+        /// <param name="CS">CS</param>
+        /// <param name="SU">SU</param>
+        /// <param name="DSSCS">DSS CS</param>
+        /// <param name="DSSSU">DSS SU</param>
+        /// <param name="Weight">Weight</param>
+        /// <param name="Volume">Volume</param>
+        /// <returns>0 if </returns>
+        public int CheckProduct(String Material, String Description,String Brand, String Category, String CS, String SU, String DSSCS, String DSSSU, String Weight, String Volume )
+        {
+            // Initialization
+            if(this.Products == null)
+                this.Products = new List<Product>();
+
+            int aux1;
+            Double aux2;
+
+            if (!int.TryParse(Material, out aux1))
+            {
+                // 1 = Format Error
+                return 1;
+            }
+
+            Product product = this.Products.Where(x => x.SKU == aux1).FirstOrDefault();
+
+            if(product == null)
+            {
+                product = new Product();
+                product.Description = Description;
+                product.Category = Category;
+                product.Brand = Brand;
+                product.Qty = new Quantity();
+                product.DSSQty = new Quantity();
+
+                if (!int.TryParse(CS,NumberStyles.Number,CultureInfo.GetCultureInfo("en-US"), out aux1))
+                    return 1;
+
+                product.Qty.CS = aux1;
+
+                if (!double.TryParse(SU, out aux2))
+                    return 1;
+
+                product.Qty.SU = aux2;
+
+                if(!double.TryParse(Weight,out aux2))
+                    return 1;
+
+                product.Qty.NetWeight = aux2;
+
+                if(!double.TryParse(Volume,out aux2))
+                    return 1;
+
+                product.Qty.Volume = aux2;
+                
+                if (!int.TryParse(DSSCS, out aux1))
+                    product.DSSQty.CS = 0;
+                else
+                    product.DSSQty.CS = aux1;
+
+
+                if (!double.TryParse(DSSSU, out aux2))
+                    product.DSSQty.SU = 0;
+                else
+                    product.DSSQty.SU = aux2;
+
+                this.Products.Add(product);
+
+                return 0;
+
+            }
+            else
+            {
+                // Product Exist.
+                if (!int.TryParse(DSSCS, out aux1))
+                    product.DSSQty.CS = 0;
+                else
+                    product.DSSQty.CS = aux1;
+
+
+                if (!double.TryParse(DSSSU, out aux2))
+                    product.DSSQty.SU = 0;
+                else
+                    product.DSSQty.SU = aux2;
 
                 return 0;
             }

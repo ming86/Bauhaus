@@ -125,12 +125,7 @@ namespace Bauhaus.Controllers
             System.Web.Security.Roles.AddUserToRole(userName,roleName);
 
             //Security Log Details
-            Log log = new Log();
-            log.Source = Request.UserHostAddress;
-            log.UserName = User.Identity.Name;
-            log.Type = "Warning";
-            log.Description = "Assigned " + roleName + " role to user " + userName;
-            log.Date = TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById("Venezuela Standard Time"));
+            Log log = new Log(Request.UserHostAddress, User.Identity.Name, "Warning", "Assigned " + roleName + " role to user " + userName);
             db.Logs.Add(log);
             // 
 
@@ -143,12 +138,7 @@ namespace Bauhaus.Controllers
         [HttpPost]
         public JsonResult DeleteUser(string userName)
         {
-            Log log = new Log();
-            log.Source = Request.UserHostAddress;
-            log.UserName = User.Identity.Name;
-            log.Type = "Warning";
-            log.Description = "Deleted User '" + userName + "'";
-            log.Date = TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById("Venezuela Standard Time"));
+            Log log = new Log(Request.UserHostAddress, User.Identity.Name, "Warning", "Deleted User '" + userName + "'");
             db.Logs.Add(log);
             db.SaveChanges();
             if (WebSecurity.UserExists(userName))

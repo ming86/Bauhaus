@@ -38,12 +38,7 @@ namespace Bauhaus.Controllers
         {
             if (ModelState.IsValid && WebSecurity.Login(model.UserName, model.Password, persistCookie: model.RememberMe))
             {
-                Log log = new Log();
-                log.Source = Request.UserHostAddress;
-                log.UserName = model.UserName;
-                log.Type = "Warning";
-                log.Description = "Logged In";
-                log.Date = TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById("Venezuela Standard Time"));
+                Log log = new Log(Request.UserHostAddress, User.Identity.Name, "Warning", "Logged In");
                 db.Logs.Add(log);
                 db.SaveChanges();
                 if (!String.IsNullOrWhiteSpace(returnUrl))
@@ -64,12 +59,7 @@ namespace Bauhaus.Controllers
         [ValidateAntiForgeryToken]
         public ActionResult LogOff()
         {
-            Log log = new Log();
-            log.Source = Request.UserHostAddress;
-            log.UserName = User.Identity.Name;
-            log.Type = "Warning";
-            log.Description = "Logged Off";
-            log.Date = TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById("Venezuela Standard Time"));
+            Log log = new Log(Request.UserHostAddress, User.Identity.Name, "Warning","Logged Off");
             db.Logs.Add(log);
             db.SaveChanges();
             WebSecurity.Logout();
@@ -108,13 +98,8 @@ namespace Bauhaus.Controllers
                         Active = true
                     });
                     WebSecurity.Login(model.UserName, model.Password);
-                    
-                    Log log = new Log();
-                    log.Source = Request.UserHostAddress;
-                    log.UserName = model.UserName;
-                    log.Type = "Information";
-                    log.Description = "User Registered";
-                    log.Date = TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById("Venezuela Standard Time"));
+
+                    Log log = new Log(Request.UserHostAddress, "System", "Info", "Registered User "+model.UserName );
                     db.Logs.Add(log);
                     db.SaveChanges();
                     return RedirectToAction("Unassigned", "Home");

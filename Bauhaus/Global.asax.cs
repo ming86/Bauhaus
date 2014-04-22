@@ -43,8 +43,6 @@ namespace Bauhaus
                 Roles.CreateRole("Carrier");
             if (!Roles.RoleExists("CBD"))
                 Roles.CreateRole("CBD");
-            if (!Roles.RoleExists("GU"))
-                Roles.CreateRole("GU");
             if (!Roles.RoleExists("Planner"))
                 Roles.CreateRole("Planner");
         }

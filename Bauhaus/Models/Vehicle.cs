@@ -11,11 +11,10 @@ namespace Bauhaus.Models
     {
         [Key]
         public int ID { get; set; }
-        public int Status { get; set; }
         [Required]
         public String Plate { get; set; }
         [Required]
         public String Type { get; set; }
-        public virtual Driver Driver { get; set; }
+        public virtual Contact Driver { get; set; }
     }
 }

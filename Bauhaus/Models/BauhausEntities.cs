@@ -22,18 +22,18 @@ namespace Bauhaus.Models
         public DbSet<Log> Logs { get; set; }
         public DbSet<Carrier> Carriers { get; set; }
         public DbSet<Vehicle> Vehicles { get; set; }
-        public DbSet<Driver> Drivers { get; set; }
         public DbSet<CarryFee> CarryFees { get; set; }
         public DbSet<Route> Routes { get; set; }
         public DbSet<HistIndicator> HistIndicators { get; set; }
         public DbSet<Indicator> Indicators { get; set; }
         public DbSet<RDDF> RDDFs { get; set; }
         public DbSet<Input> Inputs { get; set; }
+        public DbSet<Product> Products { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {
             modelBuilder.Conventions.Remove<PluralizingTableNameConvention>();
         }
-             
+                     
     }
 }

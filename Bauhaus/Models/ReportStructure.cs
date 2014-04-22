@@ -32,7 +32,7 @@ namespace Bauhaus.Models
             Pallets, Note, Turn , NonDescStatus;
 
         // ZSKU
-        public string ShipmentDate, CarrierNumber, OrderNetValue, OrderTotalPrice;
+        public string ShipmentDate, CarrierNumber, OrderNetValue, OrderTotalPrice, Material, MaterialDesc, Category, Brand;
 
         // COnsolidado de Caletas
         public string CarryFee;
@@ -183,7 +183,6 @@ namespace Bauhaus.Models
             OrderTotalPrice = "Z";
             PODDate = "AA";
             PaymentTerm = "AB";
-            
         }
 
         public void CarryFees()
@@ -201,5 +200,51 @@ namespace Bauhaus.Models
             Route = "route";
             LeadTime = "leadtime";
         }
+    }
+
+    public class ReportStructureTXT
+    {
+        // ZSKU
+        public int OrderNumber, Status, BlkInd, OrderDate, OrderType, ShipTo, CustomerPONumber, CustomerName,
+            Plant, OrderQtyCS, OrderQtySU, RDDF, OrderWeight, OrderVolume,
+            DeliveryNumber, DeliveryDate, DeliveryQtyCS, DeliveryQtySU, ShipmentNumber, VehicleType,
+            InvoiceNumber, InvoiceDate, PODDate, CanceledorRejectedCases,ShipmentDate, CarrierNumber,
+            OrderNetValue, OrderTotalPrice, Material, MaterialDesc, Category, Brand,PaymentTerm;
+
+        public void ZSKU()
+        {
+            OrderNumber = 1;
+            Status = 2;
+            OrderDate = 3;
+            OrderType = 4;
+            ShipTo = 5;
+            CustomerPONumber = 6;
+            CustomerName = 77;
+            Plant = 8;
+            Material = 9;
+            MaterialDesc = 10;
+            Category = 11;
+            Brand = 12;
+            OrderQtyCS = 13;
+            OrderQtySU = 14;
+            RDDF = 15;
+            OrderWeight = 16;
+            OrderVolume = 17;
+            DeliveryNumber = 18;
+            DeliveryDate = 19;
+            DeliveryQtyCS = 20;
+            DeliveryQtySU = 21;
+            ShipmentNumber = 22;
+            ShipmentDate = 23;
+            CarrierNumber = 24;
+            InvoiceNumber = 25;
+            InvoiceDate = 26;
+            OrderTotalPrice = 27;
+            PODDate = 28;
+            PaymentTerm = 29;
+
+        }
+
+        
     }
 }

@@ -1,10 +1,13 @@
 ﻿@{
     Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewBag.Title = "Unnasigned Role";
+    
 }
 <div class="container">
     <div class="row">
-        <div class="col-md-15">
-            <p><i class="fa fa-clock-o fa-5x"></i> Your User account have been created correctly. Please wait for an Administrator to assign you a Role.</p>
+        <div class="col-md-10">
+            <p><i class="fa fa-clock-o fa-5x"></i> Your account have been created. Please wait for an Administrator to assign you a Role.</p>
+            <p>If you are an administrator @Html.ActionLink("click here","AutoEnroll")</p>
         </div>
     </div>
 </div>

@@ -299,8 +299,11 @@
 
                     </b>
                );
-               columns.Add(item => item.Quantities.QtyCS)
-                   .Titled("Ord. CS");
+               columns.Add()
+                   .Titled("CS")
+                   .Encoded(false)
+                   .Sanitized(false)
+                   .RenderValueAs(o=>o.Products.Sum(x=>x.Qty.CS).ToString());
                columns.Add()
                    .Titled("DSS CS")
                    .Encoded(false)
@@ -309,7 +312,7 @@
                     @<b>
                         @if (o.Delivery != null)
                         {
-                            <strong>@o.Delivery.Quantities.QtyCS.ToString()</strong>
+                            o.Products.Sum(x => x.DSSQty.CS).ToString();
                         }
                         else
                         {
