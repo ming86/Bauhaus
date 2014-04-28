@@ -593,12 +593,6 @@ namespace Bauhaus.Controllers
                     System.Diagnostics.Debug.WriteLine("User is CBD");
                     orders = orders.Where(x => x.Customer.CBDRep.Name == user.FullName);
                 }
-                    
-                if(User.IsInRole("GU)"))
-                {
-                    System.Diagnostics.Debug.WriteLine("User is GU");
-                    orders = orders.Where(x => x.Customer.GU.Name == user.FullName);
-                }
             }
             return orders.ToList().AsQueryable();
         }

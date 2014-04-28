@@ -49,9 +49,15 @@
                        </div>
                );
         columns.Add(item => item.Uploader);
-        columns.Add(item => item.ProcessTime);
-
-
+        columns.Add()
+            .Titled("Process Time")
+            .Sanitized(false)
+            .Encoded(false)
+            .RenderValueAs(o =>
+                @<div>
+                    @Math.Round(o.ProcessTime) Mins
+                </div>);
+            
     }).SetLanguage("En").Sortable().WithPaging(10).Filterable().WithMultipleFilters().Selectable(false)
 
 <script>

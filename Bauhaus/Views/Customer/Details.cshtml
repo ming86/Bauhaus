@@ -308,19 +308,7 @@
                    .Titled("DSS CS")
                    .Encoded(false)
                    .Sanitized(false)
-                   .RenderValueAs(o =>
-                    @<b>
-                        @if (o.Delivery != null)
-                        {
-                            o.Products.Sum(x => x.DSSQty.CS).ToString();
-                        }
-                        else
-                        {
-                            <strong class="text-danger">N/A</strong>
-                        }
-
-                    </b>
-               );
+                   .RenderValueAs(o =>o.Products.Sum(x => x.DSSQty.CS).ToString());
                columns.Add()
                    .Encoded(false)
                    .Sanitized(false)
@@ -330,7 +318,7 @@
                         @Html.ActionLink("Details", "Details", "Order", new { id = d.SapID }, null)
                     </b>);
 
-           }).SetLanguage("En").Sortable().Filterable().WithMultipleFilters()
+           }).SetLanguage("En").Sortable().Filterable().WithMultipleFilters().Selectable(false)
             </div>
         </div>
     </div>

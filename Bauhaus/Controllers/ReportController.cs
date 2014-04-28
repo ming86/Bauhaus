@@ -208,6 +208,9 @@ namespace Bauhaus.Controllers
             string[] splitedLine;
             ReportStructureTXT zsku = new ReportStructureTXT();
             zsku.ZSKU();
+            int counter = 0;
+            int total = allLines.Length;
+            int commitCount = 350;
             long previous = 0;
             Order order = null;
 
@@ -216,7 +219,7 @@ namespace Bauhaus.Controllers
                 splitedLine = line.Split('|');
                 long sapID;
 
-                if (splitedLine.Length <= 2)
+                if (splitedLine.Length <= 28)
                 {
                     System.Diagnostics.Debug.WriteLine("Line Skipped: " + line);
                     continue;
@@ -260,8 +263,23 @@ namespace Bauhaus.Controllers
                         if(order!=null)
                             order.Status.Report = report.ReportID;
                     }
-
                 }
+                if(order != null)
+                {
+
+                    previous = order.SapID;
+                    counter += 1;
+                }
+
+                if (counter % commitCount == 0)
+                {
+                    report.Remark = ((int)((double)((double)counter / total) * 100)) + "%";
+                    SaveChanges(db);
+                    db.Dispose();
+                    db = new BauhausEntities();
+                }
+                    
+
             }
 
             report.Status = 1;
@@ -306,13 +324,13 @@ namespace Bauhaus.Controllers
                 order.Type = (!String.IsNullOrWhiteSpace(splitedLine[zsku.OrderType])) ?
                     splitedLine[zsku.OrderType] : "Manual";
                 order.CustomerPO = splitedLine[zsku.CustomerPONumber];
-                order.PayTerm = splitedLine[zsku.PaymentTerm];
+                order.PayTerm = splitedLine[zsku.PaymentTerm].Trim();
 
                 // Add Status
-                int auxInt;
+                int statusInt;
                 order.Status = new Status();
-                if (int.TryParse(splitedLine[zsku.Status], out auxInt))
-                    order.Status.Code = auxInt;
+                if (int.TryParse(splitedLine[zsku.Status], out statusInt))
+                    order.Status.Code = statusInt;
                 else
                 {
                     LogError("ZSKU", "NumberFormat", "Couldn't Parse Order Status");
@@ -360,6 +378,13 @@ namespace Bauhaus.Controllers
                 }
 
                 order.Status.OpenItem = false;
+
+                if (!int.TryParse(splitedLine[zsku.Plant], out statusInt))
+                {
+                    LogError("ZSKU", "Number Format", "Couldn't Parse Plant Number");
+                    return null;
+                }
+                order.Plant = statusInt;
 
                 // Add Customer
                 System.Diagnostics.Debug.WriteLine("Adding Customer : " + splitedLine[zsku.ShipTo] + " to new Order ");
@@ -459,9 +484,13 @@ namespace Bauhaus.Controllers
                             long CarrN;
                             order.Shipment.Carrier = (long.TryParse(splitedLine[zsku.CarrierNumber], out CarrN)) ?
                                 db.Carriers.Find(CarrN) : null;
+                            
                             order.Shipment.TransitData = new List<Input> { };
                             order.Shipment.Orders = new List<Order> { };
                             order.Shipment.Orders.Add(order);
+                            order.Shipment.Vehicle = new Vehicle();
+                            order.Shipment.Vehicle.Plate = "N/A";
+                            order.Shipment.CalculateVehicle();
                             // Add to DB.
                             db.Shipments.Add(order.Shipment);
                         }
@@ -548,7 +577,7 @@ namespace Bauhaus.Controllers
 
                 // Add Status
                 int aux;
-                if (int.TryParse(splitedLine[zsku.OrderNumber], out aux))
+                if (int.TryParse(splitedLine[zsku.Status], out aux))
                     order.Status.Code = aux;
                 else
                 {
@@ -883,6 +912,7 @@ namespace Bauhaus.Controllers
                                     {
                                         stReport.Status = 3;
                                     }
+                                    ready = true;
                                     break;
 
                                 //// MAESTRO
@@ -910,6 +940,7 @@ namespace Bauhaus.Controllers
                                         stReport.Status = 3;
                                     }
                                     db.SaveChanges();
+                                    ready = true;
                                     break;
 
                                 // ORDENES EN MANO BDC
@@ -918,6 +949,7 @@ namespace Bauhaus.Controllers
                                         stReport.Status = 0;
                                     else
                                         stReport.Status = 1;
+                                    ready = true;
                                     break;
 
                                 case "zvorf":
@@ -936,6 +968,7 @@ namespace Bauhaus.Controllers
                                     }
                                     else
                                         stReport.Status = 1;
+                                    ready = true;
                                     break;
 
                                 case "carryfees":
@@ -943,6 +976,7 @@ namespace Bauhaus.Controllers
                                         stReport.Status = 1;
                                     else
                                         stReport.Status = 0;
+                                    ready = true;
                                     break;
 
                                 case "carriercodes":
@@ -950,6 +984,7 @@ namespace Bauhaus.Controllers
                                         stReport.Status = 1;
                                     else
                                         stReport.Status = 0;
+                                    ready = true;
                                     break;
                                 default:
                                     break;
@@ -2745,6 +2780,12 @@ namespace Bauhaus.Controllers
                 {
                     db.Deliveries.Remove(ord.Delivery);
                     ord.Delivery = null;
+                }
+
+                foreach (Product prod in ord.Products.ToList())
+                {
+                    db.Products.Remove(prod);
+                    ord.Products.Remove(prod);
                 }
 
                 db.Statuses.Remove(ord.Status);

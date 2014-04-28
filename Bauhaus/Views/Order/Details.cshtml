@@ -82,12 +82,17 @@
                             {
                                 <tr>
                                     <td>
-                                        <strong>@product.Description</strong>
-                                        <p>@product.Qty.CS CS @product.Qty.SU SU</p>
+                                        <p>@product.Qty.CS <strong>CS /</strong> @product.Qty.SU <strong>SU /</strong> @if(Model.Delivery!=null){@product.DSSQty.CS <strong class="text-success">DSS CS</strong>}</p>
+                                        <strong><small>@product.Description</small></strong>
+                                        
                                     </td>
                                 </tr>
                             }
+                        </table>
+                    </div>
 
+                    <div class="col-md-4">
+                        <table class="table">
                             @if (Model.Delivery != null)
                             {
                                 <tr>
@@ -106,14 +111,8 @@
                                         @Html.DisplayFor(model => model.Delivery.Date)
                                     </td>
                                 </tr>
-                                
+
                             }
-
-                        </table>
-                    </div>
-
-                    <div class="col-md-4">
-                        <table class="table">
 
                             @if (Model.Shipment != null)
                             {

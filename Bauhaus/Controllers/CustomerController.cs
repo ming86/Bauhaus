@@ -11,6 +11,7 @@ using System.IO;
 using OfficeOpenXml;
 using System.Drawing;
 using WebMatrix.WebData;
+using Newtonsoft.Json;
 
 namespace Bauhaus.Controllers
 {
@@ -113,6 +114,7 @@ namespace Bauhaus.Controllers
                              DeliveryCS = (x.Delivery == null)? "Sin Asignar":x.Products.Sum(prod=>prod.DSSQty.CS).ToString(),
                              Shipment = (x.Shipment == null)? "Sin Asignar":x.Shipment.ID.ToString(),
                              Status = x.Status.StageDescription() + " " + x.Status.ReasonDescription(),
+                             Products = JsonConvert.SerializeObject(x.Products.Select(y => new{y.Qty.CS, y.Description}).ToList()),
                             
                          };
 

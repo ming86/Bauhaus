@@ -35,7 +35,6 @@ namespace Bauhaus.Models
             if(this.Vehicle==null)
             {
                 this.Vehicle = new Models.Vehicle();
-                this.Vehicle.Plate = "N/A";
             }
                 
             double volume = this.Orders.Sum(x => x.Products.Sum(y => y.Qty.Volume));

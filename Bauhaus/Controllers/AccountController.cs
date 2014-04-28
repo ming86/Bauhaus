@@ -404,7 +404,8 @@ namespace Bauhaus.Controllers
             {
                 user.Active = (user.Active)? false:true;
                 String feedBack = (user.Active) ? "Activated" : "Disabled";
-                if(User.IsInRole("CSR"))
+                String[] roles = System.Web.Security.Roles.GetRolesForUser(userName);
+                if (roles.Contains("CSR"))
                 {
                     List<Customer> customers = null;
                     if(user.Active)

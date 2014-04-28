@@ -93,14 +93,16 @@ namespace Bauhaus.Models
         /// <returns>0 if </returns>
         public int CheckProduct(String Material, String Description,String Brand, String Category, String CS, String SU, String DSSCS, String DSSSU, String Weight, String Volume )
         {
+            CultureInfo culture = new CultureInfo("es-VE");
             // Initialization
             if(this.Products == null)
                 this.Products = new List<Product>();
 
-            int aux1;
+            long aux1;
             Double aux2;
+            int aux3;
 
-            if (!int.TryParse(Material, out aux1))
+            if (!long.TryParse(Material, out aux1))
             {
                 // 1 = Format Error
                 return 1;
@@ -111,42 +113,56 @@ namespace Bauhaus.Models
             if(product == null)
             {
                 product = new Product();
-                product.Description = Description;
-                product.Category = Category;
-                product.Brand = Brand;
-                product.Qty = new Quantity();
-                product.DSSQty = new Quantity();
+                product.SKU = aux1;
+                product.Description = Description.Trim();
+                product.Category = Category.Trim();
+                product.Brand = Brand.Trim();
+                Quantity Qty = new Quantity();
+                Quantity DSSQty = new Quantity();
 
-                if (!int.TryParse(CS,NumberStyles.Number,CultureInfo.GetCultureInfo("en-US"), out aux1))
-                    return 1;
+                if (!int.TryParse(CS, NumberStyles.Number, CultureInfo.InvariantCulture, out aux3))
+                    if (!int.TryParse(CS, NumberStyles.Number, culture, out aux3))
+                        return 1;
 
-                product.Qty.CS = aux1;
+                Qty.CS = aux3;
 
-                if (!double.TryParse(SU, out aux2))
-                    return 1;
+                if (!double.TryParse(SU, NumberStyles.Number, CultureInfo.InvariantCulture, out aux2))
+                    if (!double.TryParse(SU, NumberStyles.Number, culture, out aux2))
+                        return 1;
 
-                product.Qty.SU = aux2;
+                Qty.SU = aux2;
 
-                if(!double.TryParse(Weight,out aux2))
-                    return 1;
+                if (!double.TryParse(Weight, NumberStyles.Number, CultureInfo.InvariantCulture, out aux2))
+                    if (!double.TryParse(SU, NumberStyles.Number, culture, out aux2))
+                        return 1;
 
-                product.Qty.NetWeight = aux2;
+                Qty.NetWeight = aux2;
 
-                if(!double.TryParse(Volume,out aux2))
-                    return 1;
+                if (!double.TryParse(Volume, NumberStyles.Number, CultureInfo.InvariantCulture, out aux2))
+                    if (!double.TryParse(Volume, NumberStyles.Number, culture, out aux2))
+                        return 1;
 
-                product.Qty.Volume = aux2;
-                
-                if (!int.TryParse(DSSCS, out aux1))
-                    product.DSSQty.CS = 0;
+                Qty.Volume = aux2;
+
+                if (!int.TryParse(DSSCS, NumberStyles.Number, CultureInfo.InvariantCulture, out aux3))
+                    if (!int.TryParse(DSSCS, NumberStyles.Number, culture, out aux3))
+                        return 1;
+                    else
+                        DSSQty.CS = aux3;
                 else
-                    product.DSSQty.CS = aux1;
+                    DSSQty.CS = aux3;
 
 
-                if (!double.TryParse(DSSSU, out aux2))
-                    product.DSSQty.SU = 0;
+                if (!double.TryParse(DSSSU, NumberStyles.Number, CultureInfo.InvariantCulture, out aux2))
+                    if (!double.TryParse(DSSSU, NumberStyles.Number, culture, out aux2))
+                        return 1;
+                    else
+                        DSSQty.SU = aux2;
                 else
-                    product.DSSQty.SU = aux2;
+                    DSSQty.SU = aux2;
+
+                product.Qty = Qty;
+                product.DSSQty = DSSQty;
 
                 this.Products.Add(product);
 
@@ -156,14 +172,20 @@ namespace Bauhaus.Models
             else
             {
                 // Product Exist.
-                if (!int.TryParse(DSSCS, out aux1))
-                    product.DSSQty.CS = 0;
+                if (!int.TryParse(DSSCS, NumberStyles.Number, CultureInfo.InvariantCulture, out aux3))
+                    if (!int.TryParse(DSSCS, NumberStyles.Number, culture, out aux3))
+                        return 1;
+                    else
+                        product.DSSQty.CS = aux3;
                 else
-                    product.DSSQty.CS = aux1;
+                    product.DSSQty.CS = aux3;
 
 
-                if (!double.TryParse(DSSSU, out aux2))
-                    product.DSSQty.SU = 0;
+                if (!double.TryParse(DSSSU, NumberStyles.Number, CultureInfo.InvariantCulture, out aux2))
+                    if (!double.TryParse(DSSSU, NumberStyles.Number, culture, out aux2))
+                        return 1;
+                    else
+                        product.DSSQty.SU = aux2;
                 else
                     product.DSSQty.SU = aux2;
 

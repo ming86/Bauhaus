@@ -17,6 +17,8 @@ namespace Bauhaus.Models
         [DisplayFormat(ApplyFormatInEditMode = true, DataFormatString = "{0:dd/MM/yyyy}")]
         public DateTime Date { get; set; }
 
+        public Log() { }
+
         public Log(string source, string user, string type, string desc)
         {
             this.Source = source;
