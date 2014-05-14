@@ -253,6 +253,7 @@
     <Compile Include="Models\Carrier.cs" />
     <Compile Include="Models\CarryFee.cs" />
     <Compile Include="Models\CustomerStatus.cs" />
+    <Compile Include="Models\Filter.cs" />
     <Compile Include="Models\HistIndicator.cs" />
     <Compile Include="Models\Indicator.cs" />
     <Compile Include="Models\Input.cs" />
@@ -491,7 +492,6 @@
     <Content Include="Scripts\toastr.min.js.map" />
     <Content Include="Views\Shared\_GridPager.cshtml" />
     <Content Include="Views\Shared\_Grid.cshtml" />
-    <Content Include="Views\Order\Dashboard.cshtml" />
     <Content Include="Views\Report\_ReportsGrid.cshtml" />
     <Content Include="Views\Carrier\_VehiclesGrid.cshtml" />
     <Content Include="Views\Carrier\_VehEditModal.cshtml" />
@@ -500,6 +500,9 @@
     <Content Include="Views\Account\_EditProfile.cshtml" />
     <Content Include="Views\Shared\_NavBarContent.cshtml" />
     <Content Include="Views\Planner\Index.cshtml" />
+    <Content Include="Views\CBD\FilterSetup.cshtml" />
+    <Content Include="Views\Customer\_CustomersGridCBD.cshtml" />
+    <Content Include="Views\CBD\_GridPagerCBD.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

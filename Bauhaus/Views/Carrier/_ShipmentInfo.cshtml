@@ -9,8 +9,8 @@
             @if (Model.Vehicle != null && Model.Vehicle.Driver != null)
             {
 
-                @Model.Vehicle.Driver.Name
-                @Model.Vehicle.Driver.Telephone
+                <p>@Model.Vehicle.Driver.Name / @Model.Vehicle.Driver.Telephone</p>
+                
 
             }
             else

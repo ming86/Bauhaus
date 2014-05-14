@@ -65,7 +65,7 @@
                             <button type="button" class="btn btn-xs btn-default btn-xs selectVehicle" value="@o.ID" data-toggle="modal" data-target="#vehModal">
                                 @if(o.Vehicle != null && o.Vehicle.Driver != null)
                                 {
-                                    <i class="fa fa-edit"></i>
+                                    <i id="@o.Vehicle.ID" class="fa fa-edit"></i>
                                 }
                                 else
                                 {

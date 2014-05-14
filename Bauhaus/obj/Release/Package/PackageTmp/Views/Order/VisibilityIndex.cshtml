@@ -215,52 +215,16 @@
         .RenderValueAs(d =>
 
             @<div>
-                @Html.ReasonResolver(d.Status.Stage, d.Status.State, d.Status.Reason)
-                <button class="btn btn-link btn-xs" onclick="location.href='@Url.Action("Details",new {id = d.SapID})';return false;"><i class="fa fa-search fa-x2"></i></button>
+                @Html.ActionLink(d.Status.ReasonDescription(), "Details", new { id = d.SapID })
             </div>
             
      );
-}).SetLanguage("En").Selectable(false).WithPaging(10).Sortable().Filterable().WithMultipleFilters()
+}).SetLanguage("En").Selectable(false).WithPaging(7).Sortable().Filterable().WithMultipleFilters()
 
 </div>
 
 <script>
     $(function () {
-        var jmessage = '@message';
-        var jtype = '@type';
-        toastr.options = {
-            "closeButton": true,
-            "debug": false,
-            "positionClass": "toast-bottom-right",
-            "onclick": null,
-            "showDuration": "500",
-            "hideDuration": "1000",
-            "timeOut": "5000",
-            "extendedTimeOut": "1000",
-            "showEasing": "swing",
-            "hideEasing": "linear",
-            "showMethod": "fadeIn",
-            "hideMethod": "fadeOut"
-        }
-        if (jmessage != "") {
-            switch (jtype) {
-                case "info":
-                    toastr.info(jmessage);
-                    break;
-                case "success":
-                    toastr.success(jmessage);
-                    break;
-                case "warning":
-                    toastr.warning(jmessage);
-                    break;
-                case "danger":
-                    toastr.error(jmessage);
-                    break;
-                default:
-                    toastr.info(jmessage);
-                    break;
-            }
-        }
-
+        displayAlert('@type', '@message');
     });
 </script>

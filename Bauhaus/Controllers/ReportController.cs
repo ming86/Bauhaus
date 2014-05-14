@@ -81,7 +81,7 @@ namespace Bauhaus.Controllers
                     if (System.IO.File.Exists(path))
                         System.IO.File.Delete(path);
                     db.Reports.Remove(stReport);
-                    db.SaveChanges();
+                    SaveChanges(db);
                 }
                 // File not in Db
                 else
@@ -119,7 +119,7 @@ namespace Bauhaus.Controllers
                 stReport.Uploader = User.Identity.Name;
                 stReport.Path = path;
                 db.Reports.Add(stReport);
-                db.SaveChanges();
+                SaveChanges(db);
                 //////////////////////////////// FINISHED UPLOADING //////////////////////////////////////
                 // Decide wich procedure handles report.
 
@@ -130,21 +130,22 @@ namespace Bauhaus.Controllers
                         try
                         {
 
-                            if (Path.GetExtension(path) != ".txt")
+                            if (Path.GetExtension(path) == ".txt")
                             {
-                                ProcessReportExcel(stReport.ReportID);
+                                ProcessReportTxt(stReport.ReportID);
                             }
                             else
                             {
-                                ProcessReportTxt(stReport.ReportID);
+                                ProcessReportExcel(stReport.ReportID);
                             }
                             sw.Stop();
                             stReport.ProcessTime = sw.Elapsed.TotalMinutes;
 
-                            if (stReport.Name.Contains("ZSKU"))
+                            if (stReport.Name == "ZSKU.txt" || stReport.Name == "ZSKU.xlsx")
                                 CleanOrders(stReport.ReportID);
 
                             CalculateKPIs();
+                            SaveChanges(db);
                         }
                         catch (Exception e)
                         {
@@ -153,7 +154,7 @@ namespace Bauhaus.Controllers
                             LogError("ZSKU", "Critical", e.Message);
                             stReport.Remark = e.Message;
                             stReport.Status = 3;
-                            db.SaveChanges();
+                            SaveChanges(db);
                             TempData["Type"] = "Danger";
                             TempData["Message"] = "Report Processing Error: " + e.Message;
                         }
@@ -178,39 +179,49 @@ namespace Bauhaus.Controllers
         /// Process a txt report with the given ID
         /// </summary>
         /// <param name="id">Report Id to be processed.</param>
-        public int ProcessReportTxt(int id)
+        public void ProcessReportTxt(int id)
         {
             System.Diagnostics.Debug.WriteLine("Processing TXT");
             Report report = db.Reports.Find(id);
             if (report == null)
-                return 1;
+                return;
             switch (report.Name)
             {
                 case "ZSKU.txt":
-                    ParseZSKUTxt(report);
+                    if (ParseZSKUTxt(report) != 0)
+                    {
+                        report.Status = 3;
+                        report.Remark = "Report was processed with Errors. See log for details.";
+                    }
+                    else
+                    {
+                        report.Status = 1;
+                    }
                     break;
 
                 default:
-                    return 2;
+                    report.Status = 3;
+                    report.Remark = "Name not recognized as a valid report.";
+                    break;
             }
-
-            return 0;
+            SaveChanges(db);
         }
 
         /// <summary>
         /// Parses ZSKU.txt report and Stores Orders in DB
         /// </summary>
         /// <param name="report"></param>
-        public void ParseZSKUTxt(Report report)
+        public int ParseZSKUTxt(Report report)
         {
             System.Diagnostics.Debug.WriteLine("Parsing ZSKU.txt");
             string[] allLines = System.IO.File.ReadAllLines(report.Path);
             string[] splitedLine;
             ReportStructureTXT zsku = new ReportStructureTXT();
             zsku.ZSKU();
+            int errorCount = 0;
             int counter = 0;
             int total = allLines.Length;
-            int commitCount = 350;
+            int commitCount = 300;
             long previous = 0;
             Order order = null;
 
@@ -224,17 +235,29 @@ namespace Bauhaus.Controllers
                     System.Diagnostics.Debug.WriteLine("Line Skipped: " + line);
                     continue;
                 }
-                    
+
                 if (!long.TryParse(splitedLine[zsku.OrderNumber], out sapID))
                 {
-                    System.Diagnostics.Debug.WriteLine("Order# not parsed, line: "+line);
+                    System.Diagnostics.Debug.WriteLine("Order# not parsed, line: " + line);
                     continue;
                 }
+
                 System.Diagnostics.Debug.WriteLine("Order " + sapID);
+
+                if (counter % commitCount == 0 && previous != sapID )
+                {
+                    System.Diagnostics.Debug.WriteLine("//////////////////// SAVING //////////////////////////////");
+                    report.Remark = " " + ((int)((double)((double)counter / total) * 100)) + "%";
+                    SaveChanges(db);
+                    db.Dispose();
+                    db = new BauhausEntities();
+                    db.Reports.Attach(report);
+                }
 
                 // Another Product
                 if (sapID == previous && order != null)
-                    order.CheckProduct(splitedLine[zsku.Material],
+                {
+                    if(order.CheckProduct(splitedLine[zsku.Material],
                     splitedLine[zsku.MaterialDesc],
                     splitedLine[zsku.Brand],
                     splitedLine[zsku.Category],
@@ -243,47 +266,43 @@ namespace Bauhaus.Controllers
                     splitedLine[zsku.DeliveryQtyCS],
                     splitedLine[zsku.DeliveryQtySU],
                     splitedLine[zsku.OrderWeight],
-                    splitedLine[zsku.OrderVolume]);
-
+                    splitedLine[zsku.OrderVolume]) != 0)
+                    {
+                        LogError("ZSKU", "Format", "Error Registering Product "+splitedLine[zsku.MaterialDesc]+" Order "+sapID);
+                    }
+                }
                 // Another Order
                 else
                 {
+                    counter += 1;
                     order = db.Orders.Find(sapID);
-
                     // Old Order
                     if (order != null)
                     {
-                        UpdateOrder(order, splitedLine, zsku);
-                        order.Status.Report = report.ReportID;
+                        if (UpdateOrder(order, splitedLine, zsku) != 0)
+                            errorCount += 1;
+                        else
+                            order.Status.Report = report.ReportID;
                     }
                     // New Order
                     else
                     {
                         order = RegisterOrder(splitedLine, zsku);
-                        if(order!=null)
+                        if (order != null)
                             order.Status.Report = report.ReportID;
+                        else
+                            errorCount += 1;
                     }
                 }
-                if(order != null)
-                {
 
+                if (order != null)
+                {
                     previous = order.SapID;
-                    counter += 1;
                 }
-
-                if (counter % commitCount == 0)
-                {
-                    report.Remark = ((int)((double)((double)counter / total) * 100)) + "%";
-                    SaveChanges(db);
-                    db.Dispose();
-                    db = new BauhausEntities();
-                }
-                    
-
             }
+            return errorCount;
 
-            report.Status = 1;
-            SaveChanges(db);
+
         }
 
         /// <summary>
@@ -361,7 +380,6 @@ namespace Bauhaus.Controllers
                             order.Status.State = 0;
                             order.Status.Reason = 0;
                         }
-
                         break;
                     case 40:
                         order.Status.Stage = 2;
@@ -402,7 +420,7 @@ namespace Bauhaus.Controllers
                     return null;
                 }
                 // Add Product
-                if(order.CheckProduct(splitedLine[zsku.Material],
+                if (order.CheckProduct(splitedLine[zsku.Material],
                     splitedLine[zsku.MaterialDesc],
                     splitedLine[zsku.Brand],
                     splitedLine[zsku.Category],
@@ -413,9 +431,8 @@ namespace Bauhaus.Controllers
                     splitedLine[zsku.OrderWeight],
                     splitedLine[zsku.OrderVolume]) != 0)
                 {
-                    LogError("ZSKU", "Product Error", "Error ocurred while checking product.");
-                    return null;
-                }
+                    LogError("ZSKU", "Format", "Error Registering Product " + splitedLine[zsku.MaterialDesc] + " Order " + order.SapID);
+                }     
 
                 //Add RDDF
                 order.RDDF = new RDDF();
@@ -451,7 +468,7 @@ namespace Bauhaus.Controllers
                         return null;
                     }
 
-                   
+
                     //Register DSS suggested RDDF
                     if (order.Customer.Route != null && order.Customer.Route.LeadTime != null)
                         order.RDDF.DSSDate = order.Delivery.Date.AddBusinessDays(order.Customer.Route.LeadTime.Days);
@@ -484,7 +501,7 @@ namespace Bauhaus.Controllers
                             long CarrN;
                             order.Shipment.Carrier = (long.TryParse(splitedLine[zsku.CarrierNumber], out CarrN)) ?
                                 db.Carriers.Find(CarrN) : null;
-                            
+
                             order.Shipment.TransitData = new List<Input> { };
                             order.Shipment.Orders = new List<Order> { };
                             order.Shipment.Orders.Add(order);
@@ -568,7 +585,7 @@ namespace Bauhaus.Controllers
         /// <param name="order">Order structure to be updated</param>
         /// <param name="splitedLine">Line that contains updated data</param>
         /// <param name="zsku">Report Structure</param>
-        private void UpdateOrder(Order order, string[] splitedLine, ReportStructureTXT zsku)
+        private int UpdateOrder(Order order, string[] splitedLine, ReportStructureTXT zsku)
         {
             try
             {
@@ -582,7 +599,7 @@ namespace Bauhaus.Controllers
                 else
                 {
                     LogError("ZSKU", "Number Format", "Could not parse orderer Number" + splitedLine[zsku.OrderNumber]);
-                    return;
+                    return 1;
                 }
 
                 switch (order.Status.Code)
@@ -624,6 +641,7 @@ namespace Bauhaus.Controllers
                     default:
                         break;
                 }
+
                 // Add Product
                 if (order.CheckProduct(splitedLine[zsku.Material],
                     splitedLine[zsku.MaterialDesc],
@@ -636,8 +654,7 @@ namespace Bauhaus.Controllers
                     splitedLine[zsku.OrderWeight],
                     splitedLine[zsku.OrderVolume]) != 0)
                 {
-                    LogError("ZSKU", "Product Error", "Error ocurred while checking product.");
-                    return;
+                    LogError("ZSKU", "Format", "Error Registering Product " + splitedLine[zsku.MaterialDesc] + " Order " + order.SapID);
                 }
 
                 // Delivery
@@ -652,7 +669,7 @@ namespace Bauhaus.Controllers
                         else
                         {
                             LogError("ZSKU", "Number Format", "Could not parse Delivery Number");
-                            return;
+                            return 1;
                         }
                     }
                     DateTime auxDate;
@@ -665,7 +682,7 @@ namespace Bauhaus.Controllers
                     else
                     {
                         LogError("ZSKU", "Date Format", "Could not Parse Delivery Date");
-                        return;
+                        return 1;
                     }
 
                     // Correcting DSS Default Date
@@ -683,7 +700,7 @@ namespace Bauhaus.Controllers
                         order.Status.Stage = 0;
                         order.Status.State = 0;
                         order.Status.Reason = 0;
-                        foreach(Product prod in order.Products.ToList())
+                        foreach (Product prod in order.Products.ToList())
                         {
                             prod.DSSQty = null;
                         }
@@ -694,9 +711,9 @@ namespace Bauhaus.Controllers
                 if (!String.IsNullOrWhiteSpace(splitedLine[zsku.ShipmentNumber]))
                 {
                     long aux3;
-                    if(long.TryParse(splitedLine[zsku.ShipmentNumber],out aux3))
+                    if (long.TryParse(splitedLine[zsku.ShipmentNumber], out aux3))
                     {
-                        if(order.Shipment == null || order.Shipment.ID != aux3)
+                        if (order.Shipment == null || order.Shipment.ID != aux3)
                         {
                             order.Shipment = db.Shipments.Find(aux3);
 
@@ -714,13 +731,13 @@ namespace Bauhaus.Controllers
                                 else
                                 {
                                     LogError("ZSKU", "Date Format", "Couldn't Parse Shipment Date");
-                                    return;
+                                    return 1;
                                 }
                                 order.Shipment.TransitData = new List<Input> { };
                                 order.Shipment.Orders = new List<Order> { };
                                 order.Shipment.Orders.Add(order);
                             }
-                            
+
                         }
 
                         // Add order to Shipment
@@ -747,6 +764,8 @@ namespace Bauhaus.Controllers
 
                     // Carry Fee Assignment
                     if (order.Shipment.CarryFee == null &&
+                        order.Shipment.Carrier != null &&
+                        order.Shipment.Carrier.CarryFees != null &&
                         order.Shipment.Vehicle != null &&
                         !String.IsNullOrWhiteSpace(order.Shipment.Vehicle.Type) &&
                         order.Customer.Route != null)
@@ -762,22 +781,22 @@ namespace Bauhaus.Controllers
                 // Invoices
                 if (!String.IsNullOrWhiteSpace(splitedLine[zsku.InvoiceNumber]))
                 {
-                    AddInvoice(splitedLine,order,zsku);
+                    AddInvoice(splitedLine, order, zsku);
                 }
 
                 // Update POD
                 if (!String.IsNullOrWhiteSpace(splitedLine[zsku.PODDate]))
                 {
-                     DateTime auxDate;
-                        if (!DateTime.TryParseExact(
-                                splitedLine[zsku.PODDate], "dd'.'MM'.'yyyy",
-                                CultureInfo.InvariantCulture,
-                                DateTimeStyles.AssumeLocal,
-                                out auxDate))
-                        {
-                            LogError("ZSKU", "Date Format", "Couldn't Parse POD Date");
-                            return;
-                        }
+                    DateTime auxDate;
+                    if (!DateTime.TryParseExact(
+                            splitedLine[zsku.PODDate], "dd'.'MM'.'yyyy",
+                            CultureInfo.InvariantCulture,
+                            DateTimeStyles.AssumeLocal,
+                            out auxDate))
+                    {
+                        LogError("ZSKU", "Date Format", "Couldn't Parse POD Date");
+                        return 1;
+                    }
                     if (order.POD == null)
                     {
                         order.POD = new POD();
@@ -790,7 +809,7 @@ namespace Bauhaus.Controllers
                     {
                         // Update POD if Different
                         if (order.POD.Date != auxDate)
-                                order.POD.Date = auxDate;
+                            order.POD.Date = auxDate;
 
                     }
                     // KPI Generation
@@ -798,7 +817,7 @@ namespace Bauhaus.Controllers
                     {
                         if (order.CalculateIndicators() != 0)
                         {
-                            LogError("ZSKU",  "Indicator", "Failed to Calculate Indicators");
+                            LogError("ZSKU", "Indicator", "Failed to Calculate Indicators");
                         }
                     }
                 }
@@ -806,7 +825,152 @@ namespace Bauhaus.Controllers
             catch (Exception e)
             {
                 LogError("ZSKU", e.Message, e.ToString());
-                return;
+                return 1;
+            }
+            return 0;
+        }
+
+        /// <summary>
+        /// Add product to Order if product is Missing.
+        /// </summary>
+        /// <param name="Material">Material Code to add</param>
+        /// <param name="Description">Material Description</param>
+        /// <param name="Brand">Product Brand</param>
+        /// <param name="Category">Product Category</param>
+        /// <param name="CS">CS</param>
+        /// <param name="SU">SU</param>
+        /// <param name="DSSCS">DSS CS</param>
+        /// <param name="DSSSU">DSS SU</param>
+        /// <param name="Weight">Weight</param>
+        /// <param name="Volume">Volume</param>
+        /// <returns>0 if </returns>
+        public ICollection<Product> CheckProduct(ICollection<Product> products, String Material, String Description, String Brand, String Category, String CS, String SU, String DSSCS, String DSSSU, String Weight, String Volume)
+        {
+            // Initialization
+            CultureInfo culture = new CultureInfo("es-VE");
+            if (products == null)
+                products = new List<Product>();
+            long auxLong;
+            Double auxDouble;
+            int auxInt;
+            // Parse SKU
+            if (!long.TryParse(Material, out auxLong))
+            {
+                LogError("ZSKU", "Number Format", "Could not parse Product SKU");
+                return products;
+            }
+            // Find Product
+            Product product = products.Where(x => x.SKU == auxLong).FirstOrDefault();
+
+            // New Product
+            if (product == null)
+            {
+                product = new Product();
+                product.SKU = auxLong;
+                product.Description = Description.Trim();
+                product.Category = Category.Trim();
+                product.Brand = Brand.Trim();
+                product.Qty = new Quantity();
+                product.DSSQty = new Quantity();
+                // Parse CS
+                if (!int.TryParse(CS, NumberStyles.Number, CultureInfo.InvariantCulture, out auxInt))
+                    if (!int.TryParse(CS, NumberStyles.Number, culture, out auxInt))
+                    {
+                        LogError("ZSKU", "Number Format", "Could not parse Product CS");
+                        return products;
+                    }
+                        
+                product.Qty.CS = auxInt;
+
+                // Parse SU
+                if (!double.TryParse(SU, NumberStyles.Number, CultureInfo.InvariantCulture, out auxDouble))
+                    if (!double.TryParse(SU, NumberStyles.Number, culture, out auxDouble))
+                    {
+                        LogError("ZSKU", "Number Format", "Could not parse Product SU");
+                        return products;
+                    }
+
+                product.Qty.SU = auxDouble;
+
+                //Parse  Weight
+                if (!double.TryParse(Weight, NumberStyles.Number, CultureInfo.InvariantCulture, out auxDouble))
+                    if (!double.TryParse(SU, NumberStyles.Number, culture, out auxDouble))
+                    {
+                        LogError("ZSKU", "Number Format", "Could not parse Product Weight");
+                        return products;
+                    }
+
+                product.Qty.NetWeight = auxDouble;
+
+                // Parse Volume
+                if (!double.TryParse(Volume, NumberStyles.Number, CultureInfo.InvariantCulture, out auxDouble))
+                    if (!double.TryParse(Volume, NumberStyles.Number, culture, out auxDouble))
+                    {
+                        LogError("ZSKU", "Number Format", "Could not parse Product Volume");
+                        return products;
+                    }
+
+                product.Qty.Volume = auxDouble;
+
+                if(!String.IsNullOrWhiteSpace(DSSCS))
+                {
+                    // Parse Dss CS
+                    if (!int.TryParse(DSSCS, NumberStyles.Number, CultureInfo.InvariantCulture, out auxInt))
+                        if (!int.TryParse(DSSCS, NumberStyles.Number, culture, out auxInt))
+                        {
+                            LogError("ZSKU", "Number Format", "Could not parse Product DSS CS");
+                            return products;
+                        }
+
+                    product.DSSQty.CS = auxInt;
+
+                    // Parse Dss SU
+                    if (!double.TryParse(DSSSU, NumberStyles.Number, CultureInfo.InvariantCulture, out auxDouble))
+                        if (!double.TryParse(DSSSU, NumberStyles.Number, culture, out auxDouble))
+                        {
+                            LogError("ZSKU", "Number Format", "Could not parse Product DSS SU");
+                            return products;
+                        }
+                    product.DSSQty.SU = auxDouble;
+
+                }
+                products.Add(product);
+
+                return products;
+
+            }
+            else
+            // Product Exist.
+            {
+                // Initialize Quantities
+                if (product.Qty == null)
+                    product.Qty = new Quantity();
+
+                if (product.DSSQty == null)
+                    product.DSSQty = new Quantity();
+
+                if(!String.IsNullOrWhiteSpace(DSSCS))
+                {
+                    // Parse Dss Cs
+                    if (!int.TryParse(DSSCS, NumberStyles.Number, CultureInfo.InvariantCulture, out auxInt))
+                        if (!int.TryParse(DSSCS, NumberStyles.Number, culture, out auxInt))
+                        {
+                            LogError("ZSKU", "Number Format", "Could not parse Product DSS CS");
+                            return products;
+                        }
+                    product.DSSQty.CS = auxInt;
+
+                    // Parse Dss Su
+                    if (!double.TryParse(DSSSU, NumberStyles.Number, CultureInfo.InvariantCulture, out auxDouble))
+                        if (!double.TryParse(DSSSU, NumberStyles.Number, culture, out auxDouble))
+                        {
+                            LogError("ZSKU", "Number Format", "Could not parse Product DSS SU");
+                            return products;
+                        }
+                    product.DSSQty.SU = auxDouble;
+
+                }
+                return products;
             }
         }
 
@@ -824,7 +988,7 @@ namespace Bauhaus.Controllers
             bool added = false;
 
             long invID;
-            if(long.TryParse(splitedLine[zsku.InvoiceNumber],out invID))
+            if (long.TryParse(splitedLine[zsku.InvoiceNumber], out invID))
             {
                 if (order.Invoices.Any())
                 {
@@ -860,7 +1024,7 @@ namespace Bauhaus.Controllers
                 LogError("ZSKU", "Number Format", "Invoice Number could not be parsed");
                 return false;
             }
-            
+
         }
 
         /// <summary>
@@ -898,7 +1062,7 @@ namespace Bauhaus.Controllers
                                 break;
 
                             // Casing Procedures Due report Name
-                            String sheetName = RemoveSimbols(RemoveDiacritics(cWs.Name.ToLower()),1);
+                            String sheetName = RemoveSimbols(RemoveDiacritics(cWs.Name.ToLower()), 1);
                             System.Diagnostics.Debug.WriteLine(sheetName);
                             switch (sheetName)
                             {
@@ -914,19 +1078,6 @@ namespace Bauhaus.Controllers
                                     }
                                     ready = true;
                                     break;
-
-                                //// MAESTRO
-                                //case "toda la data de activos":
-                                //    if (ProcessCustomerData(cWs, stReport) == 0)
-                                //    {
-                                //        stReport.Status = 1;
-                                //    }
-                                //    else
-                                //    {
-                                //        stReport.Status = 3;
-                                //    }
-                                //    db.SaveChanges();
-                                //    break;
 
                                 // Summary de Jose Tarazona
                                 case "infoomtransporte":
@@ -959,18 +1110,6 @@ namespace Bauhaus.Controllers
                                         stReport.Status = 1;
                                     break;
 
-                                case "zsku":
-                                    int count = ProcessZsku(cWs, stReport);
-                                    if (count != 0)
-                                    {
-                                        stReport.Status = 3;
-                                        stReport.Remark = "Completed with " + count.ToString() + " Format Error(s).";
-                                    }
-                                    else
-                                        stReport.Status = 1;
-                                    ready = true;
-                                    break;
-
                                 case "carryfees":
                                     if (ProcessCarryFees(cWs, stReport) == 0)
                                         stReport.Status = 1;
@@ -986,6 +1125,7 @@ namespace Bauhaus.Controllers
                                         stReport.Status = 0;
                                     ready = true;
                                     break;
+
                                 default:
                                     break;
                             }
@@ -1002,28 +1142,8 @@ namespace Bauhaus.Controllers
                         package.Save();
                         System.Diagnostics.Debug.WriteLine("Report Date: " + stReport.CreationDate.ToString());
                         db.Entry(stReport).State = System.Data.Entity.EntityState.Modified;
-                        try
-                        {
 
-                            db.SaveChanges();
-                        }
-                        catch (System.Data.Entity.Validation.DbEntityValidationException e)
-                        {
-                            var outputLines = new List<string>();
-                            foreach (var eve in e.EntityValidationErrors)
-                            {
-                                outputLines.Add(string.Format(
-                                    "{0}: Entity of type \"{1}\" in state \"{2}\" has the following validation errors:",
-                                    DateTime.Now, eve.Entry.Entity.GetType().Name, eve.Entry.State));
-                                foreach (var ve in eve.ValidationErrors)
-                                {
-                                    outputLines.Add(string.Format(
-                                        "- Property: \"{0}\", Error: \"{1}\"",
-                                        ve.PropertyName, ve.ErrorMessage));
-                                }
-                            }
-                            LogError(stReport.Name, "Entity Validation", outputLines.ToString());
-                        }
+                        SaveChanges(db);
 
                     }
                 }
@@ -1035,7 +1155,63 @@ namespace Bauhaus.Controllers
 
         private int ProcessCarriers(ExcelWorksheet cWs, Report stReport)
         {
-            throw new NotImplementedException();
+            int cCount = 350;
+            Dictionary<String, String> Map = MapReport(cWs);
+            System.Diagnostics.Debug.WriteLine("CarryFees");
+            CarrierCodes columns = new CarrierCodes();
+            String errors = columns.SelfCheck(Map);
+            // Check for missing Columns
+            if (!String.IsNullOrEmpty(errors))
+            {
+                System.Diagnostics.Debug.WriteLine("Aborting process due to missing columns");
+                LogError("Carrier Codes", "Missing Columns", errors);
+                stReport.Remark = "An error ocurred, missing columns: " + errors;
+                return 1;
+            }
+
+            for (int i = 2; i <= cWs.Dimension.End.Row; i++)
+            {
+                long aux1;
+                if (!long.TryParse(cWs.Cells[Map[columns.CarrierNumber] + i].Text, out aux1))
+                {
+                    LogError("Carrier Code", "Number Format", "Could not parse Carrier number.");
+                    return 1;
+                }
+
+                Carrier auxCarrier = db.Carriers.Find(aux1);
+                String carrName = cWs.Cells[Map[columns.CarrierName] + i].Text.Trim();
+
+                // Add new Carrier
+                if (auxCarrier == null)
+                {
+                    Carrier newCarrier = new Carrier();
+                    newCarrier.ID = aux1;
+                    newCarrier.Name = carrName;
+                    newCarrier.Vehicles = new List<Vehicle>();
+                    newCarrier.Drivers = new List<Contact>();
+                    newCarrier.CarryFees = new List<CarryFee>();
+                    db.Carriers.Add(newCarrier);
+                }
+                else
+                {
+
+                    if (auxCarrier.Name != carrName)
+                    {
+                        auxCarrier.Name = carrName;
+                        SaveChanges(db);
+                    }
+                }
+                // Register Progress.
+                if (i % cCount == 0)
+                {
+                    stReport.Remark = ((int)((double)((double)i / cWs.Dimension.End.Row) * 100)) + "%";
+                    db.SaveChanges();
+                    db.Dispose();
+                    db = new BauhausEntities();
+                }
+            }
+            return 0;
+
         }
 
         /// <summary>
@@ -1081,16 +1257,16 @@ namespace Bauhaus.Controllers
             for (int i = 2; i <= cWs.Dimension.End.Row; i++)
             {
                 long aux1;
-                if(!long.TryParse(cWs.Cells[Map[columns.CarrierNumber] + i].Text,out aux1))
+                if (!long.TryParse(cWs.Cells[Map[columns.CarrierNumber] + i].Text, out aux1))
                 {
                     LogError("Carry Fees", "Number Format", "Could not parse Carrier number.");
-                        return 1;
+                    return 1;
                 }
 
                 Carrier auxCarrier = db.Carriers.Find(aux1);
 
                 // Add new Carrier
-                if(auxCarrier == null)
+                if (auxCarrier == null)
                 {
                     Carrier newCarrier = new Carrier();
                     newCarrier.ID = aux1;
@@ -1100,14 +1276,16 @@ namespace Bauhaus.Controllers
                     newCarrier.CarryFees = new List<CarryFee>();
                     db.Carriers.Add(newCarrier);
                 }
-
-                // Carrier is Registered
-                if (auxCarrier != null)
+                else
                 {
+                    //Check Name
+                    if (auxCarrier.Name != cWs.Cells[Map[columns.CarrierName] + i].Text)
+                        auxCarrier.Name = cWs.Cells[Map[columns.CarrierName] + i].Text;
+
                     String auxRoute = cWs.Cells[Map[columns.Route] + i].Text;
                     String auxVeh = cWs.Cells[Map[columns.VehicleType] + i].Text;
 
-                    if(auxCarrier.CarryFees == null)
+                    if (auxCarrier.CarryFees == null)
                         auxCarrier.CarryFees = new List<CarryFee>();
 
                     CarryFee newCarryFee = (from x in auxCarrier.CarryFees
@@ -1240,7 +1418,18 @@ namespace Bauhaus.Controllers
                 tempCust.Region = cWs.Cells[Mapping[columnsMaestro.Region] + i].Text;
                 tempCust.City = cWs.Cells[Mapping[columnsMaestro.City] + i].Text;
                 tempCust.Address = cWs.Cells[Mapping[columnsMaestro.Address] + i].Text;
-                tempCust.SaleZone = (cWs.Cells[Mapping[columnsMaestro.SaleZone] + i].Text != "") ? int.Parse(cWs.Cells[Mapping[columnsMaestro.SaleZone] + i].Text) : 0;
+                int auxInt;
+                if (Int32.TryParse(cWs.Cells[Mapping[columnsMaestro.SaleZone] + i].Text, out auxInt))
+                {
+                    tempCust.SaleZone = auxInt;
+                    if (cWs.Cells[Mapping[columnsMaestro.SaleZone] + i].Text.Length>=2)
+                        tempCust.Unit = int.Parse(cWs.Cells[Mapping[columnsMaestro.SaleZone] + i].Text.Substring(0, 2));
+                }
+                else
+                {
+                    tempCust.SaleZone = 0;
+                    tempCust.Unit = 0;
+                }
                 tempCust.Team = cWs.Cells[Mapping[columnsMaestro.Team] + i].Text;
 
                 // REGISTER CBD REP
@@ -1271,13 +1460,22 @@ namespace Bauhaus.Controllers
 
                 // Register || Update Initial Contacts
                 Contact cont;
-                cont = tempCust.Contacts.Where(x => x.Area == "Principal").FirstOrDefault();
-                cont = updateContact(cont, "Principal", tempCust.Name, cWs.Cells[Mapping[columnsMaestro.MainTelephone] + i].Text, cWs.Cells[Mapping[columnsMaestro.GeneralEmail] + i].Text);
-                    
-                cont = tempCust.Contacts.Where(x => x.Area == "Recepción").FirstOrDefault();
-                cont = updateContact(cont, "Recepción", cWs.Cells[Mapping[columnsMaestro.ContactName] + i].Text, cWs.Cells[Mapping[columnsMaestro.ContactTelephone] + i].Text, "");
-                    
+                if (tempCust.Contacts == null)
+                    tempCust.Contacts = new List<Contact>();
 
+                cont = tempCust.Contacts.Where(x => x.Area == "Principal").FirstOrDefault();
+                if (cont == null)
+                    tempCust.Contacts.Add(updateContact(cont, "Principal", tempCust.Name, cWs.Cells[Mapping[columnsMaestro.MainTelephone] + i].Text, cWs.Cells[Mapping[columnsMaestro.GeneralEmail] + i].Text));
+                else
+                    cont = updateContact(cont, "Principal", tempCust.Name, cWs.Cells[Mapping[columnsMaestro.MainTelephone] + i].Text, cWs.Cells[Mapping[columnsMaestro.GeneralEmail] + i].Text);
+
+                cont = tempCust.Contacts.Where(x => x.Area == "Recepción").FirstOrDefault();
+                if(cont == null)
+                    tempCust.Contacts.Add(updateContact(cont, "Recepción", cWs.Cells[Mapping[columnsMaestro.ContactName] + i].Text, cWs.Cells[Mapping[columnsMaestro.ContactTelephone] + i].Text, ""));
+                else
+                    cont = updateContact(cont, "Recepción", cWs.Cells[Mapping[columnsMaestro.ContactName] + i].Text, cWs.Cells[Mapping[columnsMaestro.ContactTelephone] + i].Text, "");
+
+                // Register new Customer
                 if (nuevo)
                     db.Customers.Add(tempCust);
 
@@ -1306,18 +1504,22 @@ namespace Bauhaus.Controllers
         /// <returns>Returns Updated Contact or Null if new Name is Empty</returns>
         public Contact updateContact(Contact cont, String area, String name, String tel, String mail)
         {
-            if (!String.IsNullOrWhiteSpace(name))
+            // Critical Fields Null? -> Abort
+            if (!String.IsNullOrWhiteSpace(name) || !String.IsNullOrWhiteSpace(tel))
             {
+                // Initialize
                 if (cont == null)
-                {
                     cont = new Contact();
-                }
 
+                // Update Name
                 if (cont.Name != name)
                 {
+                    // Look for Name or tel.
                     Contact auxCont = db.Contacts.Where(x => x.Name == name || x.Telephone == tel).FirstOrDefault();
+                    // Found
                     if (auxCont != null)
                     {
+                        // Update Fields
                         if (auxCont.Telephone != tel && !String.IsNullOrWhiteSpace(tel))
                             auxCont.Telephone = tel;
                         if (auxCont.Email != mail && !String.IsNullOrWhiteSpace(mail))
@@ -1325,15 +1527,16 @@ namespace Bauhaus.Controllers
                     }
                     else
                     {
+                        // Create New
                         auxCont = new Contact();
                         auxCont.Area = area;
                         auxCont.Name = name;
                         auxCont.Telephone = tel;
                         auxCont.Email = mail;
-                        db.Contacts.Add(auxCont);
                     }
                     return auxCont;
                 }
+                    // Same Name, Update Everything else.
                 else
                 {
                     if (cont.Telephone != tel && !String.IsNullOrWhiteSpace(tel))
@@ -1395,170 +1598,174 @@ namespace Bauhaus.Controllers
                         if (auxOrder.Status.Code > 40)
                             continue;
 
-
-                        // Allocate Shipment Status
-                        switch (shipStatus)
+                        // PLANIFICADO
+                        if (shipStatus.Contains("planif"))
                         {
-                            case "planificado":
-
-                                System.Diagnostics.Debug.WriteLine("Planificado");
-                                long shpN;
-                                if (long.TryParse(cWs.Cells[Mapping[columnsOEM.ShipmentNumber] + i].Text, out shpN))
+                            System.Diagnostics.Debug.WriteLine("Planificado");
+                            long shpN;
+                            if (long.TryParse(cWs.Cells[Mapping[columnsOEM.ShipmentNumber] + i].Text, out shpN))
+                            {
+                                //New Shipment (Didnt Find it or Null from before.)
+                                if (auxOrder.Shipment == null || auxOrder.Shipment.ID != shpN)
                                 {
-                                    //New Shipment (Didnt Find it or Null from before.)
-                                    if (auxOrder.Shipment == null || auxOrder.Shipment.ID != shpN)
+                                    auxOrder.Shipment = db.Shipments.Find(shpN);
+                                    if (auxOrder.Shipment == null)
                                     {
-                                        auxOrder.Shipment = db.Shipments.Find(shpN);
-                                        if (auxOrder.Shipment == null)
-                                        {
-                                            auxOrder.Shipment = new Shipment();
-                                            auxOrder.Shipment.ID = shpN;
-                                            auxOrder.Shipment.Date = DateTime.Today;
-                                        }
-
+                                        auxOrder.Shipment = new Shipment();
+                                        auxOrder.Shipment.ID = shpN;
+                                        auxOrder.Shipment.Date = DateTime.Today;
                                     }
 
-                                    // Update Vehicle Type
-                                    if (auxOrder.Shipment.Vehicle.Type != cWs.Cells[Mapping[columnsOEM.VehicleType] + i].Text)
-                                    {
-                                        auxOrder.Shipment.Vehicle.Type = cWs.Cells[Mapping[columnsOEM.VehicleType] + i].Text;
-                                    }
-
-                                    // Check Turn
-                                    //String turn = cWs.Cells[Mapping[columnsOEM.Turn] + i].Text;
-
-                                    //if (String.IsNullOrEmpty(auxOrder.Shipment.Turn) || auxOrder.Shipment.Turn != turn)
-                                    //{
-
-                                    //    auxOrder.Shipment.Turn = turn;
-                                    //    auxOrder.Shipment.Date = (turn != "T1" && turn != "T2" && turn != "T3" && turn != "" && turn != "0") ?
-                                    //        DateTime.Today.AddDays(1) : DateTime.Today;
-                                    //}
-
-                                    // Initialize Order List
-                                    if (auxOrder.Shipment.Orders == null)
-                                    {
-                                        auxOrder.Shipment.Orders = new List<Order> { };
-                                    }
-
-                                    // Add Order To List
-                                    if (!auxOrder.Shipment.Orders.Contains(auxOrder))
-                                    {
-                                        auxOrder.Shipment.Orders.Add(auxOrder);
-                                    }
-
-                                    //Assign Carrier
-                                    String carrName = cWs.Cells[Mapping[columnsOEM.CarrierName] + i].Text;
-
-                                    if (auxOrder.Shipment.Carrier == null ||
-                                        RemoveSimbols(RemoveDiacritics(auxOrder.Shipment.Carrier.Name.ToLower()), 0) != RemoveSimbols(RemoveDiacritics(carrName.ToLower()), 0))
-                                    {
-                                        string newCarr = RemoveSimbols(RemoveDiacritics(carrName.ToLower()), 0);
-
-                                        auxOrder.Shipment.Carrier = (from x in db.Carriers
-                                                                     where x.Name.ToLower() == newCarr
-                                                                     select x).FirstOrDefault();
-                                    }
-
-                                    // Calculate CarryFee
-                                    if (String.IsNullOrEmpty(auxOrder.Shipment.CarryFee) &&
-                                        !String.IsNullOrEmpty(auxOrder.Shipment.Vehicle.Type) &&
-                                        auxOrder.Customer.Route != null &&
-                                        auxOrder.Shipment.Carrier != null)
-                                    {
-                                        auxOrder.Shipment.CarryFee = (from x in auxOrder.Shipment.Carrier.CarryFees
-                                                                      where x.Route == auxOrder.Customer.Route.Name &&
-                                                                      x.VehicleType == auxOrder.Shipment.Vehicle.Type
-                                                                      select x.Cost).FirstOrDefault();
-                                    }
-
-                                    auxOrder.Status.Stage = 2;
-                                    auxOrder.Status.State = 0;
-                                    auxOrder.Status.Reason = 1;
                                 }
-                                break;
 
-                            case "confirmaciondecita":
-                                auxOrder.Status.Stage = 1;
-                                auxOrder.Status.State = 1;
+                                // Update Vehicle Type
+                                if (auxOrder.Shipment.Vehicle.Type != cWs.Cells[Mapping[columnsOEM.VehicleType] + i].Text)
+                                {
+                                    auxOrder.Shipment.Vehicle.Type = cWs.Cells[Mapping[columnsOEM.VehicleType] + i].Text;
+                                }
+
+
+                                // Initialize Order List
+                                if (auxOrder.Shipment.Orders == null)
+                                {
+                                    auxOrder.Shipment.Orders = new List<Order> { };
+                                }
+
+                                // Add Order To List
+                                if (!auxOrder.Shipment.Orders.Contains(auxOrder))
+                                {
+                                    auxOrder.Shipment.Orders.Add(auxOrder);
+                                }
+
+                                //Assign Carrier
+                                String carrName = cWs.Cells[Mapping[columnsOEM.CarrierName] + i].Text;
+
+                                if (auxOrder.Shipment.Carrier == null ||
+                                    RemoveSimbols(RemoveDiacritics(auxOrder.Shipment.Carrier.Name.ToLower()), 0) != RemoveSimbols(RemoveDiacritics(carrName.ToLower()), 0))
+                                {
+                                    string newCarr = RemoveSimbols(RemoveDiacritics(carrName.ToLower()), 0);
+
+                                    auxOrder.Shipment.Carrier = (from x in db.Carriers
+                                                                 where x.Name.ToLower() == newCarr
+                                                                 select x).FirstOrDefault();
+                                }
+
+                                // Calculate CarryFee
+                                if (String.IsNullOrEmpty(auxOrder.Shipment.CarryFee) &&
+                                    !String.IsNullOrEmpty(auxOrder.Shipment.Vehicle.Type) &&
+                                    auxOrder.Customer.Route != null &&
+                                    auxOrder.Shipment.Carrier != null)
+                                {
+                                    auxOrder.Shipment.CarryFee = (from x in auxOrder.Shipment.Carrier.CarryFees
+                                                                  where x.Route == auxOrder.Customer.Route.Name &&
+                                                                  x.VehicleType == auxOrder.Shipment.Vehicle.Type
+                                                                  select x.Cost).FirstOrDefault();
+                                }
+
+                                auxOrder.Status.Stage = 2;
+                                auxOrder.Status.State = 0;
                                 auxOrder.Status.Reason = 1;
-                                break;
+                            }
 
-                            case "vfr80":
-                                auxOrder.Status.Stage = 1;
-                                auxOrder.Status.State = 1;
-                                auxOrder.Status.Reason = 8;
-                                break;
-
-                            case "pendienteporeliminar":
-                                auxOrder.Status.Stage = 1;
-                                auxOrder.Status.State = 1;
-                                auxOrder.Status.Reason = 10;
-                                break;
-
-                            case "capacidaddecliente":
-                                auxOrder.Status.Stage = 1;
-                                auxOrder.Status.State = 1;
-                                auxOrder.Status.Reason = 2;
-                                break;
-
-                            case "vfr80makro":
+                        }
+                        else if (shipStatus.Contains("cita"))
+                        {
+                            System.Diagnostics.Debug.WriteLine("Cita");
+                            auxOrder.Status.Stage = 1;
+                            auxOrder.Status.State = 1;
+                            auxOrder.Status.Reason = 1;
+                        }
+                        else if (shipStatus.Contains("vfr"))
+                        {
+                            if (shipStatus.Contains("makro"))
+                            {
+                                System.Diagnostics.Debug.WriteLine("VFR Makro");
                                 auxOrder.Status.Stage = 1;
                                 auxOrder.Status.State = 1;
                                 auxOrder.Status.Reason = 9;
-                                break;
-
-                            case "ordenminimamakro":
+                            }
+                            else
+                            {
+                                System.Diagnostics.Debug.WriteLine("VFR");
+                                auxOrder.Status.Stage = 1;
+                                auxOrder.Status.State = 1;
+                                auxOrder.Status.Reason = 8;
+                            }
+                        }
+                        else if (shipStatus.Contains("elim"))
+                        {
+                            System.Diagnostics.Debug.WriteLine("Eliminar");
+                            auxOrder.Status.Stage = 1;
+                            auxOrder.Status.State = 1;
+                            auxOrder.Status.Reason = 10;
+                        }
+                        else if (shipStatus.Contains("cap"))
+                        {
+                            System.Diagnostics.Debug.WriteLine("Capacidad del Cliente");
+                            auxOrder.Status.Stage = 1;
+                            auxOrder.Status.State = 1;
+                            auxOrder.Status.Reason = 2;
+                        }
+                        else if (shipStatus.Contains("min"))
+                        {
+                            if (shipStatus.Contains("makro"))
+                            {
+                                System.Diagnostics.Debug.WriteLine("Orden Minima Makro");
                                 auxOrder.Status.Stage = 1;
                                 auxOrder.Status.State = 1;
                                 auxOrder.Status.Reason = 7;
-                                break;
-
-                            case "ordenminima":
+                            }
+                            else
+                            {
+                                System.Diagnostics.Debug.WriteLine("Orden Minima");
                                 auxOrder.Status.Stage = 1;
                                 auxOrder.Status.State = 1;
                                 auxOrder.Status.Reason = 6;
-                                break;
-
-                            case "zsplit":
-                                auxOrder.Status.Stage = 1;
-                                auxOrder.Status.State = 1;
-                                auxOrder.Status.Reason = 11;
-                                break;
-
-                            case "pedidopospuesto":
-                                auxOrder.Status.Stage = 1;
-                                auxOrder.Status.State = 1;
-                                auxOrder.Status.Reason = 3;
-                                break;
-
-                            case "vehiculo":
-                                auxOrder.Status.Stage = 1;
-                                auxOrder.Status.State = 1;
-                                auxOrder.Status.Reason = 4;
-                                break;
-
-                            case "pendiente":
-                                auxOrder.Status.Stage = 1;
-                                auxOrder.Status.State = 0;
-                                auxOrder.Status.Reason = 0;
-                                break;
-
-                            case "faltadeinventario":
-                                auxOrder.Status.Stage = 1;
-                                auxOrder.Status.State = 1;
-                                auxOrder.Status.Reason = 5;
-                                break;
-
-                            default:
-                                LogError("OEM", "Reason not Recognized", "The reason : " + cWs.Cells[Mapping[columnsOEM.ShipmentStatus] + i].Text + " is not registered");
-                                auxOrder.Status.Comment = cWs.Cells[Mapping[columnsOEM.ShipmentStatus] + i].Text;
-                                auxOrder.Status.Stage = 1;
-                                auxOrder.Status.State = 1;
-                                auxOrder.Status.Reason = 0;
-                                break;
+                            }
                         }
-
+                        else if (shipStatus.Contains("zsplit"))
+                        {
+                            System.Diagnostics.Debug.WriteLine("ZSPLIT");
+                            auxOrder.Status.Stage = 1;
+                            auxOrder.Status.State = 1;
+                            auxOrder.Status.Reason = 11;
+                        }
+                        else if (shipStatus.Contains("pos"))
+                        {
+                            System.Diagnostics.Debug.WriteLine("Pedido Pospuesto");
+                            auxOrder.Status.Stage = 1;
+                            auxOrder.Status.State = 1;
+                            auxOrder.Status.Reason = 3;
+                        }
+                        else if (shipStatus.Contains("veh"))
+                        {
+                            System.Diagnostics.Debug.WriteLine("Falta de Vehiculo");
+                            auxOrder.Status.Stage = 1;
+                            auxOrder.Status.State = 1;
+                            auxOrder.Status.Reason = 4;
+                        }
+                        else if (shipStatus.Contains("pend"))
+                        {
+                            System.Diagnostics.Debug.WriteLine("Pendiente");
+                            auxOrder.Status.Stage = 1;
+                            auxOrder.Status.State = 0;
+                            auxOrder.Status.Reason = 0;
+                        }
+                        else if (shipStatus.Contains("inv"))
+                        {
+                            System.Diagnostics.Debug.WriteLine("Falta de Inventario");
+                            auxOrder.Status.Stage = 1;
+                            auxOrder.Status.State = 1;
+                            auxOrder.Status.Reason = 5;
+                        }
+                        else
+                        {
+                            LogError("OEM", "Reason not Recognized", "The reason : " + cWs.Cells[Mapping[columnsOEM.ShipmentStatus] + i].Text + " is not registered");
+                            auxOrder.Status.Comment = cWs.Cells[Mapping[columnsOEM.ShipmentStatus] + i].Text;
+                            auxOrder.Status.Stage = 1;
+                            auxOrder.Status.State = 1;
+                            auxOrder.Status.Reason = 0;
+                        }
                     }
 
                     if (i % commitCount == 0)
@@ -1714,7 +1921,7 @@ namespace Bauhaus.Controllers
                         {
                             if (ex.Message.Contains("Violation of PRIMARY KEY constraint"))
                             {
-                                LogError("ZSKU", "SQL", "Line "+i+" Trying to add Order already in Database." + ex.Message);
+                                LogError("ZSKU", "SQL", "Line " + i + " Trying to add Order already in Database." + ex.Message);
                                 long badOrder;
                                 if (long.TryParse(Regex.Match(ex.Message, @"\d+").Value, out badOrder))
                                 {
@@ -1843,7 +2050,7 @@ namespace Bauhaus.Controllers
                 // Add Customer
                 tempOrder.Customer = tempCustomer;
 
-                int error = tempOrder.CheckProduct(cWs.Cells[columns.Material + i].Text,
+                tempOrder.CheckProduct(cWs.Cells[columns.Material + i].Text,
                                                    cWs.Cells[columns.MaterialDesc + i].Text,
                                                    cWs.Cells[columns.Brand + i].Text,
                                                    cWs.Cells[columns.Category + i].Text,
@@ -1853,23 +2060,6 @@ namespace Bauhaus.Controllers
                                                    cWs.Cells[columns.DeliveryQtySU + i].Text,
                                                    cWs.Cells[columns.OrderWeight + i].Text,
                                                    cWs.Cells[columns.OrderVolume + i].Text);
-                // Add Product
-
-                if (error != 0)
-                {
-                    switch(error)
-                    {
-                        case 1:
-                            LogError("ZSKU", "Format", "Error ocurred while checking product.");
-
-                            break;
-                        default:
-                            LogError("ZSKU", "Product", "Error ocurred while checking product.");
-                            break;
-                    }
-                    return null;
-                }
-                    
 
                 tempOrder.RDDF = new RDDF();
                 if (DateTime.TryParseExact(cWs.Cells[columns.RDDF + i].Text,
@@ -1903,7 +2093,7 @@ namespace Bauhaus.Controllers
                         LogError("ZSKU", "Date Format", "Couldn't Parse Delivery Date");
                         return null;
                     }
-                   
+
                     //Register DSS suggested RDDF
                     if (tempOrder.Customer.Route != null && tempOrder.Customer.Route.LeadTime != null)
                         tempOrder.RDDF.DSSDate = tempOrder.Delivery.Date.AddBusinessDays(tempOrder.Customer.Route.LeadTime.Days);
@@ -2061,7 +2251,7 @@ namespace Bauhaus.Controllers
                 ord.POD.OT = new Indicator();
 
                 if (ord.POD.Date <= ord.RDDF.DSSDate || // Inside Time Window
-                    ord.Products.Sum(x=>x.Qty.CS) < 200 || // Small Orders
+                    ord.Products.Sum(x => x.Qty.CS) < 200 || // Small Orders
                     (ord.POD.Date.Day - ord.RDDF.DSSDate.Day < 4 && // Weekend and Time Window < 4
                     ord.POD.Date.DayOfWeek == DayOfWeek.Saturday || ord.POD.Date.DayOfWeek == DayOfWeek.Sunday))
                 {
@@ -2266,7 +2456,7 @@ namespace Bauhaus.Controllers
                     {
                         ord.POD.OT = new Indicator();
                         if (ord.POD.Date <= ord.RDDF.DSSDate || // Inside Time Window
-                            ord.Products.Sum(x=>x.Qty.CS) < 200 || // Small Orders
+                            ord.Products.Sum(x => x.Qty.CS) < 200 || // Small Orders
                             (ord.POD.Date.Day - ord.RDDF.DSSDate.Day < 4 && // Weekend and Time Window < 4
                             ord.POD.Date.DayOfWeek == DayOfWeek.Saturday || ord.POD.Date.DayOfWeek == DayOfWeek.Sunday))
                         {
@@ -2431,7 +2621,7 @@ namespace Bauhaus.Controllers
                         break;
                 }
                 // Add Product
-                if (ord.CheckProduct(cWs.Cells[columns.Material + i].Text,
+                ord.CheckProduct(cWs.Cells[columns.Material + i].Text,
                     cWs.Cells[columns.MaterialDesc + i].Text,
                     cWs.Cells[columns.Brand + i].Text,
                     cWs.Cells[columns.Category + i].Text,
@@ -2440,11 +2630,8 @@ namespace Bauhaus.Controllers
                     cWs.Cells[columns.DeliveryQtyCS + i].Text,
                     cWs.Cells[columns.DeliveryQtySU + i].Text,
                     cWs.Cells[columns.OrderWeight + i].Text,
-                    cWs.Cells[columns.OrderVolume + i].Text) != 0)
-                {
-                    LogError("ZSKU", "Product Error", "Error ocurred while checking product.");
-                    return 1;
-                }
+                    cWs.Cells[columns.OrderVolume + i].Text);
+               
                 DateTime auxDate;
                 if (DateTime.TryParseExact(cWs.Cells[columns.RDDF + i].Text, "dd'.'MM'.'yyyy",
                     CultureInfo.InvariantCulture,
@@ -2453,7 +2640,7 @@ namespace Bauhaus.Controllers
                     ord.RDDF.Original = auxDate;
                 else
                 {
-                    LogError("ZSKU",  "Date Format", "Couldn't Parse RDDF");
+                    LogError("ZSKU", "Date Format", "Couldn't Parse RDDF");
                     return 1;
                 }
 
@@ -2526,7 +2713,7 @@ namespace Bauhaus.Controllers
                         else
                         {
                             if (!ord.Shipment.Orders.Contains(ord))
-                            ord.Shipment.Orders.Add(ord);
+                                ord.Shipment.Orders.Add(ord);
                         }
                     }
 
@@ -2609,13 +2796,13 @@ namespace Bauhaus.Controllers
 
                     }
                     // KPI Generation TOOOOOOOOOOOOODOOOOOOOOOOOOOOOOOOOOOOOOOO
-                //    if (ord.POD.CSOT == null || ord.POD.OT == null)
-                //    {
-                //        if (ord.calculateIndicators() != 0)
-                //        {
-                //            LogError("ZSKU", i, "Indicator", "Failed to Calculate Indicators");
-                //        }
-                //    }
+                    //    if (ord.POD.CSOT == null || ord.POD.OT == null)
+                    //    {
+                    //        if (ord.calculateIndicators() != 0)
+                    //        {
+                    //            LogError("ZSKU", i, "Indicator", "Failed to Calculate Indicators");
+                    //        }
+                    //    }
                 }
 
                 return 0;
@@ -2878,7 +3065,7 @@ namespace Bauhaus.Controllers
 
                 }
             }
-            return new ContentResult { Content = i.ToString() + p.ToString() };
+            return new ContentResult { Content = i.ToString() +" "+ p.ToString() };
         }
 
         /// <summary>
@@ -2890,7 +3077,7 @@ namespace Bauhaus.Controllers
         private void LogError(String reportName, String type, String description)
         {
             System.Diagnostics.Debug.WriteLine("Error ocurred: " + type + " " + description);
-            Log lg = new Log("LocalHost", "System", "Error", reportName + " Report " + type + " exception :" + description);
+            Log lg = new Log("LocalHost", "System", "Error", reportName + " Report " + type + " :" + description);
             db.Logs.Add(lg);
         }
 

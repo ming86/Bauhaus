@@ -6,16 +6,16 @@
     <tr>
         <td colspan="2">
             <strong>Driver</strong>
-            @if (Model.Vehicle != null)
+            @if (Model.Vehicle != null && Model.Vehicle.Driver != null)
             {
 
-                @Model.Vehicle.Driver.Name
-                @Model.Vehicle.Driver.Telephone
+                <p>@Model.Vehicle.Driver.Name / @Model.Vehicle.Driver.Telephone</p>
+                
 
             }
             else
             {
-                <p class="text-danger">Assign a Vehicle</p>
+                <p class="text-danger">Assign Driver</p>
             }
         </td>
     </tr>

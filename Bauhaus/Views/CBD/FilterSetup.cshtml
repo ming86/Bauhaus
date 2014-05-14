@@ -1,0 +1,239 @@
+﻿@{
+    ViewBag.Title = "FilterSetup";
+}
+
+<div class="container">
+    <div class="row">
+        <div class="col-md-13">
+            <ul class="nav nav-tabs">
+                <li class="active"><a href="#general" data-toggle="tab">General Summary</a></li>
+                <li>
+                    <button class="btn btn-primary" data-toggle="modal" data-backdrop="static" data-keyboard="false" data-target="#filterModal" id="ShowFilter">
+                        <i class="fa fa-filter"></i>
+                    </button>
+                </li>
+            </ul>
+
+            <!-- Tab panes -->
+            <!-- GENERAL SUMMARY TAB -->
+            <div class="tab-content">
+                <div class="tab-pane active" id="general">
+                    <div class="row" style="margin-top:10px">
+                        <div class="col-md-5">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Regular Status</th>
+                                        <th>#</th>
+                                        <th>CS</th>
+                                        <th>SU</th>
+                                        <th>
+
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td align="left">
+                                            <span class="fa fa-lock"></span>@Html.ActionLink("Blocked", "ViewOrders", "Order", new { desc = "blocked", filter = true }, null)
+                                        </td>
+                                        <td id="blocked">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="blockedCS">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="blockedSU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td>
+                                            <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "blocked", filter = true })"><span class="fa fa-download"></span></a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="left">
+                                            <span class="fa fa-unlock"></span>@Html.ActionLink("Open", "ViewOrders", "Order", new { desc = "open", filter = true }, null)
+                                        </td>
+                                        <td id="open">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="openCS">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="openSU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td>
+                                            <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "open", filter = true })"><span class="fa fa-download"></span></a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="left">
+                                            <span class="fa fa-dropbox"></span>@Html.ActionLink("Assigned", "ViewOrders", "Order", new { desc = "assigned", filter = true }, null)
+                                        </td>
+                                        <td id="assigned">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="assignedCS">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="assignedSU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td>
+                                            <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "assigned", filter = true })"><span class="fa fa-download"></span></a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="left">
+                                            <span class="fa fa-calendar"></span>@Html.ActionLink("Planned", "ViewOrders", "Order", new { desc = "planned", filter = true }, null)
+                                        </td>
+                                        <td id="planned">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="plannedCS">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="plannedSU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td>
+                                            <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "planned", filter = true })"><span class="fa fa-download"></span></a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="left">
+                                            <span class="fa fa-print"></span>@Html.ActionLink("Invoiced", "ViewOrders", "Order", new { desc = "invoiced", filter = true }, null)
+                                        </td>
+                                        <td id="invoiced">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="invoicedCS">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="invoicedSU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td>
+                                            <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "invoiced", filter = true })"><span class="fa fa-download"></span></a>
+                                        </td>
+                                    </tr>
+                                    <tr class="success">
+                                        <td align="left">
+                                            <strong>Total</strong>
+                                        </td>
+                                        <td id="all">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="allCS">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="allSU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal -->
+<div class="modal fade" id="filterModal" tabindex="-1" role="dialog" aria-labelledby="filter" aria-hidden="true">
+    <div class="modal-dialog" style="max-width:25%">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title" id="filterChooseTitle"><i class="fa fa-filter"></i> Filter Orders</h4>
+            </div>
+            <div class="modal-body">
+                <h4>
+                    Team
+                    <span class="btn-group">
+                        <button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" id="team">
+                            All <span class="caret"></span>
+                        </button>
+                        <ul class="dropdown-menu" role="menu">
+                            <li><a class="teamValue" href="#">All</a></li>
+                            <li><a class="teamValue" href="#">HFS</a></li>
+                            <li><a class="teamValue" href="#">Key Accounts</a></li>
+                            <li><a class="teamValue" href="#">Centro Oriente</a></li>
+                            <li><a class="teamValue" href="#">Occidente</a></li>
+                        </ul>
+                    </span>
+                </h4>
+                <h4>
+                    Area
+                    <input type="text" placeholder="All" id="area" style="max-width:40%" />
+                </h4>
+                <h4><input type="checkbox" id="save" /> Remember</h4>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default saveFilter" id="showAll">Show All</button>
+                <button type="button" class="btn btn-primary saveFilter" id="saveFilter">Filter</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+@{
+
+    string message = "";
+    string type = "";
+
+    if (TempData["Message"] != null)
+    {
+        message = TempData["Message"].ToString();
+        type = TempData["Type"].ToString();
+    }
+}
+
+<script>
+    var loaded = false;
+    $(function () {
+        $("#ShowFilter").click();
+        displayAlert('@type', '@message');
+    });
+
+    //Filter Loading
+    $("#ShowFilter").click(function () {
+        $.post('@Url.Action("LoadFilter")', {},
+            function (data) {
+                $("#team").html(data.Team + ' <span class="caret"></span>');
+                $("#area").val(data.Area);
+                $("#rememberFilter").checked(data.Remember);
+            
+        });
+    });
+
+    //Filter Values Saving
+    $(".teamValue").click(function () {
+        $("#team").html($(this).text() + ' <span class="caret"></span>');
+    })
+
+    $(".saveFilter").click(function () {
+        SaveFilter();
+    });
+
+    function SaveFilter() {
+        $.post("@Url.Action("SaveFilter")", {
+            team: $("#team").text(),
+            area: $("#area").val(),
+            remember: $("#rememberFilter").is(":checked")
+        }, function (data) {
+            if (data.Status != 1) {
+                displayAlert("warning", "Filter could not be saved properly. " + data.Message);
+            }
+            location.href = '@Url.Action("Index")';
+        });
+    };
+
+    // Loading Alert
+    $(".download").click(function () {
+        displayAlert("info", "Please Wait. Your Download is being prepared.");
+    });
+</script>

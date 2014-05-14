@@ -20,17 +20,27 @@
             type = TempData["Type"].ToString();
         }
     }
+
+<style>
+    .tooltip-inner {
+        max-width: 400px;
+        width: auto;
+    }
+</style>
 <div class="row">
     <div class="col col-justified">
         <div class="panel panel-primary">
             <div class="panel-body">
                 <div class="row">
                     <div class="col-md-4">
-
                         <h3 class="text-center">@Html.DisplayFor(model => model.SapID)</h3>
-                        <h4>@Html.StageResolver(Model.Status.Stage)</h4>
-                        <h5 class="text-center text-muted">@Html.ReasonResolver(Model.Status.Stage,Model.Status.State,Model.Status.Reason)</h5>
-
+                        <h4 class="text-center">@Model.Status.CodeDescription()</h4>
+                        @if(!User.IsInRole("CBD"))
+                        {
+                            <h5 class="text-center text-muted">@Model.Status.ReasonDescription()</h5>
+                            <h6>@Html.DisplayFor(model => model.Status.Comment)</h6>
+                        }
+                        
                         <table class="table">
                             <tr>
                                 <td>
@@ -73,26 +83,6 @@
                     </div>
                     <div class="col-md-4">
                         <table class="table">
-                            <tr>
-                                <td class="active">
-                                    <strong>Products</strong>
-                                </td>
-                            </tr>
-                            @foreach(Product product in Model.Products)
-                            {
-                                <tr>
-                                    <td>
-                                        <p>@product.Qty.CS <strong>CS /</strong> @product.Qty.SU <strong>SU /</strong> @if(Model.Delivery!=null){@product.DSSQty.CS <strong class="text-success">DSS CS</strong>}</p>
-                                        <strong><small>@product.Description</small></strong>
-                                        
-                                    </td>
-                                </tr>
-                            }
-                        </table>
-                    </div>
-
-                    <div class="col-md-4">
-                        <table class="table">
                             @if (Model.Delivery != null)
                             {
                                 <tr>
@@ -113,12 +103,12 @@
                                 </tr>
 
                             }
-
                             @if (Model.Shipment != null)
                             {
                                 <tr>
                                     <td class="active">
-                                        <strong>@Html.DisplayNameFor(model => model.Shipment.ID)</strong>                     </td>
+                                        <strong>@Html.DisplayNameFor(model => model.Shipment.ID)</strong>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td>
@@ -139,7 +129,7 @@
                                             @Html.DisplayFor(model => model.Shipment.Carrier.Name)
                                         </td>
                                     </tr>
-                                
+
                                     if (Model.Shipment.CarryFee != null)
                                     {
                                         <tr>
@@ -151,6 +141,12 @@
                                     }
                                 }
                             }
+                            
+                        </table>
+                    </div>
+
+                    <div class="col-md-4">
+                        <table class="table">                          
                             @if (Model.Invoices.Any())
                             {
                                 <tr>
@@ -173,15 +169,16 @@
                             {
                                 <tr>
                                     <td class="success">
-                                        <strong>POD </strong>
+                                        <strong>POD</strong>
                                         @Html.DisplayFor(model => model.POD.Date)
                                         <span class="glyphicon glyphicon-ok"></span>
                                     </td>
                                 </tr>
-                                <tr>
+                                @*<tr>
                                     <td>
+                                        
                                         <strong class="text-left">CSOT</strong>
-                                        @if(Model.POD.CSOT.Value)
+                                        @if(Model.POD.CSOT != null && Model.POD.CSOT.Value)
                                         {
                                             <p class="text-success">HIT</p>
                                         }
@@ -190,28 +187,44 @@
                                             <p class="text-danger">MISS</p>
                                         }
                                     </td>
-                                </tr>
-                            }
-                            @if(!String.IsNullOrWhiteSpace(Model.Status.Comment))
-                            {
-                                <tr>
-                                    <td>
-                                        <strong>@Html.DisplayNameFor(model=>model.Status.Comment)</strong>
-                                        @Html.DisplayFor(model=>model.Status.Comment)
-                                    </td>
-                                </tr>
-                                
+                                </tr>*@
                             }
 
                         </table>
                     </div>
                 </div>
-            </div>
+                <div class="well">
+                    <h3><i class="fa fa-list-ol"></i> Products <a class="download" href="@Url.Action("DownloadOrderInformation", new { id = Model.SapID })"><span class="fa fa-download"></span></a></h3>
+                </div>
+                <div class="table">
+                    @Html.Grid(Model.Products).Named("productsGrid").Columns(columns=>
+                                     {
+                                         columns.Add(item=>item.SKU);
+                                         columns.Add(item => item.Description);
+                                         columns.Add(item => item.Qty.CS);
+                                         columns.Add(item => item.Qty.SU);
+                                         columns.Add(item => item.DSSQty.CS);
+                                         columns.Add(item => item.DSSQty.SU);
+                                     }
+                   
+                    ).Selectable(false);
+                </div>
         </div>
     </div>
 </div>
+</div>
 <script>
+    $('[data-toggle="tooltip"]').tooltip({
+        'placement': 'top',
+        'html': 'true'
+    });
     $(function () {
         displayAlert('@type', '@message');
-     });
+    });
+    // Alert the user that his download is being prepared.
+    $(".download").click(function () {
+        toastr.info("Please Wait. Your Download is being prepared.");
+    });
+
+
 </script>

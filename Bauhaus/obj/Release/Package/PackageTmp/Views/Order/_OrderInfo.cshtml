@@ -1,9 +1,12 @@
-﻿@model Bauhaus.Models.Order
+﻿@using Bauhaus.Models
+@model Bauhaus.Models.Order
 
-<h5> @Html.StageResolver(Model.Status.Stage)</h5>
-<small>@Html.ReasonResolver(Model.Status.Stage,Model.Status.State,Model.Status.Reason)</small>
-
-
+<h3 class="text-center"> @Model.Status.CodeDescription()</h3>
+@if(!User.IsInRole("CBD"))
+{
+    <small class="text-center">@Model.Status.ReasonDescription()</small>
+    <p class="text-danger">@Html.DisplayFor(x=>x.Status.Comment)</p>   
+}
 <table class="table table-condensed">
 
     <tr>
@@ -25,14 +28,28 @@
     </tr>
     <tr>
         <td>
-            <strong>@Html.DisplayNameFor(item => item.Quantities.QtyCS)</strong>
-            @Html.DisplayFor(item => item.Quantities.QtyCS)
+            <strong>Qty CS</strong>
+            @if(Model.Delivery != null)
+            {
+                @Model.Products.Sum(x=>x.DSSQty.CS).ToString()
+            }
+            else
+            {
+                @Model.Products.Sum(x=>x.Qty.CS).ToString()
+            }
         </td>
     </tr>
     <tr>
         <td>
-            <strong>@Html.DisplayNameFor(item => item.Quantities.QtySU)</strong>
-            @Html.DisplayFor(item => item.Quantities.QtySU)
+            <strong>Qty SU</strong>
+            @if (Model.Delivery != null)
+            {
+                @Model.Products.Sum(x => x.DSSQty.SU).ToString()
+            }
+            else
+            {
+                @Model.Products.Sum(x => x.Qty.SU).ToString()
+            }
         </td>
     </tr>
      
@@ -66,18 +83,7 @@
                 @Html.DisplayFor(item => item.Delivery.Date)
             </td>
         </tr>
-        <tr>
-            <td class="warning">
-                <strong>@Html.DisplayNameFor(item => item.Delivery.Quantities.QtyCS)</strong>
-                @Html.DisplayFor(item => item.Delivery.Quantities.QtyCS)
-            </td>
-        </tr>
-        <tr>
-            <td class="warning">
-                <strong>@Html.DisplayNameFor(item => item.Delivery.Quantities.QtySU)</strong>
-                @Html.DisplayFor(item => item.Delivery.Quantities.QtySU)
-            </td>
-        </tr>
+      
     }
     @if (Model.Shipment != null)
     {

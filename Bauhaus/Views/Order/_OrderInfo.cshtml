@@ -1,10 +1,12 @@
 ﻿@using Bauhaus.Models
 @model Bauhaus.Models.Order
 
-<h5> @Html.StageResolver(Model.Status.Stage)</h5>
-<small>@Html.ReasonResolver(Model.Status.Stage,Model.Status.State,Model.Status.Reason)</small>
-
-
+<h3 class="text-center"> @Model.Status.CodeDescription()</h3>
+@if(!User.IsInRole("CBD"))
+{
+    <small class="text-center">@Model.Status.ReasonDescription()</small>
+    <p class="text-danger">@Html.DisplayFor(x=>x.Status.Comment)</p>   
+}
 <table class="table table-condensed">
 
     <tr>
@@ -27,15 +29,27 @@
     <tr>
         <td>
             <strong>Qty CS</strong>
-            @Model.Products.Sum(x=>x.Qty.CS).ToString()
-           
+            @if(Model.Delivery != null)
+            {
+                @Model.Products.Sum(x=>x.DSSQty.CS).ToString()
+            }
+            else
+            {
+                @Model.Products.Sum(x=>x.Qty.CS).ToString()
+            }
         </td>
     </tr>
     <tr>
         <td>
             <strong>Qty SU</strong>
-           @Model.Products.Sum(x => x.Qty.SU).ToString()
-            
+            @if (Model.Delivery != null)
+            {
+                @Model.Products.Sum(x => x.DSSQty.SU).ToString()
+            }
+            else
+            {
+                @Model.Products.Sum(x => x.Qty.SU).ToString()
+            }
         </td>
     </tr>
      
@@ -69,18 +83,7 @@
                 @Html.DisplayFor(item => item.Delivery.Date)
             </td>
         </tr>
-        @*<tr>
-            <td class="warning">
-                <strong>DSS CS</strong>
-                @Model.Products.Sum(x => x.DSSQty.CS)
-            </td>
-        </tr>
-        <tr>
-            <td class="warning">
-                <strong>DSS SU</strong>
-                @Model.Products.Sum(x => x.Qty.SU)
-            </td>
-        </tr>*@
+      
     }
     @if (Model.Shipment != null)
     {

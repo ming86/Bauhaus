@@ -2,7 +2,7 @@
 
 <div class="container">
     <div class="row">
-       <div class="col-md-13">
+        <div class="col-md-13">
 
             <ul class="nav nav-tabs">
                 <li class="active"><a href="#general" data-toggle="tab">General</a></li>
@@ -85,9 +85,7 @@
                                         <td id="warning">
                                             <i class="fa fa-cog fa-spin"></i>
                                         </td>
-                                        <td>
-
-                                        </td>
+                                        <td></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -188,9 +186,7 @@
                                         <td id="all">
                                             <i class="fa fa-cog fa-spin"></i>
                                         </td>
-                                        <td>
-
-                                        </td>
+                                        <td></td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -218,7 +214,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
+                                <tr class="success">
                                     <td align="left">
                                         <i class="fa fa-check"></i>@Html.ActionLink("Planned", "ViewOrders", "Order", new { desc = "planned", filter = true }, null)
                                     </td>
@@ -337,6 +333,20 @@
                             <tbody>
                                 <tr>
                                     <td align="left">
+                                        <i class="fa fa-archive"></i>@Html.ActionLink("Pending", "ViewOrders", "Order", new { desc = "pending", filter = true }, null)
+                                    </td>
+                                    <td id="pending">
+                                        <i class="fa fa-cog fa-spin"></i>
+                                    </td>
+                                    <td id="pendingSU">
+                                        <i class="fa fa-cog fa-spin"></i>
+                                    </td>
+                                    <td>
+                                        <a class="download" href="@Url.Action("DownloadOrders", "Order", new { desc = "pending" })"><span class="fa fa-download"></span></a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td align="left">
                                         <i class="fa fa-sort-amount-desc"></i>@Html.ActionLink("Min CS Makro", "ViewOrders", "Order", new { desc = "minimunMakro", filter = true }, null)
                                     </td>
                                     <td id="minimunMakro">
@@ -442,47 +452,46 @@
 
 <!-- Modal -->
 <div class="modal fade" id="ReportHelp" tabindex="-1" role="dialog" aria-labelledby="ReportHelpLabel" aria-hidden="true">
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-        <h4 class="modal-title" id="ReportHelpLabel">Need up to date information?</h4>
-      </div>
-      <div class="modal-body">
-        <p>You can update order's information manually by loading a ZSKU report following the next steps</p>
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="ReportHelpLabel">Need up to date information?</h4>
+            </div>
+            <div class="modal-body">
+                <p>You can update order's information manually by loading a ZSKU report following the next steps</p>
 
-          <ol>
-              <li>Open SAP LogOn</li>
-              <li>Choose ZSKU Transaction</li>
-              <li>Select variant created by CN2819</li>
-              <li>Use Layout /VEBAUHAUS</li>
-              <li>Download Report to your computer as "ZSKU.xls"</li>
-              <li>Open Report and save it with ".xlsx" extension</li>
-              <li>Open bauhaus.pg.com and LogIn</li>
-              <li>Select Reports View (<i class="fa fa-archive"></i>)</li>
-              <li>Choose file ZSKU.xlsx and click upload button (<i class="fa fa-cloud-upload"></i>)</li>
-          </ol>
-        
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-        <button type="button" class="btn btn-primary" onclick="location.href='@Url.Action("Index", "Report")';return false;">Upload Report</button>
-      </div>
-    </div><!-- /.modal-content -->
-  </div><!-- /.modal-dialog -->
+                <ol>
+                    <li>Open SAP LogOn</li>
+                    <li>Choose ZSKU Transaction</li>
+                    <li>Select variant created by CN2819</li>
+                    <li>Use Layout /VEBAUHAUS</li>
+                    <li>Download Report to your computer as "ZSKU.xls"</li>
+                    <li>Open Report and save it with ".xlsx" extension</li>
+                    <li>Open bauhaus.pg.com and LogIn</li>
+                    <li>Select Reports View (<i class="fa fa-archive"></i>)</li>
+                    <li>Choose file ZSKU.xlsx and click upload button (<i class="fa fa-cloud-upload"></i>)</li>
+                </ol>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="location.href='@Url.Action("Index", "Report")';return false;">Upload Report</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
 </div><!-- /.modal -->
-
 @{
-        
-        string message = "";
-        string type = "";
-        
-        if (TempData["Message"] != null)
-        {
-            message = TempData["Message"].ToString();
-            type = TempData["Type"].ToString();
-        }
-    } 
+
+    string message = "";
+    string type = "";
+
+    if (TempData["Message"] != null)
+    {
+        message = TempData["Message"].ToString();
+        type = TempData["Type"].ToString();
+    }
+}
 
 
 
@@ -494,7 +503,7 @@
     });
 
     function updateGeneral() {
-    $.post("@Url.Action("UpdateSummaryC","Order")", {filter: true}, function (data) {
+    $.post("@Url.Action("UpdateSummaryCount","Order")", {filter: true}, function (data) {
             $("#openItems").html("").animate({ opacity: 0 });
             $("#openItems").text(data.openItems).animate({ opacity: 1 });
             $("#15D").html("").animate({ opacity: 0 });
@@ -527,9 +536,13 @@
 
     // Distribution Status Update
     function updateDistribution() {
-        $.post("@Url.Action("UpdateSummaryDistC","Order")", { filter: true }, function (data) {
+        $.post("@Url.Action("UpdateSummaryDistCount","Order")", { filter: true }, function (data) {
             $("#plannedDSU").html("").animate({ opacity: 0 });
             $("#plannedDSU").text(data.PlannedDSU).animate({ opacity: 1 });
+            $("#pending").html("").animate({ opacity: 0 });
+            $("#pending").text(data.Pending).animate({ opacity: 1 });
+            $("#pendingSU").html("").animate({ opacity: 0 });
+            $("#pendingSU").text(data.PendingSU).animate({ opacity: 1 });
             $("#appointmentConfirmation").html("").animate({ opacity: 0 });
             $("#appointmentConfirmation").text(data.AppointmentConfirmation).animate({ opacity: 1 });
             $("#appointmentConfirmationSU").html("").animate({ opacity: 0 });

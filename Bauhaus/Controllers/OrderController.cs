@@ -32,6 +32,14 @@ namespace Bauhaus.Controllers
 
         //
         // GET: /Order/
+        [Authorize]
+        public ActionResult Index2(Boolean filter = false)
+        {
+            return View(SelectOrders("all", filter));
+        }
+
+        //
+        // GET: /Order/
 
         [Authorize]
         [HttpPost]
@@ -61,7 +69,7 @@ namespace Bauhaus.Controllers
 
         }
         
-        [Authorize(Roles="CSR,Admin")]
+        [Authorize]
         public ActionResult GeneralSearch(String id)
         {
             long idn;
@@ -82,18 +90,26 @@ namespace Bauhaus.Controllers
                         return View("Index", orders);
                     }
                 }
+                    // Its a Unit
+                else if(id.Length == 2)
+                {
+                    var orders = db.Orders.Where(order => order.Customer.Unit == idn)
+                        .OrderBy(order => order.Customer.Name)
+                        .ToList()
+                        .AsQueryable();
+                }
                 else
                 {
                     //Check Orders
                     Order ord = db.Orders.Find(idn);
                     if (ord != null)
-                        return View("Details", ord);
+                        return RedirectToAction("Details", new { id = idn });
                     else
                     {
                         //Check Customers
                         Customer cust = db.Customers.Find(idn);
                         if (cust != null)
-                            return View("~/Views/Customer/Details.cshtml", cust);
+                            return RedirectToAction("Details","Customer",new { id = idn});
                         else
                         {
                             //Check Shipments
@@ -111,7 +127,7 @@ namespace Bauhaus.Controllers
                                        select x).FirstOrDefault();
                                 if (ord != null)
                                 {
-                                    return View("Details", ord);
+                                    return RedirectToAction("Details", new { id = idn });
                                 }
                                 else
                                 {
@@ -122,7 +138,7 @@ namespace Bauhaus.Controllers
                                                    select x).FirstOrDefault();
                                     if (linqOrd != null)
                                     {
-                                        return View("Details", linqOrd);
+                                        return RedirectToAction("Details", linqOrd);
                                     }
                                 }
                             }
@@ -150,7 +166,7 @@ namespace Bauhaus.Controllers
             return Redirect(returnUrl);
         }
             
-
+        [Authorize]
         public ActionResult VisibilitySearch(long id = 0)
         {
             if (id == 0)
@@ -377,7 +393,7 @@ namespace Bauhaus.Controllers
                               where x.Status.Stage == 0 &&
                               x.Status.State == 1
                               select x);
-                    ViewBag.Title = "Bloqued Orders";
+                    ViewBag.Title = "Blocked Orders";
                     break;
 
                 case "open":
@@ -403,6 +419,13 @@ namespace Bauhaus.Controllers
                              x.Status.Stage == 2
                               select x);
                     ViewBag.Title = "Planned Orders";
+                    break;
+                case "invoiced":
+                    orders = (from x in db.Orders
+                              where x.Status.Code == 50 &&
+                              x.POD == null
+                              select x);
+                    ViewBag.Title = "Invoiced Orders";
                     break;
 
                 case "onTransit":
@@ -591,7 +614,25 @@ namespace Bauhaus.Controllers
                 if(User.IsInRole("CBD"))
                 {
                     System.Diagnostics.Debug.WriteLine("User is CBD");
-                    orders = orders.Where(x => x.Customer.CBDRep.Name == user.FullName);
+                    if(Session["FilterData"]!=null)
+                    {
+                        Models.Filter filterData = Session["FilterData"] as Models.Filter;
+                        if(filterData.Settings.ContainsKey("Team"))
+                        {
+                            String teamFilter = filterData.Settings["Team"];
+                            orders = orders.Where(x => x.Customer.Team == teamFilter);
+                        }
+                        if (filterData.Settings.ContainsKey("Area"))
+                        {
+                            int areaFilter = Int32.Parse(filterData.Settings["Area"]);
+                            orders = orders.Where(x => x.Customer.SaleZone == areaFilter);
+                        }
+                        if (filterData.Settings.ContainsKey("Unit"))
+                        {
+                            int unitFilter = Int32.Parse(filterData.Settings["Unit"]);
+                            orders = orders.Where(x => x.Customer.Unit == unitFilter);
+                        }
+                    }
                 }
             }
             return orders.ToList().AsQueryable();
@@ -614,10 +655,14 @@ namespace Bauhaus.Controllers
         /// </summary>
         /// <param name="desc">Order Description</param>
         /// <param name="filter">TRUE if orders should be filtered by username ( False by default) </param>
+        [Authorize]
         public void DownloadOrders(String desc, Boolean filter = false)
         {
             IQueryable<Order> final = SelectOrders(desc,filter);
+            Boolean isCBD = User.IsInRole("CBD");
+
             var ordersF = from x in final
+                          from y in x.Products
                           select new
                           {
                               x.SapID,
@@ -625,15 +670,17 @@ namespace Bauhaus.Controllers
                               ShipTo = x.Customer.ID,
                               x.Customer.Name,
                               x.CustomerPO,
-                              OrderCS = x.Products.Sum(prod=>prod.Qty.CS),
-                              OrderSU = x.Products.Sum(prod => prod.Qty.SU),
+                              SKU = y.SKU,
+                              Description = y.Description,
+                              CS = y.Qty.CS,
+                              SU = y.Qty.SU,
                               Delivery = (x.Delivery == null) ? "N/A" : x.Delivery.ID.ToString(),
                               DeliveryDate = (x.Delivery == null) ? "N/A" : x.Delivery.Date.ToShortDateString(),
-                              DeliveryCS = (x.Delivery == null) ? "N/A" : x.Products.Sum(prod => prod.DSSQty.CS).ToString(),
-                              DeliverySU = (x.Delivery == null) ? "N/A" : x.Products.Sum(prod => prod.DSSQty.SU).ToString(),
+                              DeliveryCS = (x.Delivery == null) ? "N/A" : y.DSSQty.CS.ToString(),
+                              DeliverySU = (x.Delivery == null) ? "N/A" : y.DSSQty.SU.ToString(),
                               Shipment = (x.Shipment == null) ? "N/A" : x.Shipment.ID.ToString(),
                               Invoices = (x.Invoices == null || !x.Invoices.Any()) ? "N/A" : x.Invoices.First().ID.ToString(),
-                              Status = x.Status.StageDescription() + " " + x.Status.ReasonDescription(),
+                              Status = (isCBD)? x.Status.StageDescription():x.Status.StageDescription() + " " + x.Status.ReasonDescription(),
                           };
             using (ExcelPackage pck = new ExcelPackage())
             {
@@ -644,7 +691,7 @@ namespace Bauhaus.Controllers
                 ws.Cells["A1"].LoadFromCollection(ordersF.ToList(), true);
 
                 // Format Headers
-                using (ExcelRange rng = ws.Cells["A1:N1"])
+                using (ExcelRange rng = ws.Cells["A1:Q1"])
                 {
                     rng.Style.Font.Bold = true;
                     rng.Style.Font.Color.SetColor(Color.White);
@@ -667,23 +714,28 @@ namespace Bauhaus.Controllers
         /// <param name="desc">description orders must match</param>
         /// <param name="filter">TRUE if orders should be filtered by username</param>
         /// <returns>Json Object containing int</returns>
-        public JsonResult UpdateSummary(String desc, Boolean filter = false)
+        [Authorize]
+        public JsonResult GetOrders(String desc, Boolean filter = false)
         {
             IQueryable<Order> orders = SelectOrders(desc,filter);
             int count = orders.Count();
-            double sus = Math.Round((from order in orders
+            int cs = (from order in orders
+                      from product in order.Products
+                      select product.Qty.CS).Sum(); 
+            double su = Math.Round((from order in orders
                               from product in order.Products
                               select (double?)product.Qty.SU).Sum() ?? 0,2);
                 
-            return Json(new { Count = count, SU = sus });
+            return Json(new { Count = count,CS = cs, SU = su });
         }
-
+        
         /// <summary>
-        /// 
+        /// Updates Order Count of Dashboard Summary
         /// </summary>
-        /// <param name="filter"></param>
+        /// <param name="filter">True if orders should by filtered according roles</param>
         /// <returns></returns>
-        public JsonResult UpdateSummaryC(Boolean filter = false)
+        [Authorize]
+        public JsonResult UpdateSummaryCount(Boolean filter = false)
         {
             int openItems = SelectOrders("openItems", filter).Count();
             int D15 = SelectOrders("15D", filter).Count();
@@ -699,7 +751,8 @@ namespace Bauhaus.Controllers
             int warning = openItems + D15 + D3 + D5;
             int total = blocked + open + assigned + planned + transit + customer + delivered;
 
-            return Json(new { 
+            return Json(new
+            {
                 openItems = openItems,
                 D15 = D15,
                 D3 = D3,
@@ -713,28 +766,200 @@ namespace Bauhaus.Controllers
                 Customer = customer,
                 Delivered = delivered,
                 Total = total
-
             });
         }
 
         /// <summary>
-        /// 
+        /// Updates Complete Dashboard Summary
         /// </summary>
-        /// <param name="filter"></param>
+        /// <param name="filter">True if orders should by filtered according roles</param>
         /// <returns></returns>
         [Authorize]
-        public JsonResult UpdateSummaryDistC(Boolean filter = false)
+        public JsonResult UpdateSummaryComplete(Boolean filter = false)
         {
-            IQueryable<Order> orders = SelectOrders("appointmentConfirmation", filter);
+            IQueryable<Order> orders = SelectOrders("openItems", filter);
+            //int openItems = orders.Count();
+            //int openItemsCS = (from order in orders
+            //                   from product in order.Products
+            //                   select product.Qty.CS).Sum(); 
+            //double openItemsSU = Math.Round((from order in orders
+            //                                   from product in order.Products
+            //                                   select (double?)product.Qty.SU).Sum() ?? 0, 2);
+
+            //orders = SelectOrders("15D", filter);
+            //int D15 = orders.Count();
+            //int D15CS = (from order in orders
+            //                   from product in order.Products
+            //                   select product.Qty.CS).Sum(); 
+            //double D15SU = Math.Round((from order in orders
+            //                               from product in order.Products
+            //                               select (double?)product.Qty.SU).Sum() ?? 0, 2);
+
+            //orders = SelectOrders("3D", filter);
+            //int D3 = orders.Count();
+            //int D3CS = (from order in orders
+            //             from product in order.Products
+            //             select product.Qty.CS).Sum();
+            //double D3SU = Math.Round((from order in orders
+            //                           from product in order.Products
+            //                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
+
+            //orders = SelectOrders("5D", filter);
+            //int D5 = orders.Count();
+            //int D5CS = (from order in orders
+            //             from product in order.Products
+            //             select product.Qty.CS).Sum();
+            //double D5SU = Math.Round((from order in orders
+            //                           from product in order.Products
+            //                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
+
+            orders = SelectOrders("blocked", filter);
+            int blocked = orders.Count();
+            int blockedCS = (from order in orders
+                         from product in order.Products
+                         select product.Qty.CS).Sum();
+            double blockedSU = Math.Round((from order in orders
+                                       from product in order.Products
+                                       select (double?)product.Qty.SU).Sum() ?? 0, 2);
+
+            orders = SelectOrders("open", filter);
+            int open = orders.Count();
+            int openCS = (from order in orders
+                             from product in order.Products
+                             select product.Qty.CS).Sum();
+            double openSU = Math.Round((from order in orders
+                                           from product in order.Products
+                                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
+
+            orders = SelectOrders("assigned", filter);
+            int assigned = orders.Count();
+            int assignedCS = (from order in orders
+                             from product in order.Products
+                             select product.Qty.CS).Sum();
+            double assignedSU = Math.Round((from order in orders
+                                           from product in order.Products
+                                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
+
+            orders = SelectOrders("planned", filter);
+            int planned = orders.Count();
+            int plannedCS = (from order in orders
+                             from product in order.Products
+                             select product.Qty.CS).Sum();
+            double plannedSU = Math.Round((from order in orders
+                                           from product in order.Products
+                                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
+
+            orders = SelectOrders("invoiced", filter);
+            int invoiced = orders.Count();
+            int invoicedCS = (from order in orders
+                             from product in order.Products
+                             select product.Qty.CS).Sum();
+            double invoicedSU = Math.Round((from order in orders
+                                           from product in order.Products
+                                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
+
+            //orders = SelectOrders("onTransit", filter);
+            //int transit = orders.Count();
+            //int transitCS = (from order in orders
+            //                 from product in order.Products
+            //                 select product.Qty.CS).Sum();
+            //double transitSU = Math.Round((from order in orders
+            //                               from product in order.Products
+            //                               select (double?)product.Qty.SU).Sum() ?? 0, 2);
+
+            //orders = SelectOrders("onCustomer", filter);
+            //int customer = orders.Count();
+            //int customerCS = (from order in orders
+            //                 from product in order.Products
+            //                 select product.Qty.CS).Sum();
+            //double customerSU = Math.Round((from order in orders
+            //                               from product in order.Products
+            //                               select (double?)product.Qty.SU).Sum() ?? 0, 2);
+
+            //orders = SelectOrders("delivered", filter);
+            //int delivered = orders.Count();
+            //int deliveredCS = (from order in orders
+            //                 from product in order.Products
+            //                 select product.Qty.CS).Sum();
+            //double deliveredSU = Math.Round((from order in orders
+            //                               from product in order.Products
+            //                               select (double?)product.Qty.SU).Sum() ?? 0, 2);
+
+            //int warning = openItems + D15 + D3 + D5;
+            //int warningCS = openItemsCS + D15CS + D3CS + D5CS;
+            //double warningSU = openItemsSU + D15SU + D3SU + D5SU;
+
+            int total = blocked + open + assigned + planned + invoiced;
+            //transit + customer + delivered;
+            int totalCS = blockedCS + openCS + assignedCS + plannedCS + invoicedCS;
+            //transitCS + customerCS + deliveredCS;
+            double totalSU = blockedSU + openSU + assignedSU + plannedSU + invoicedSU;
+            //transitSU + customerSU + deliveredSU;
+
+            return Json(new { 
+                //openItems = openItems,
+                //openItemsCS = openItemsCS,
+                //openItemsSU = openItemsSU,
+                //D15 = D15,
+                //D15CS = D15CS,
+                //D15SU = D15SU,
+                //D3 = D3,
+                //D3CS = D3CS,
+                //D3SU = D3SU,
+                //D5 = D5,
+                //D5CS = D5CS,
+                //D5SU = D5SU,
+                //Warning = warning,
+                //WarningCS = warningCS,
+                //WarningSU = warningSU,
+                Blocked = blocked,
+                BlockedCS = blockedCS,
+                BlockedSU = blockedSU,
+                Open = open,
+                OpenCS = openCS,
+                OpenSU = openSU,
+                Assigned = assigned,
+                AssignedCS = assignedCS,
+                AssignedSU = assignedSU,
+                Planned = planned,
+                PlannedCS = plannedCS,
+                PlannedSU = plannedSU,
+                Invoiced = invoiced,
+                InvoicedCS = invoicedCS,
+                InvoicedSU = invoicedSU,
+                //Transit = transit,
+                //TransitCS = transitCS,
+                //TransitSU = transitSU,
+                //Customer = customer,
+                //CustomerCS = customerCS,
+                //CustomerSU = customerSU,
+                //Delivered = delivered,
+                //DeliveredCS = deliveredCS,
+                //DeliveredSU = deliveredSU,
+                Total = total,
+                TotalCS = totalCS,
+                TotalSU = totalSU
+            });
+        }
+
+        /// <summary>
+        /// Updates Distribution Summary with order Count only.
+        /// </summary>
+        /// <param name="filter">True if orders should be filtered.</param>
+        /// <returns></returns>
+        [Authorize]
+        public JsonResult UpdateSummaryDistCount(Boolean filter = false)
+        {
+            IQueryable<Order> orders = SelectOrders("planned", filter);
+            double plannedSU = Math.Round((from order in orders
+                                               from product in order.Products
+                                               select (double?)product.Qty.SU).Sum() ?? 0, 2);
+
+            orders = SelectOrders("appointmentConfirmation", filter);
             int appointment = orders.Count();
             double appointmentSU = Math.Round((from order in orders
                                                from product in order.Products
                                                select (double?)product.Qty.SU).Sum() ?? 0, 2);
-
-            orders = SelectOrders("planned", filter);
-            double plannedSU = Math.Round((from order in orders
-                                           from product in order.Products
-                                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("pending", filter);
             int pending = orders.Count();
@@ -819,6 +1044,8 @@ namespace Bauhaus.Controllers
                 PlannedDSU = plannedSU,
                 AppointmentConfirmation = appointment,
                 AppointmentConfirmationSU = appointmentSU,
+                Pending = pending,
+                PendingSU = pendingSU,
                 CustomerCapacity = customerCapacity,
                 CustomerCapacitySU = customerCapacitySU,
                 Postponed = postponed,
@@ -851,6 +1078,7 @@ namespace Bauhaus.Controllers
         /// individual last value for quick visualization
         /// </summary>
         /// <returns>Json Object Containing: Status, Message,CSOT,CSOTGraph,OT,OTGraph</returns>
+        [Authorize]
         public JsonResult UpdateKPIS()
         {
             DateTime helper = DateTime.Today.AddDays(-45);
@@ -877,8 +1105,91 @@ namespace Bauhaus.Controllers
                 Double OTvalue = (ot.LastOrDefault() != null)? ot.LastOrDefault().value:0;
 
                 return Json(new { Status = 1, Message = "KPIs Updated", CSOT = CSOTvalue, CSOTGraph = csot, OT = OTvalue, OTGraph = ot });
+        }
+        [Authorize]
+        public void DownloadOrderInformation(long id)
+        {
+            Order order = db.Orders.Find(id);
+            var products = from x in order.Products
+                           select new
+                           {
+                               SKU = x.SKU,
+                               Description = x.Description,
+                               CS = x.Qty.CS,
+                               SU = x.Qty.SU,
+                               DssCS = x.DSSQty.CS,
+                               DssSU = x.DSSQty.SU
+                           };
 
-            
+
+            using (ExcelPackage pck = new ExcelPackage())
+            {
+                // Create WorkSheet
+                ExcelWorksheet ws = pck.Workbook.Worksheets.Add("Order Details");
+
+                // Load Info
+                ws.Cells["A1"].Value = "Order #";
+                ws.Cells["B1"].Value = order.SapID;
+                ws.Cells["A2"].Value = "Status";
+                ws.Cells["B2"].Value = order.Status.StageDescription()+" "+order.Status.ReasonDescription();
+                ws.Cells["A3"].Value = "PO";
+                ws.Cells["B3"].Value = order.CustomerPO;
+                ws.Cells["A4"].Value = "Doc. Date";
+                ws.Cells["B4"].Value = order.DocDate;
+                ws.Cells["A5"].Value = "DSS Date";
+                ws.Cells["B5"].Value = order.RDDF.DSSDate;
+                ws.Cells["C1"].Value = "Delivery #";
+                ws.Cells["D1"].Value = (order.Delivery != null)? order.Delivery.ID.ToString():"N/A";
+                ws.Cells["C2"].Value = "Delivery Date";
+                ws.Cells["D2"].Value = (order.Delivery != null) ? order.Delivery.Date.ToString() : "N/A";
+                ws.Cells["C3"].Value = "Shipment #";
+                ws.Cells["D3"].Value = (order.Shipment != null) ? order.Shipment.ID.ToString() : "N/A";
+                ws.Cells["C4"].Value = "Shipment Date";
+                ws.Cells["D4"].Value = (order.Shipment != null) ? order.Shipment.Date.ToString() : "N/A";
+                ws.Cells["C5"].Value = "Carrier";
+                ws.Cells["D5"].Value = (order.Shipment.Carrier != null) ? order.Shipment.Carrier.Name.ToString() : "N/A";
+                ws.Cells["E1"].Value = "Invoices";
+                ws.Cells["F1"].Value = (order.Invoices.Any()) ? JsonConvert.SerializeObject(order.Invoices.ToList()) : "N/A";
+                ws.Cells["E2"].Value = "POD Date";
+                ws.Cells["F2"].Value = (order.POD != null) ? order.POD.Date.ToString() : "N/A";
+                ws.Cells["A6"].LoadFromCollection(products.ToList(), true);
+
+                // Format Headers
+                using (ExcelRange rng = ws.Cells["A6:F6"])
+                {
+                    rng.Style.Font.Bold = true;
+                    rng.Style.Font.Color.SetColor(Color.White);
+                    rng.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                    rng.Style.Fill.BackgroundColor.SetColor(Color.DarkBlue);
+                }
+                using (ExcelRange rng = ws.Cells["A1:A5"])
+                {
+                    rng.Style.Font.Bold = true;
+                    rng.Style.Font.Color.SetColor(Color.White);
+                    rng.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                    rng.Style.Fill.BackgroundColor.SetColor(Color.DarkBlue);
+                }
+                using (ExcelRange rng = ws.Cells["E1:E2"])
+                {
+                    rng.Style.Font.Bold = true;
+                    rng.Style.Font.Color.SetColor(Color.White);
+                    rng.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                    rng.Style.Fill.BackgroundColor.SetColor(Color.DarkBlue);
+                }
+                using (ExcelRange rng = ws.Cells["C1:C5"])
+                {
+                    rng.Style.Font.Bold = true;
+                    rng.Style.Font.Color.SetColor(Color.White);
+                    rng.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                    rng.Style.Fill.BackgroundColor.SetColor(Color.DarkBlue);
+                }
+                // Write Back Response to Client
+                Response.Clear();
+                Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                Response.AddHeader("content-disposition", "attachment; filename= Order_" + order.SapID + ".xlsx");
+                Response.BinaryWrite(pck.GetAsByteArray());
+                Response.End();
+            }
         }
     }
 }

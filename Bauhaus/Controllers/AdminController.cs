@@ -29,8 +29,7 @@ namespace Bauhaus.Controllers
         public ActionResult Index()
         {
             DateTime updated = (from x in db.Reports
-                                where x.Name == "ZVORF.xlsx"
-                                || x.Name == "ZSKU.xlsx"
+                                where x.Name == "ZSKU.txt" || x.Name == "ZSKU.xlsx"
                                 select x.CreationDate).ToList().LastOrDefault();
             if (updated == null)
             {

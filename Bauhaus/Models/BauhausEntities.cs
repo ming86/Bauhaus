@@ -29,6 +29,7 @@ namespace Bauhaus.Models
         public DbSet<RDDF> RDDFs { get; set; }
         public DbSet<Input> Inputs { get; set; }
         public DbSet<Product> Products { get; set; }
+        public DbSet<Filter> Filters { get; set; }
 
         protected override void OnModelCreating(DbModelBuilder modelBuilder)
         {

@@ -15,7 +15,8 @@ namespace Bauhaus.Models
         [Display(Name="Cust. Name")]
         public String Name { get; set; }
         [Display(Name="Sale Zone")]
-        public int? SaleZone { get; set; }
+        public int SaleZone { get; set; }
+        public int Unit { get; set; }
         public virtual Route Route { get; set; }
         [Display(Name="Max. Vehycle")]
         public String MaxVEH { get; set; }

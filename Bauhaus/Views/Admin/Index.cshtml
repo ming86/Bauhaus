@@ -6,49 +6,6 @@
 
 <div class="container">
     <div class="row">
-        @*<div class="col-md-2" style="border-right: solid 2px #c8c8c8">
-
-            <button title="Report Uploading and Processing." class="btn btn-default btn-lg" style="margin-top:15px" onclick="location.href='@Url.Action("Index", "Report")';return false;">
-                Reports
-                <i class="fa fa-archive fa-x2"></i>
-            </button>
-
-            <button type="button" class="btn btn-default btn-lg" style="margin-top:15px" onclick="location.href='@Url.Action("ViewOrders", "Order", new { desc = "all" })';return false;">
-                Orders
-                <i class="fa fa-shopping-cart fa-x2"></i>
-            </button>
-
-            <button title="Truck Monitoring" type="button" class="btn btn-default btn-lg" style="margin-top:15px" onclick="location.href='@Url.Action("Index", "Carrier")';return false;">
-                Shipments
-                <i class="fa fa-truck fa-x2"></i>
-            </button>
-
-            <button title="All information regarding Customers." class="btn btn-default btn-lg" style="margin-top:15px" onclick="location.href='@Url.Action("Index", "Customer")';return false;">
-                Customers
-                <i class="fa fa-suitcase fa-x2"></i>
-            </button>
-
-            <button title="Order's Completeness." class="btn btn-default btn-lg" style="margin-top:15px" onclick="location.href='@Url.Action("VisibilityIndex", "Order")';return false;">
-                Order Tracking
-                <i class="fa fa-map-marker fa-x2"></i>
-            </button>
-
-            <button title="Order's Completeness." class="btn btn-default btn-lg" style="margin-top:15px" onclick="location.href='@Url.Action("RDDFConfirmation", "Order")';return false;">
-                RDDF Check
-                <i class="fa fa-calendar fa-x2"></i>
-            </button>
-
-            <button title="System Users and Role Assignation." class="btn btn-default btn-lg" style="margin-top:15px" onclick="location.href='@Url.Action("ManageUsers", "Admin")';return false;">
-                Manage Users
-                <i class="fa fa-users fa-x2"></i>
-            </button>
-
-            <button title="System Log." class="btn btn-default btn-lg" style="margin-top:15px" onclick="location.href='@Url.Action("LogIndex", "Admin")';return false;">
-                Security Log
-                <i class="fa fa-video-camera fa-x2"></i>
-            </button>
-        </div>*@
-
         <div class="col-md-13">
 
             <ul class="nav nav-tabs">
@@ -260,7 +217,7 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr>
+                                <tr class="success">
                                     <td align="left">
                                         <i class="fa fa-check"></i>@Html.ActionLink("Planned", "ViewOrders", "Order", new { desc = "planned" }, null)
                                     </td>
@@ -379,6 +336,20 @@
                             <tbody>
                                 <tr>
                                     <td align="left">
+                                        <i class="fa fa-archive"></i>@Html.ActionLink("Pending", "ViewOrders", "Order", new { desc = "pending" }, null)
+                                    </td>
+                                    <td id="pending">
+                                        <i class="fa fa-cog fa-spin"></i>
+                                    </td>
+                                    <td id="pendingSU">
+                                        <i class="fa fa-cog fa-spin"></i>
+                                    </td>
+                                    <td>
+                                        <a class="download" href="@Url.Action("DownloadOrders", "Order", new { desc = "pending" })"><span class="fa fa-download"></span></a>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td align="left">
                                         <i class="fa fa-sort-amount-desc"></i>@Html.ActionLink("Min CS Makro", "ViewOrders", "Order", new { desc = "minimunMakro" }, null)
                                     </td>
                                     <td id="minimunMakro">
@@ -485,7 +456,7 @@
                                 <div class="panel-body" id="CSOT" style="height:180px">
                                 </div>
                             </div>
-                            </div>
+                        </div>
                         <div class="col-md-5">
                             <div class="panel panel-primary">
                                 <div class="panel-heading">OT <strong id="OTVal"></strong>%<button class="btn btn-link" id="toggleOT" style="color:white"><i class="fa fa-chevron-down"></i></button></div>
@@ -560,7 +531,7 @@
     });
 
     function updateGeneral() {
-        $.post("@Url.Action("UpdateSummaryC","Order")", function (data) {
+        $.post("@Url.Action("UpdateSummaryCount","Order")", function (data) {
             $("#openItems").html("").animate({ opacity: 0 });
             $("#openItems").text(data.openItems).animate({ opacity: 1 });
             $("#15D").html("").animate({ opacity: 0 });
@@ -593,9 +564,13 @@
 
     // Distribution Status Update
     function updateDistribution() {
-        $.post("@Url.Action("UpdateSummaryDistC","Order")", function (data) {
+        $.post("@Url.Action("UpdateSummaryDistCount","Order")", function (data) {
             $("#plannedDSU").html("").animate({ opacity: 0 });
             $("#plannedDSU").text(data.PlannedDSU).animate({ opacity: 1 });
+            $("#pending").html("").animate({ opacity: 0 });
+            $("#pending").text(data.Pending).animate({ opacity: 1 });
+            $("#pendingSU").html("").animate({ opacity: 0 });
+            $("#pendingSU").text(data.PendingSU).animate({ opacity: 1 });
             $("#appointmentConfirmation").html("").animate({ opacity: 0 });
             $("#appointmentConfirmation").text(data.AppointmentConfirmation).animate({ opacity: 1 });
             $("#appointmentConfirmationSU").html("").animate({ opacity: 0 });

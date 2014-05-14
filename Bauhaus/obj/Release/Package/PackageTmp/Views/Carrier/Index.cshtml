@@ -64,6 +64,7 @@
     // Load Vehicle selection MoDAL
     $(".selectVehicle").click(function () {
         $("#shipN").text($(this).val());
+        $("#vehId").val($(this).val())
         var current = $(this);
         $.post("@Url.Action("GetVehEditModal")",
             { id: $(this).val() },

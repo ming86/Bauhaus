@@ -8,8 +8,7 @@ namespace Bauhaus.Models
     public class CustomerStatus
     {
         public String CustomerName { get; set; }
-        public int Stage { get; set; }
-        public int Status { get; set; }
-        public int Reason { get; set; }
+        public String Stage { get; set; }
+        public String Reason { get; set; }
     }
 }

@@ -2,94 +2,101 @@
 @using GridMvc.Filtering
 @using GridMvc.Html
 @using GridMvc.Sorting
+@using Bauhaus.Models
 @model Bauhaus.Models.Customer
-
+<style>
+    .popover {
+        max-width: 400px;
+        width: auto;
+    }
+</style>
 <div class="row">
     <div class="col col-justified">
         <div class="panel panel-primary">
             <div class="panel-body">
-                <div class="col-md-4">
-                    <h3 class="text-center">@Html.DisplayFor(model => model.Name)</h3>
-                    <table class="table">
-                        <tr>
-                            <td>
-                                <strong class="text-info">@Html.DisplayNameFor(model => model.ID)</strong>
-                                @Html.DisplayFor(model => model.ID)
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <strong>@Html.DisplayNameFor(model => model.Route.Name)</strong>
-                                @if (Model.Route != null)
-                                {
+                <div class="row">
+                    <div class="col-md-4">
+                        <h3 class="text-center">@Html.DisplayFor(model => model.Name)</h3>
+                        <table class="table">
+                            <tr>
+                                <td>
+                                    <strong class="text-info">@Html.DisplayNameFor(model => model.ID)</strong>
+                                    @Html.DisplayFor(model => model.ID)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.Route.Name)</strong>
+                                    @if (Model.Route != null)
+                                    {
                                     @Html.DisplayFor(model => model.Route.Name)
-                                }
-                                else
-                                {
+                                    }
+                                    else
+                                    {
                                     <p class="text-danger">Not Available.</p>
-                                }
+                                    }
 
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <strong>@Html.DisplayNameFor(model => model.SaleZone)</strong>
-                                @if(Model.SaleZone != null)
-                                {
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.SaleZone)</strong>
+                                    @if (Model.SaleZone != null)
+                                    {
                                     @Html.DisplayFor(model => model.SaleZone)
-                                }
-                                else
-                                {
+                                    }
+                                    else
+                                    {
                                     <p class="text-danger">Not Available</p>
-                                }
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <strong>@Html.DisplayNameFor(model => model.Address)</strong>
-                                @Html.DisplayFor(model=>model.Region),
-                                @Html.DisplayFor(model=>model.City),
-                                @Html.DisplayFor(model => model.Address)
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <strong>@Html.DisplayNameFor(model => model.Team)</strong>
-                                @Html.DisplayFor(model => model.Team)
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <strong>@Html.DisplayNameFor(model => model.Route.LeadTime)</strong>
-                                @if (Model.Route != null)
-                                {
+                                    }
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.Address)</strong>
+                                    @Html.DisplayFor(model => model.Region),
+                                    @Html.DisplayFor(model => model.City),
+                                    @Html.DisplayFor(model => model.Address)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.Team)</strong>
+                                    @Html.DisplayFor(model => model.Team)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.Route.LeadTime)</strong>
+                                    @if (Model.Route != null)
+                                    {
                                     @Html.DisplayFor(model => model.Route.LeadTime)
-                                }
-                                else
-                                {
+                                    }
+                                    else
+                                    {
                                     <p class="text-danger">Not Available.</p>
-                                }
+                                    }
 
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <strong>@Html.DisplayNameFor(model => model.MaxVEH)</strong>
-                                @Html.DisplayFor(model => model.MaxVEH)
-                            </td>
-                        </tr>
-                    </table>
-                </div>
-                <div class="col-md-4">
-                    <table class="table" style="table-layout:fixed">
-                        <tr>
-                            <td class="active">
-                                <strong>@Html.DisplayNameFor(model => model.Contacts)</strong>
-                                <button class="btn btn-link btn-xs" data-toggle="modal" data-target="#NewContactModal">Add</button>
-                            </td>
-                        </tr>
-                        @foreach (Bauhaus.Models.Contact cont in Model.Contacts)
-                        {
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.MaxVEH)</strong>
+                                    @Html.DisplayFor(model => model.MaxVEH)
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                    <div class="col-md-4">
+                        <table class="table" style="table-layout:fixed">
+                            <tr>
+                                <td class="active">
+                                    <strong>@Html.DisplayNameFor(model => model.Contacts)</strong>
+                                    <button class="btn btn-link btn-xs" data-toggle="modal" data-target="#NewContactModal">Add</button>
+                                </td>
+                            </tr>
+                            @foreach (Bauhaus.Models.Contact cont in Model.Contacts)
+                            {
                             <tr id="@cont.ID" class="contact">
                                 <td style="word-wrap:break-word">
                                     <strong id="area">@cont.Area</strong>
@@ -101,36 +108,36 @@
                                     <p style="margin:0 0 0px" id="email">@cont.Email</p>
                                 </td>
                             </tr>
-                        }
-                        <tr>
-                            <td>
-                                <strong>@Html.DisplayNameFor(model => model.Observation)</strong>
-                                <button class="btn btn-link btn-xs" data-toggle="modal" data-target="#ObservationModal">Edit</button>
-                                <p id="observation">@Html.DisplayFor(model => model.Observation)</p>
+                            }
+                            <tr>
+                                <td>
+                                    <strong>@Html.DisplayNameFor(model => model.Observation)</strong>
+                                    <button class="btn btn-link btn-xs" data-toggle="modal" data-target="#ObservationModal">Edit</button>
+                                    <p id="observation">@Html.DisplayFor(model => model.Observation)</p>
 
-                            </td>
-                        </tr>
-                    </table>
-                </div>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
 
-                <div class="col-md-4">
-                    <table class="table">
-                        <tr>
-                            <td>
-                                <strong>CSR OM</strong>
-                                @Html.DisplayFor(model => model.MainCSROM.Name)
-                                @Html.DisplayFor(model => model.MainCSROM.Telephone)
-                            </td>
-                        </tr>
-                        <tr>
-                            <td>
-                                <strong>Backup CSR OM</strong>
-                                @Html.DisplayFor(model => model.BackupCSROM.Name)
-                                @Html.DisplayFor(model => model.BackupCSROM.Telephone)
-                            </td>
-                        </tr>
-                        @if (Model.CBDRep != null)
-                        {
+                    <div class="col-md-4">
+                        <table class="table">
+                            <tr>
+                                <td>
+                                    <strong>CSR OM</strong>
+                                    @Html.DisplayFor(model => model.MainCSROM.Name)
+                                    @Html.DisplayFor(model => model.MainCSROM.Telephone)
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <strong>Backup CSR OM</strong>
+                                    @Html.DisplayFor(model => model.BackupCSROM.Name)
+                                    @Html.DisplayFor(model => model.BackupCSROM.Telephone)
+                                </td>
+                            </tr>
+                            @if (Model.CBDRep != null)
+                            {
                             <tr>
                                 <td>
                                     <strong>CBD Rep.</strong>
@@ -138,9 +145,9 @@
                                     @Html.DisplayFor(model => model.CBDRep.Telephone)
                                 </td>
                             </tr>
-                        }
-                        @if (Model.GU != null)
-                        {
+                            }
+                            @if (Model.GU != null)
+                            {
                             <tr>
                                 <td>
                                     <strong>GU</strong>
@@ -149,27 +156,27 @@
                                 </td>
                             </tr>
 
-                        }
+                            }
 
-                        <tr>
-                            <td class="active">
-                                <strong>Payment Info</strong><button id="showPay" type="button" class="btn btn-link btn-xs"><i class="fa fa-chevron-down"></i></button>
-                            </td>
-                        </tr>
-                        @if (Model.Payer == 0 || Model.Payer == Model.ID)
-                        {
+                            <tr>
+                                <td class="active">
+                                    <strong>Payment Info</strong><button id="showPay" type="button" class="btn btn-link btn-xs"><i class="fa fa-chevron-down"></i></button>
+                                </td>
+                            </tr>
+                            @if (Model.Payer == 0 || Model.Payer == Model.ID)
+                            {
                             <tr class="payment" style="display:none">
                                 <td>
                                     <strong>@Html.DisplayNameFor(model => model.PayTerm)</strong>
                                     @if (!String.IsNullOrWhiteSpace(Model.PayTerm))
                                     {
 
-                                        @Html.DisplayFor(model => model.PayTerm)
+                                    @Html.DisplayFor(model => model.PayTerm)
 
                                     }
                                     else
                                     {
-                                        <p class="text-danger">Not Available.</p>
+                                    <p class="text-danger">Not Available.</p>
                                     }
                                 </td>
                             </tr>
@@ -178,11 +185,11 @@
                                     <strong>@Html.DisplayNameFor(model => model.PayType)</strong>
                                     @if (!String.IsNullOrWhiteSpace(Model.PayType))
                                     {
-                                        @Html.DisplayFor(model => model.PayType)
+                                    @Html.DisplayFor(model => model.PayType)
                                     }
                                     else
                                     {
-                                        <p class="text-danger">Not Available.</p>
+                                    <p class="text-danger">Not Available.</p>
                                     }
 
                                 </td>
@@ -199,24 +206,24 @@
                                     @Html.DisplayFor(model => model.BackupCSRAR.Name)
                                 </td>
                             </tr>
-                        }
-                        else
-                        {
+                            }
+                            else
+                            {
                             <tr class="payment" style="display:none">
                                 <td>
                                     @Html.DisplayFor(model => model.Payer)
                                 </td>
                             </tr>
-                        }
-                    </table>
+                            }
+                        </table>
 
+                    </div>
                 </div>
-            </div>
-            <div class="well">
-                <h3>Available Orders <a class="download" href="@Url.Action("DownloadCustomerOrders", new { id = Model.ID })"><span class="fa fa-download"></span></a></h3>
-            </div>
-            <div class="table">
-                @Html.Grid(Model.Orders).Named("CustOrdersGrid").Columns(columns =>
+                <div class="well">
+                    <h3><i class="fa fa-exchange"></i> Available Orders <a class="download" href="@Url.Action("DownloadCustomerOrders", new { id = Model.ID })"><i class="fa fa-download"></i></a></h3>
+                </div>
+                <div class="table">
+                    @Html.Grid(Model.Orders).Named("CustOrdersGrid").Columns(columns =>
            {
                columns.Add(item => item.SapID)
                    .Titled("Order Number");
@@ -225,13 +232,89 @@
                columns.Add(item => item.DocDate)
                    .Titled("Date")
                    .Format("{0:dd/MM/yyyy}");
+
+               columns.Add()
+                   .Titled("SKUs")
+                   .Encoded(false)
+                   .Sanitized(false)
+                   .RenderValueAs(o =>
+                    @<div>
+                        <button type="button" class="btn btn-link" data-container="body" data-toggle="popover" data-placement="left" data-content="
+                            <table class='table table-condensed table-bordered'>
+                                <thead>
+                                    <tr>
+                                        <th>
+                                            SKU
+                                        </th>
+                                        <th>
+                                            Description
+                                        </th>
+                                        @if (o.Delivery != null)
+                                        {
+                                            <th>
+                                                DSS CS
+                                            </th>
+                                            <th>
+                                                DSS SU
+                                            </th>
+                                        }
+                                        else
+                                        {
+                                            <th>
+                                                CS
+                                            </th>
+                                            <th>
+                                                SU
+                                            </th>
+
+                                        }
+
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach (Product prod in o.Products)
+                                    {
+                                        <tr>
+                                            <td>
+                                                @prod.SKU
+                                            </td>
+                                            <td>
+                                                @prod.Description
+                                            </td>
+                                            @if (o.Delivery != null)
+                                            {
+                                                <td>
+                                                    @prod.DSSQty.CS
+                                                </td>
+                                                <td>
+                                                    @prod.DSSQty.SU
+                                                </td>
+                                            }
+                                            else
+                                            {
+                                                <td>
+                                                    @prod.Qty.CS
+                                                </td>
+                                                <td>
+                                                    @prod.Qty.SU
+                                                </td>
+                                            }
+                                        </tr>
+                                    }
+                                </tbody>
+
+                            </table>">
+                            <i class="fa fa-list-ol"></i>
+                        </button>
+                    </div>
+                   );
                columns.Add()
                    .Titled("Status")
                    .Encoded(false)
                    .Sanitized(false)
                    .RenderValueAs(o =>
                     @<div>
-                        @Html.StageResolver(o.Status.Stage)
+                        @o.Status.StageDescription()
                     </div>
                    );
                columns.Add()
@@ -240,7 +323,7 @@
                .Sanitized(false)
                .RenderValueAs(o =>
                 @<div>
-                    @Html.ReasonResolver(o.Status.Stage, o.Status.State, o.Status.Reason)
+                    @o.Status.ReasonDescription()
                 </div>
                    );
                columns.Add()
@@ -299,25 +382,16 @@
 
                     </b>
                );
-               columns.Add(item => item.Quantities.QtyCS)
-                   .Titled("Ord. CS");
+               columns.Add()
+                   .Titled("CS")
+                   .Encoded(false)
+                   .Sanitized(false)
+                   .RenderValueAs(o => o.Products.Sum(x => x.Qty.CS).ToString());
                columns.Add()
                    .Titled("DSS CS")
                    .Encoded(false)
                    .Sanitized(false)
-                   .RenderValueAs(o =>
-                    @<b>
-                        @if (o.Delivery != null)
-                        {
-                            <strong>@o.Delivery.Quantities.QtyCS.ToString()</strong>
-                        }
-                        else
-                        {
-                            <strong class="text-danger">N/A</strong>
-                        }
-
-                    </b>
-               );
+                   .RenderValueAs(o => o.Products.Sum(x => x.DSSQty.CS).ToString());
                columns.Add()
                    .Encoded(false)
                    .Sanitized(false)
@@ -327,7 +401,8 @@
                         @Html.ActionLink("Details", "Details", "Order", new { id = d.SapID }, null)
                     </b>);
 
-           }).SetLanguage("En").Sortable().Filterable().WithMultipleFilters()
+           }).SetLanguage("En").Sortable().Filterable().WithMultipleFilters().Selectable(false)
+                </div>
             </div>
         </div>
     </div>
@@ -524,6 +599,13 @@
         'placement': 'top'
     });
 
+    //Show all popovers
+    $('[data-toggle="popover"]').popover({
+        'placement': 'right',
+        'html': 'true'
+    });
+
+
     // Attach listener to every contact.
     delContacts = document.getElementsByClassName("DeleteContact");
     for (var i = 0; i < delContacts.length; i++) {
@@ -593,9 +675,7 @@
     function UpdateContact() {
         //alert($("#" + contactID).children("#name").text());
         location.href = '@Url.Action("Details","Customer",new { id=@Model.ID})';
-
-
-
+        
         resultArray = content.split("|");
         if (resultArray[0] == 0)
             toastr.success(resultArray[1]);

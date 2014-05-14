@@ -31,7 +31,7 @@
                     Delete Vehicle
                 </button>
             </div>
-            @if (Model.Vehicle != null)
+            @if (Model.Vehicle != null && Model.Vehicle.Driver != null)
             {
                 <div id="vehicleInfo">
 
@@ -55,17 +55,6 @@
                                 <option value="VE03">VE03</option>
                                 <option value="VE04">VE04</option>
                                 <option value="VE05">VE05</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="row" style="margin-bottom:10px">
-                        <div class="col-md-2">
-                            <strong class="text-info">Status</strong>
-                        </div>
-                        <div class="col-md-3">
-                            <select name="status" style="margin-bottom:10px; width:130px" id="status">
-                                <option value=0>Suspended</option>
-                                <option selected="selected" value=1>Active</option>
                             </select>
                         </div>
                     </div>
@@ -110,17 +99,6 @@
                                 <option value="VE03">VE03</option>
                                 <option value="VE04">VE04</option>
                                 <option value="VE05">VE05</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="row" style="margin-bottom:10px">
-                        <div class="col-md-2">
-                            <strong class="text-info">Status</strong>
-                        </div>
-                        <div class="col-md-3">
-                            <select name="status" style="margin-bottom:10px; width:130px" id="status">
-                                <option value=0>Suspended</option>
-                                <option value=1>Active</option>
                             </select>
                         </div>
                     </div>

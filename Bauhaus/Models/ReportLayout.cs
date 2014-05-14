@@ -107,11 +107,11 @@ namespace Bauhaus.Models
             OrderNumber = "saporder";
             ShipTo = "shipto";
             Route = "route";
-            CarrierName = "carrier";
+            CarrierName = "transporte";
             ShipmentNumber = "shipment";
             CustomerName = "custname";
             //Turn = "turno";
-            VehicleType = "tipoveh";
+            VehicleType = "type";
             if(pendiente)
                 ShipmentStatus = "observacion";
             else
@@ -119,18 +119,26 @@ namespace Bauhaus.Models
         }
     }
 
-    public class CarryFees: ReportLayout
+    public class CarrierCodes: ReportLayout
     {
         public String CarrierNumber { get; set; }
         public String CarrierName { get; set; }
+
+        public CarrierCodes()
+        {
+            CarrierNumber = "carrier";
+            CarrierName = "carriername";
+        }
+    }
+
+    public class CarryFees: CarrierCodes
+    {
         public String Route { get; set; }
         public String VehicleType { get; set; }
         public String Fee { get; set; }
 
-        public CarryFees()
+        public CarryFees():base()
         {
-            CarrierNumber = "carrier";
-            CarrierName = "carriername";
             Route = "route";
             VehicleType = "vehtype";
             Fee = "fee";

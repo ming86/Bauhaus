@@ -103,14 +103,10 @@ namespace Bauhaus.Controllers
                 
             Vehicle Veh = carr.Vehicles.Where(item=>item.Plate == plate).FirstOrDefault();
             if (Veh != null)
-                if (Veh.Driver.Name == driversName)
                     return Json(new { Status = 0, Message = "Vehicle Already Registered." });
-                else
-                    Veh.Driver = Ndriver;
             else
             {
                 Veh = new Vehicle();
-                Veh.Driver = Ndriver;
                 Veh.Plate = plate;
                 Veh.Type = type;
                 carr.Vehicles.Add(Veh);
@@ -131,6 +127,18 @@ namespace Bauhaus.Controllers
             Shipment shpmt = db.Shipments.Find(ShipmentId);
             if (shpmt != null)
             {
+                Vehicle veh = db.Vehicles.Find(VehicleId);
+                if(veh == null)
+                    return Json(new { Status = 0, Message = "Vehicle not Found." });
+                else
+                {
+
+                }
+
+                if (shpmt.Vehicle != null)
+                    if (shpmt.Vehicle.Type != veh.Type)
+                        veh.Type = shpmt.Vehicle.Type;
+
                 shpmt.Vehicle = db.Vehicles.Find(VehicleId);
                 if (shpmt.Vehicle != null)
                 {
@@ -387,8 +395,8 @@ namespace Bauhaus.Controllers
         [Authorize(Roles = "Carrier , Admin")]
         public ActionResult GetVehiclesGrid(long id,int page = 1,int elements = 5)
         {
-            
-            IEnumerable<Vehicle> vehicles = db.Carriers.Find(id).Vehicles.ToList();
+            Carrier carrier = db.Carriers.Find(id);
+            IEnumerable<Vehicle> vehicles = carrier.Vehicles.ToList();
             int totalPages = vehicles.Count() / elements;
             vehicles = vehicles.Skip(page * elements - elements).Take(elements);
             TempData["Page"] = page;

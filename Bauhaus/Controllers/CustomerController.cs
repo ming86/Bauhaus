@@ -21,30 +21,52 @@ namespace Bauhaus.Controllers
 
         //
         // GET: /Customer/
-
+        [Authorize]
         public ActionResult Index(bool filter = false)
         {
             ViewBag.Title = "Customers";
-            if(filter)
+            IQueryable<Customer> customers = db.Customers.OrderBy(x => x.Name);
+
+            if (filter)
             {
                 UserProfile user = db.UserProfiles.Find(WebSecurity.CurrentUserId);
-                if(User.IsInRole("CSR"))
-                    return View(db.Customers.Where(x => x.MainCSROM.Name == user.FullName).OrderBy(x => x.Name));
-                if(User.IsInRole("CBD"))
-                    return View(db.Customers.Where(x => x.CBDRep.Name == user.FullName).OrderBy(x => x.Name));
-                if (User.IsInRole("GU"))
-                    return View(db.Customers.Where(x => x.GU.Name == user.FullName).OrderBy(x => x.Name));
+                if (User.IsInRole("CSR"))
+                    customers = customers.Where(x => x.MainCSROM.Name == user.FullName);
+
+                if (User.IsInRole("CBD"))
+                {
+                    if (Session["FilterData"] != null)
+                    {
+                        Models.Filter filterData = Session["FilterData"] as Models.Filter;
+                        if (filterData.Settings.ContainsKey("Team"))
+                        {
+                            String teamFilter = filterData.Settings["Team"];
+                            customers = customers.Where(x => x.Team == teamFilter);
+                        }
+                        if(filterData.Settings.ContainsKey("Unit"))
+                        {
+                            int unitFilter = Int32.Parse(filterData.Settings["Unit"]);
+                            customers = customers.Where(x => x.Unit == unitFilter);
+                        }
+                        if (filterData.Settings.ContainsKey("Area"))
+                        {
+                            int areaFilter = Int32.Parse(filterData.Settings["Area"]);
+                            customers = customers.Where(x => x.SaleZone == areaFilter);
+                        }
+                    }
+                }
             }
-            return View(db.Customers.ToList().OrderBy(x => x.Name));
+            return View(customers);
         }
 
-        
+
         /// <summary>
         /// Returns a view with customers details.
         /// </summary>
         /// <param name="id">Customer ID</param>
         /// <param name="returnUrl"></param>
         /// <returns></returns>
+        [Authorize]
         public ActionResult Details(long id, string returnUrl)
         {
             ViewBag.Title = "Customer Details";
@@ -52,11 +74,12 @@ namespace Bauhaus.Controllers
             return View(customer);
         }
 
-        
+
         /// <summary>
         /// Allows disposing of current Context.
         /// </summary>
         /// <param name="disposing">Wether or not base dispose should be used.</param>
+        [Authorize]
         protected override void Dispose(bool disposing)
         {
             db.Dispose();
@@ -70,6 +93,7 @@ namespace Bauhaus.Controllers
         /// <param name="viewName">View to Render</param>
         /// <param name="model">Model that needs to be passed to the view</param>
         /// <returns>Rendered View</returns>
+        [Authorize]
         protected string RenderPartialViewToString(string viewName, object model)
         {
             if (string.IsNullOrEmpty(viewName))
@@ -87,7 +111,7 @@ namespace Bauhaus.Controllers
             }
         }
 
-
+        [Authorize]
         [HttpPost]
         public JsonResult GetCustomer(int id)
         {
@@ -100,6 +124,7 @@ namespace Bauhaus.Controllers
         /// <summary>
         /// Method that Download to a Excel File all CLient's orders.
         /// </summary>
+        [Authorize]
         public void DownloadCustomerOrders(long id)
         {
             Customer cust = db.Customers.Find(id);
@@ -109,13 +134,13 @@ namespace Bauhaus.Controllers
                              x.SapID,
                              DocDate = x.DocDate.ToString("dd/MM/yy"),
                              x.CustomerPO,
-                             OrderCS = x.Products.Sum(prod=>prod.Qty.CS),
-                             Delivery = (x.Delivery == null)? "Sin Asignar":x.Delivery.ID.ToString(),
-                             DeliveryCS = (x.Delivery == null)? "Sin Asignar":x.Products.Sum(prod=>prod.DSSQty.CS).ToString(),
-                             Shipment = (x.Shipment == null)? "Sin Asignar":x.Shipment.ID.ToString(),
+                             OrderCS = x.Products.Sum(prod => prod.Qty.CS),
+                             Delivery = (x.Delivery == null) ? "Sin Asignar" : x.Delivery.ID.ToString(),
+                             DeliveryCS = (x.Delivery == null) ? "Sin Asignar" : x.Products.Sum(prod => prod.DSSQty.CS).ToString(),
+                             Shipment = (x.Shipment == null) ? "Sin Asignar" : x.Shipment.ID.ToString(),
                              Status = x.Status.StageDescription() + " " + x.Status.ReasonDescription(),
-                             Products = JsonConvert.SerializeObject(x.Products.Select(y => new{y.Qty.CS, y.Description}).ToList()),
-                            
+                             Products = JsonConvert.SerializeObject(x.Products.Select(y => new { y.Qty.CS, y.Description }).ToList()),
+
                          };
 
 
@@ -139,13 +164,14 @@ namespace Bauhaus.Controllers
                 // Write Back Response to Client
                 Response.Clear();
                 Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
-                Response.AddHeader("content-disposition", "attachment; filename= Status_"+cust.Name+".xlsx");
+                Response.AddHeader("content-disposition", "attachment; filename= Status_" + cust.Name + ".xlsx");
                 Response.BinaryWrite(pck.GetAsByteArray());
                 Response.End();
             }
         }
 
         [HttpPost]
+        [Authorize]
         public ContentResult UpdateObservation(long ID, String newObservation)
         {
             int type = 0;
@@ -165,6 +191,42 @@ namespace Bauhaus.Controllers
 
             return new ContentResult { Content = type + "|" + result };
         }
+
+        /// <summary>
+        /// Returns partial view with customers Grid.
+        /// </summary>
+        /// <param name="id">Vehicles Carrier Id</param>
+        /// <returns>Rendered partial view with vehicles grid</returns>
+        [Authorize(Roles = "CBD , Admin")]
+        public ActionResult GetCustomersGrid(int page = 1, int elements = 6)
+        {
+            ViewBag.Title = "Customers";
+            IQueryable<Customer> customers = db.Customers.OrderBy(x => x.Name);
+
+            if (User.IsInRole("CBD"))
+            {
+                if (Session["FilterData"] != null)
+                {
+                    Models.Filter filterData = Session["FilterData"] as Models.Filter;
+                    if (filterData.Settings.ContainsKey("Team"))
+                    {
+                        String teamFilter = filterData.Settings["Team"];
+                        customers = customers.Where(x => x.Team == teamFilter);
+                    }
+                    if (filterData.Settings.ContainsKey("Area"))
+                    {
+                        int areaFilter = Int32.Parse(filterData.Settings["Area"]);
+                        customers = customers.Where(x => x.SaleZone == areaFilter);
+                    }
+                }
+            }
+            
+            int totalPages = customers.Count() / elements;
+            customers = customers.Skip(page * elements - elements).Take(elements);
+            TempData["Page"] = page;
+            return PartialView("_CustomersGridCBD", customers);
+        }
+
 
     }
 }

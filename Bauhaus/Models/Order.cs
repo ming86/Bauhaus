@@ -91,106 +91,127 @@ namespace Bauhaus.Models
         /// <param name="Weight">Weight</param>
         /// <param name="Volume">Volume</param>
         /// <returns>0 if </returns>
-        public int CheckProduct(String Material, String Description,String Brand, String Category, String CS, String SU, String DSSCS, String DSSSU, String Weight, String Volume )
+        public int CheckProduct(String Material, String Description, String Brand, String Category, String CS, String SU, String DSSCS, String DSSSU, String Weight, String Volume)
         {
-            CultureInfo culture = new CultureInfo("es-VE");
             // Initialization
-            if(this.Products == null)
+            CultureInfo firstCulture = new CultureInfo("en-US");
+            CultureInfo culture = new CultureInfo("es-VE");
+            if (this.Products == null)
                 this.Products = new List<Product>();
-
-            long aux1;
-            Double aux2;
-            int aux3;
-
-            if (!long.TryParse(Material, out aux1))
+            long auxLong;
+            Double auxDouble;
+            int auxInt;
+            // Parse SKU
+            if (!long.TryParse(Material, out auxLong))
             {
-                // 1 = Format Error
                 return 1;
             }
+            // Find Product
+            Product product = this.Products.Where(x => x.SKU == auxLong).FirstOrDefault();
 
-            Product product = this.Products.Where(x => x.SKU == aux1).FirstOrDefault();
-
-            if(product == null)
+            // New Product
+            if (product == null)
             {
                 product = new Product();
-                product.SKU = aux1;
+                product.SKU = auxLong;
                 product.Description = Description.Trim();
                 product.Category = Category.Trim();
                 product.Brand = Brand.Trim();
-                Quantity Qty = new Quantity();
-                Quantity DSSQty = new Quantity();
-
-                if (!int.TryParse(CS, NumberStyles.Number, CultureInfo.InvariantCulture, out aux3))
-                    if (!int.TryParse(CS, NumberStyles.Number, culture, out aux3))
+                product.Qty = new Quantity();
+                product.DSSQty = new Quantity();
+                // Parse CS
+                if (!int.TryParse(CS, NumberStyles.Number, firstCulture, out auxInt))
+                    if (!int.TryParse(CS, NumberStyles.Number, culture, out auxInt))
+                    {
                         return 1;
+                    }
 
-                Qty.CS = aux3;
+                product.Qty.CS = auxInt;
 
-                if (!double.TryParse(SU, NumberStyles.Number, CultureInfo.InvariantCulture, out aux2))
-                    if (!double.TryParse(SU, NumberStyles.Number, culture, out aux2))
+                // Parse SU
+                if (!double.TryParse(SU, NumberStyles.Number, firstCulture, out auxDouble))
+                    if (!double.TryParse(SU, NumberStyles.Number, culture, out auxDouble))
+                    {
                         return 1;
+                    }
 
-                Qty.SU = aux2;
+                product.Qty.SU = auxDouble;
 
-                if (!double.TryParse(Weight, NumberStyles.Number, CultureInfo.InvariantCulture, out aux2))
-                    if (!double.TryParse(SU, NumberStyles.Number, culture, out aux2))
+                //Parse  Weight
+                if (!double.TryParse(Weight, NumberStyles.Number, firstCulture, out auxDouble))
+                    if (!double.TryParse(SU, NumberStyles.Number, culture, out auxDouble))
+                    {
                         return 1;
+                    }
 
-                Qty.NetWeight = aux2;
+                product.Qty.NetWeight = auxDouble;
 
-                if (!double.TryParse(Volume, NumberStyles.Number, CultureInfo.InvariantCulture, out aux2))
-                    if (!double.TryParse(Volume, NumberStyles.Number, culture, out aux2))
+                // Parse Volume
+                if (!double.TryParse(Volume, NumberStyles.Number, firstCulture, out auxDouble))
+                    if (!double.TryParse(Volume, NumberStyles.Number, culture, out auxDouble))
+                    {
                         return 1;
+                    }
 
-                Qty.Volume = aux2;
+                product.Qty.Volume = auxDouble;
 
-                if (!int.TryParse(DSSCS, NumberStyles.Number, CultureInfo.InvariantCulture, out aux3))
-                    if (!int.TryParse(DSSCS, NumberStyles.Number, culture, out aux3))
-                        return 1;
-                    else
-                        DSSQty.CS = aux3;
-                else
-                    DSSQty.CS = aux3;
+                if (!String.IsNullOrWhiteSpace(DSSCS))
+                {
+                    // Parse Dss CS
+                    if (!int.TryParse(DSSCS, NumberStyles.Number, firstCulture, out auxInt))
+                        if (!int.TryParse(DSSCS, NumberStyles.Number, culture, out auxInt))
+                        {
+                            return 1;
+                        }
 
+                    product.DSSQty.CS = auxInt;
 
-                if (!double.TryParse(DSSSU, NumberStyles.Number, CultureInfo.InvariantCulture, out aux2))
-                    if (!double.TryParse(DSSSU, NumberStyles.Number, culture, out aux2))
-                        return 1;
-                    else
-                        DSSQty.SU = aux2;
-                else
-                    DSSQty.SU = aux2;
+                    // Parse Dss SU
+                    if (!double.TryParse(DSSSU, NumberStyles.Number, firstCulture, out auxDouble))
+                        if (!double.TryParse(DSSSU, NumberStyles.Number, culture, out auxDouble))
+                        {
+                            return 1;
+                        }
+                    product.DSSQty.SU = auxDouble;
 
-                product.Qty = Qty;
-                product.DSSQty = DSSQty;
-
+                }
                 this.Products.Add(product);
 
                 return 0;
 
             }
             else
+            // Product Exist.
             {
-                // Product Exist.
-                if (!int.TryParse(DSSCS, NumberStyles.Number, CultureInfo.InvariantCulture, out aux3))
-                    if (!int.TryParse(DSSCS, NumberStyles.Number, culture, out aux3))
-                        return 1;
-                    else
-                        product.DSSQty.CS = aux3;
-                else
-                    product.DSSQty.CS = aux3;
+                // Initialize Quantities
+                if (product.Qty == null)
+                    product.Qty = new Quantity();
 
+                if (product.DSSQty == null)
+                    product.DSSQty = new Quantity();
 
-                if (!double.TryParse(DSSSU, NumberStyles.Number, CultureInfo.InvariantCulture, out aux2))
-                    if (!double.TryParse(DSSSU, NumberStyles.Number, culture, out aux2))
-                        return 1;
-                    else
-                        product.DSSQty.SU = aux2;
-                else
-                    product.DSSQty.SU = aux2;
+                if (!String.IsNullOrWhiteSpace(DSSCS))
+                {
+                    // Parse Dss Cs
+                    if (!int.TryParse(DSSCS, NumberStyles.Number, firstCulture, out auxInt))
+                        if (!int.TryParse(DSSCS, NumberStyles.Number, culture, out auxInt))
+                        {
+                            return 1;
+                        }
+                    product.DSSQty.CS = auxInt;
 
+                    // Parse Dss Su
+                    if (!double.TryParse(DSSSU, NumberStyles.Number, firstCulture, out auxDouble))
+                        if (!double.TryParse(DSSSU, NumberStyles.Number, culture, out auxDouble))
+                        {
+                            return 1;
+                        }
+                    product.DSSQty.SU = auxDouble;
+                }
                 return 0;
             }
         }
+
+
     }
 }

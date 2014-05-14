@@ -12,7 +12,7 @@ foreach (Order ord in Model.Orders)
 {
     if (!Customers.Exists(x => x.CustomerName == ord.Customer.Name))
     {
-        Customers.Add(new CustomerStatus { CustomerName = ord.Customer.Name, Stage = ord.Status.Stage, Status = ord.Status.State, Reason = ord.Status.Reason });
+        Customers.Add(new CustomerStatus { CustomerName = ord.Customer.Name, Stage = ord.Status.StageDescription(), Reason = ord.Status.ReasonDescription() });
 
     }
 }
@@ -40,17 +40,7 @@ foreach (Order ord in Model.Orders)
                                     }
                                     else
                                     {
-                                        if (Model.Orders.FirstOrDefault().VehicleType != "")
-                                        {
-                                            @Html.DisplayFor(model => model.Orders.FirstOrDefault().VehicleType)
-                                        }
-
-                                        else
-                                        {
                                             <p class="text-danger">Not Available</p>
-                                        }
-
-
                                     }
                                 </td>
 
@@ -104,19 +94,8 @@ foreach (Order ord in Model.Orders)
                        {
                            columns.Add(item => item.CustomerName)
                                .Titled("Cust. Name");
-                           columns.Add()
-                               .Titled("Stage")
-                               .Encoded(false)
-                               .Sanitized(false)
-                               .RenderValueAs(p =>
-                                       @Html.StageResolver(p.Stage)
-                                       );
-                           columns.Add()
-                               .Titled("Reason")
-                               .Encoded(false)
-                               .Sanitized(false)
-                               .RenderValueAs(p =>
-                                   @Html.ReasonResolver(p.Stage, p.Status, p.Reason));
+                           columns.Add(p=>p.Stage);
+                           columns.Add(p => p.Reason);
                        }).SetLanguage("En").WithPaging(3).Selectable(false)
                     </div>
                     <div class="col-md-4">
@@ -130,7 +109,18 @@ foreach (Order ord in Model.Orders)
                                    .Titled("Status")
                                    .Sanitized(false)
                                    .Encoded(false)
-                                   .RenderValueAs(o => @Html.ReasonResolver(o.Stage, o.State, o.Reason));
+                                   .RenderValueAs(o =>
+                                       
+                                       @<div>
+                                                @{
+                                                    Bauhaus.Models.Status st = new Status();
+                                                    st.Stage = o.Stage;
+                                                    st.State = o.State;
+                                                    st.Reason = o.Reason;
+                                                }
+                                            @st.ReasonDescription()
+                                        </div>
+                                   );
                                Columns.Add(item => item.Comment);
                            });
                         }
@@ -141,7 +131,7 @@ foreach (Order ord in Model.Orders)
                     </div>
                 </div>
                 <div class="well">
-                    <h4>Shipment Orders</h4>
+                    <h3><i class="fa fa-anchor"></i> Shipment Orders</h3>
                 </div>
                 <div class="table">
                     @Html.Grid(Model.Orders).Named("ShipmentOrdersGrid").Columns(columns =>
@@ -182,7 +172,10 @@ foreach (Order ord in Model.Orders)
 
                     </b>
                );
-               columns.Add(item => item.Quantities.QtyCS)
+               columns.Add()
+                   .Encoded(false)
+                   .Sanitized(false)
+                   .RenderValueAs(item => item.Products.Sum(x => x.Qty.CS).ToString())
                    .Titled("Ord. CS");
                columns.Add()
                    .Titled("DSS CS")
@@ -192,9 +185,12 @@ foreach (Order ord in Model.Orders)
                     @<b>
                         @if (o.Delivery != null)
                         {
-                            <strong>@o.Delivery.Quantities.QtyCS.ToString()</strong>
+                            <strong>@o.Products.Sum(x=>x.DSSQty.CS)</strong>
                         }
-
+                        else
+                        {
+                            <strong class="text-danger">N/A</strong>
+                        }
                     </b>
                );
                columns.Add()

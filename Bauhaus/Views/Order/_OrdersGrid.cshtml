@@ -2,7 +2,14 @@
 @using GridMvc.Filtering
 @using GridMvc.Html
 @using GridMvc.Sorting
+@using Bauhaus.Models
 @model IEnumerable<Bauhaus.Models.Order>
+    <style>
+        .popover{
+            max-width:400px;
+            width:auto;
+        }
+    </style>
 
 @Html.Grid(Model).Named("ordersGrid").Columns(columns =>
     {
@@ -10,11 +17,100 @@
             .Titled("Order #");
         columns.Add(item => item.CustomerPO)
             .Titled("Cust. PO");
+        
+        columns.Add()
+            .Titled("Items")
+            .Sanitized(false)
+            .Encoded(false)
+            .RenderValueAs(o => 
+           @<div>
+                <button type="button" class="btn btn-link" data-container="body" data-toggle="popover" data-placement="left" data-content="
+                    <table class='table table-condensed table-bordered'>
+                        <thead>
+                            <tr>
+                                <th>
+                                    SKU
+                                </th>
+                                <th>
+                                    Description
+                                </th>
+                                @if(o.Delivery!=null)
+                                {
+                                    <th>
+                                    DSS CS
+                                </th>
+                                <th>
+                                    DSS SU
+                                </th>
+                                }
+                                else
+                                {
+                                    <th>
+                                    CS
+                                </th>
+                                <th>
+                                    SU
+                                </th>
+                                    
+                                }
+                                
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (Product prod in o.Products)
+                            {
+                                <tr>
+                                    <td>
+                                        @prod.SKU
+                                    </td>
+                                    <td>
+                                        @prod.Description
+                                    </td>
+                                    @if (o.Delivery != null)
+                                    {
+                                        <td>
+                                            @prod.DSSQty.CS
+                                        </td>
+                                        <td>
+                                            @prod.DSSQty.SU
+                                        </td>
+                                    }
+                                    else
+                                    {
+                                        <td>
+                                            @prod.Qty.CS
+                                        </td>
+                                        <td>
+                                            @prod.Qty.SU
+                                        </td>
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+
+                    </table>
+                    ">
+                    <i class="fa fa-list-ol"></i>
+                </button>
+     
+                   
+            </div>
+            );
         columns.Add(item => item.Customer.ID)
             .Titled("Ship To");
         columns.Add(item => item.Customer.Name)
             .Titled("Cust. Name");
         columns.Add(item => item.Status.Code)
-            .Titled("ST");
-        columns.Add(item => item.Type);
+            .Titled("St.");
+        columns.Add(item => item.Type)
+            .Titled("Type");
     }).SetRowCssClasses(item => item.RDDF.Confirmed ? "success" : string.Empty).SetLanguage("En").Sortable().Filterable().WithMultipleFilters().WithPaging(50)
+
+<script>
+    //Initialize all popovers
+    $('[data-toggle="popover"]').popover({
+        'placement': 'right',
+        'html': 'true'
+    });
+
+</script>

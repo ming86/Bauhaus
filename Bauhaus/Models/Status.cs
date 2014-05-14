@@ -22,6 +22,43 @@ namespace Bauhaus.Models
         public int Report { get; set; }
         public String Comment { get; set; }
 
+        public string CodeDescription()
+        {
+            String output;
+            switch (this.Code)
+            {
+                case 10:
+                    output = "Blocked";
+                    break;
+                case 11:
+                    output = "Date Error";
+                    break;
+                case 17:
+                    output = "Manual Block";
+                    break;
+                case 20:
+                    output = "OK (Waiting for DSS)";
+                    break;
+                case 30:
+                    output = "DSS Assigned";
+                    break;
+                case 40:
+                    output = "Planned";
+                    break;
+                case 50:
+                    output = "Invoiced";
+                    break;
+                case 99:
+                    output = "Dropped";
+                    break;
+                default:
+                    output = "Not Available";
+                    break;
+            }
+
+            return output;
+        }
+
         /// <summary>
         /// Provides description for a Stage
         /// </summary>

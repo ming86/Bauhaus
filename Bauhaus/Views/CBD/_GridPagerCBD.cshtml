@@ -1,0 +1,36 @@
+﻿<div id="customersGridCBD">
+    @Html.Action("GetCustomersGrid", "Customer")
+</div>
+<div id="pagination">
+    <button id="previousPage" type="button" class="btn btn-default">
+        <i class="fa fa-angle-left"></i>
+    </button>
+    <button id="currentPage" type="button" class="btn btn-default" disabled="disabled">
+        1
+    </button>
+    <button id="nextPage" type="button" class="btn btn-default">
+        <i class="fa fa-angle-right"></i>
+    </button>
+</div>
+<script>
+    // Changing Pages
+    $("#previousPage").click(function () {
+        if ($("#currentPage").text() != 1) {
+            $("#customersGridCBD").load("@Url.Action("GetCustomersGrid")", {
+                page: parseInt($("#currentPage").text()) - 1,
+                elements: 6
+            }, function () {
+                $("#currentPage").text(parseInt($("#currentPage").text()) - 1);
+            });
+        }
+    });
+
+    $("#nextPage").click(function () {
+        $("#CustomersGridCBD").load("@Url.Action("GetCustomersGrid")", {
+            page: parseInt($("#currentPage").text()) + 1,
+            elements: 6
+        }, function () {
+            $("#currentPage").text(parseInt($("#currentPage").text()) + 1);
+        });
+    });
+</script>

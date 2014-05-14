@@ -1,0 +1,50 @@
+﻿@using GridMvc
+@using GridMvc.Filtering
+@using GridMvc.Html
+@using GridMvc.Sorting
+@using Bauhaus.Models
+@model IEnumerable<Customer>
+
+@Html.Grid(Model).Named("customersGridCBD").Columns(columns =>
+{
+    columns.Add(x => x.ID)
+        .Titled("Shipto");
+    columns.Add(x => x.Name)
+        .Titled("Cust. Name");
+    columns.Add()
+        .Titled("B")
+        .Encoded(false)
+        .Sanitized(false)
+        .RenderValueAs(x =>
+        @<div>
+                @x.Orders.Count(o => o.Status.Code == 10)
+        </div>
+    );
+    columns.Add()
+        .Titled("O")
+        .Encoded(false)
+        .Sanitized(false)
+        .RenderValueAs(x =>
+        @<div>
+                @x.Orders.Count(o => o.Status.Code == 20)
+        </div>
+    );
+    columns.Add()
+        .Titled("I")
+        .Encoded(false)
+        .Sanitized(false)
+        .RenderValueAs(x =>
+        @<div>
+                @x.Orders.Count(o => o.Status.Code == 30)
+        </div>
+    );
+    columns.Add()
+        .Titled("F")
+        .Encoded(false)
+        .Sanitized(false)
+        .RenderValueAs(x =>
+        @<div>
+                @x.Orders.Count(o => o.Status.Code == 50)
+        </div>
+    );
+}).SetLanguage("En");

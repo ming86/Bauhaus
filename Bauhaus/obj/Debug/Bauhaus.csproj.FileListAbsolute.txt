@@ -70,9 +70,6 @@ C:\Users\meneses.bs@pg.com\Documents\Visual Studio 2012\Projects\Bauhaus\Bauhaus
 C:\Users\meneses.bs@pg.com\Documents\Visual Studio 2012\Projects\Bauhaus\Bauhaus\obj\Debug\Bauhaus.dll
 C:\Users\meneses.bs@pg.com\Documents\Visual Studio 2012\Projects\Bauhaus\Bauhaus\obj\Debug\Bauhaus.pdb
 C:\Users\meneses.bs@pg.com\Documents\Visual Studio 2012\Projects\Bauhaus\Bauhaus\obj\Debug\Bauhaus.csprojResolveAssemblyReference.cache
-C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\obj\Debug\Bauhaus.csprojResolveAssemblyReference.cache
-C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\obj\Debug\Bauhaus.dll
-C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\obj\Debug\Bauhaus.pdb
 C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\Bauhaus.dll.config
 C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\Bauhaus.dll
 C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\Bauhaus.pdb
@@ -142,3 +139,6 @@ C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\WebMatrix.Data.x
 C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\WebMatrix.WebData.xml
 C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\Org.Mentalis.Security.Cryptography.xml
 C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\Mono.Math.xml
+C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\obj\Debug\Bauhaus.dll
+C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\obj\Debug\Bauhaus.pdb
+C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\obj\Debug\Bauhaus.csprojResolveAssemblyReference.cache
