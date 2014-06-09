@@ -1,4 +1,5 @@
-﻿@using GridMvc
+﻿
+@using GridMvc
 @using GridMvc.Filtering
 @using GridMvc.Html
 @using GridMvc.Sorting
@@ -8,6 +9,12 @@
     ViewBag.Title = "Manage Reports";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+<style>
+    .popover {
+        max-width: 400px;
+        width: auto;
+    }
+</style>
 <div class="row" style="margin-bottom:10px">
     
     @using(Html.BeginForm("UploadReport","Report",FormMethod.Post,new{enctype="multipart/form-data"}))
@@ -21,8 +28,13 @@
     <div class="col-md-2">
         <button id="upload" class="btn btn-default" type="submit">
               Upload
-              <span class="fa fa-cloud-upload fa-x2"></span>
+              <i class="fa fa-cloud-upload fa-x2"></i>
           </button>
+    </div>
+        <div class="col-md-1">
+            <button class="btn btn-link" data-toggle="modal" data-target="#ReportHelp">
+                <i class="fa fa-info-circle fa-2x"></i>
+            </button>
     </div>
     }
     @{
@@ -45,16 +57,70 @@
         </div>
     </div>
 </div>
+<!-- Modal -->
+<div class="modal fade" id="ReportHelp" tabindex="-1" role="dialog" aria-labelledby="ReportHelpLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="ReportHelpLabel">Report Uploading Instructions</h4>
+            </div>
+            <div class="modal-body">
+                <p>Bauhaus can process the following reports:</p>
+                <ul>
+                    <li><a href="#" data-toggle="tooltip" title="<p>Format: .txt</p>
+                                                                 <p>Layout:</p>">ZSKU</a></li>
 
+                    <li><a href="#" data-toggle="tooltip" title="<p>Format: .xlsx</p>
+                                                                 <p>Sheet Name: ZVORF/Pendiente</p>
+                                                                 <p>Layout:</p>">Ordenes en Mano</a></li>
+
+                    <li><a href="#" data-toggle="tooltip" title="<p>Format: .xlsx</p>
+                                                                 <p>Sheet Name: CarryFees</p>
+                                                                 <p>Layout: Carrier,Carrier Name,Route,Veh Type, Fee</p>">Carry Fees</a></li>
+
+                    <li><a href="#" data-toggle="tooltip" title="<p>Format: .xlsx</p>
+                                                                 <p>Sheet Name: CarrierCodes</p>
+                                                                 <p>Layout: Carrier,CarrierName</p>">Carriers</a></li>
+
+                    <li><a href="#" data-toggle="tooltip" title="<p>Format: .xlsx</p>
+                                                                 <p>Sheet Name: Lead Times</p>
+                                                                 <p>Layout: Plant,Route,Lead Time</p>">Lead Times</a></li>
+
+                    <li><a href="#" data-toggle="tooltip" title="<p>Format: .xlsx</p>
+                                                                 <p>Sheet Name: Info OM Transporte</p>
+                                                                 <p>Layout: Cliente,Nombre Comercial,CSR OM Titular,CSR OM Backup,Dirección,Región,Ciudad,Ruta,Team,Zona,CBD Rep,Tlf. CBDR,GU,Tlf. GU,Team Leader,Clientes Clave OM,CSR AR Titular,CSR AR Backup,Nombre de Persona Contacto,Teléfono de Persona Contacto,E-Mail General,Teléfono Principal,Máximo Camión</p>">Customers</a></li>
+                </ul>
+                <p class="text-danger">Note that the only formats allowed are .txt and .xlsx.</p>
+
+                <p>In order to Upload a ZSKU.txt report you have to follow next Steps:</p>
+                <ol>
+                    <li>Open SAP LogOn</li>
+                    <li>Choose ZSKU Transaction</li>
+                    <li>Select variant VEBAUHAUS created by CN2819 (default)</li>
+                    <li>Execute Report</li>
+                    <li>Apply Layout /VEBAUHAUS<strong>2</strong></li>
+                    <li>Download Report to your computer choosing <strong>"Unconverted"</strong> option</li>
+                    <li>Save report naming it <strong>"ZSKU.txt"</strong></li>
+                    <li>Log into bauhaus.pg.com with Administrator Account</li>
+                    <li>Select Reports View (<i class="fa fa-archive"></i>)</li>
+                    <li>Choose file "ZSKU.txt"</li>
+                    <li>Confirm Report Upload (<i class="fa fa-cloud-upload"></i>)</li>
+                </ol>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
 <script>
-    $("#fresh").click(function () {
-        alert("Pressed");
-        $.post('@Url.Action("RefreshRemarks2")',{}, function (Content) {
-            $("#reportsGrid").html(Content);
-            alert
-        });
+    //Show all tooltips
+    $('[data-toggle="tooltip"]').tooltip({
+        'placement': 'right',
+        'html':'true'
     });
-
     $(function () {
         displayAlert('@type','@message');
     });

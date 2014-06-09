@@ -88,7 +88,8 @@
 
                             }
                         </div>
-                        <small class="text-left">@Html.ReasonResolver(ord.Status.Stage, ord.Status.State, ord.Status.Reason)</small>
+                        <br />
+                        <small class="text-left">@ord.Status.ReasonDescription()</small>
                     </td>
                 </tr>
 

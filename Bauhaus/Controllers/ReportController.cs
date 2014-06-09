@@ -39,11 +39,10 @@ namespace Bauhaus.Controllers
          * Desc: Handles report uploading and updating Reports DB table whenever existing reports are
          * overwriten. Also provides methods for cleaning reports format and updating creation date.
          */
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin,CSR")]
         public ActionResult UploadReport()
         {
             System.Diagnostics.Debug.WriteLine("Upload Report");
-            Stopwatch sw = Stopwatch.StartNew();
             if (Request.Files["fileUpload"].ContentLength > 0)
             {
                 //Check if Directory Exist
@@ -138,14 +137,11 @@ namespace Bauhaus.Controllers
                             {
                                 ProcessReportExcel(stReport.ReportID);
                             }
-                            sw.Stop();
-                            stReport.ProcessTime = sw.Elapsed.TotalMinutes;
-
                             if (stReport.Name == "ZSKU.txt" || stReport.Name == "ZSKU.xlsx")
                                 CleanOrders(stReport.ReportID);
 
                             CalculateKPIs();
-                            SaveChanges(db);
+                            SaveChanges(db, stReport);
                         }
                         catch (Exception e)
                         {
@@ -190,8 +186,8 @@ namespace Bauhaus.Controllers
                 case "ZSKU.txt":
                     if (ParseZSKUTxt(report) != 0)
                     {
-                        report.Status = 3;
-                        report.Remark = "Report was processed with Errors. See log for details.";
+                        report.Status = 1;
+                        report.Remark = "Finished with Errors. See log for details.";
                     }
                     else
                     {
@@ -204,7 +200,7 @@ namespace Bauhaus.Controllers
                     report.Remark = "Name not recognized as a valid report.";
                     break;
             }
-            SaveChanges(db);
+            SaveChanges(db, report);
         }
 
         /// <summary>
@@ -213,6 +209,8 @@ namespace Bauhaus.Controllers
         /// <param name="report"></param>
         public int ParseZSKUTxt(Report report)
         {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
             System.Diagnostics.Debug.WriteLine("Parsing ZSKU.txt");
             string[] allLines = System.IO.File.ReadAllLines(report.Path);
             string[] splitedLine;
@@ -244,11 +242,12 @@ namespace Bauhaus.Controllers
 
                 System.Diagnostics.Debug.WriteLine("Order " + sapID);
 
-                if (counter % commitCount == 0 && previous != sapID )
+                if (counter % commitCount == 0 && previous != sapID)
                 {
                     System.Diagnostics.Debug.WriteLine("//////////////////// SAVING //////////////////////////////");
                     report.Remark = " " + ((int)((double)((double)counter / total) * 100)) + "%";
-                    SaveChanges(db);
+                    report.ElapsedTime = sw.Elapsed.TotalMinutes;
+                    SaveChanges(db, report);
                     db.Dispose();
                     db = new BauhausEntities();
                     db.Reports.Attach(report);
@@ -257,7 +256,7 @@ namespace Bauhaus.Controllers
                 // Another Product
                 if (sapID == previous && order != null)
                 {
-                    if(order.CheckProduct(splitedLine[zsku.Material],
+                    if (order.CheckProduct(splitedLine[zsku.Material],
                     splitedLine[zsku.MaterialDesc],
                     splitedLine[zsku.Brand],
                     splitedLine[zsku.Category],
@@ -268,7 +267,7 @@ namespace Bauhaus.Controllers
                     splitedLine[zsku.OrderWeight],
                     splitedLine[zsku.OrderVolume]) != 0)
                     {
-                        LogError("ZSKU", "Format", "Error Registering Product "+splitedLine[zsku.MaterialDesc]+" Order "+sapID);
+                        LogError("ZSKU", "Format", "Error Registering Product " + splitedLine[zsku.MaterialDesc] + " Order " + sapID);
                     }
                 }
                 // Another Order
@@ -300,6 +299,7 @@ namespace Bauhaus.Controllers
                     previous = order.SapID;
                 }
             }
+            sw.Stop();
             return errorCount;
 
 
@@ -432,7 +432,7 @@ namespace Bauhaus.Controllers
                     splitedLine[zsku.OrderVolume]) != 0)
                 {
                     LogError("ZSKU", "Format", "Error Registering Product " + splitedLine[zsku.MaterialDesc] + " Order " + order.SapID);
-                }     
+                }
 
                 //Add RDDF
                 order.RDDF = new RDDF();
@@ -831,150 +831,6 @@ namespace Bauhaus.Controllers
         }
 
         /// <summary>
-        /// Add product to Order if product is Missing.
-        /// </summary>
-        /// <param name="Material">Material Code to add</param>
-        /// <param name="Description">Material Description</param>
-        /// <param name="Brand">Product Brand</param>
-        /// <param name="Category">Product Category</param>
-        /// <param name="CS">CS</param>
-        /// <param name="SU">SU</param>
-        /// <param name="DSSCS">DSS CS</param>
-        /// <param name="DSSSU">DSS SU</param>
-        /// <param name="Weight">Weight</param>
-        /// <param name="Volume">Volume</param>
-        /// <returns>0 if </returns>
-        public ICollection<Product> CheckProduct(ICollection<Product> products, String Material, String Description, String Brand, String Category, String CS, String SU, String DSSCS, String DSSSU, String Weight, String Volume)
-        {
-            // Initialization
-            CultureInfo culture = new CultureInfo("es-VE");
-            if (products == null)
-                products = new List<Product>();
-            long auxLong;
-            Double auxDouble;
-            int auxInt;
-            // Parse SKU
-            if (!long.TryParse(Material, out auxLong))
-            {
-                LogError("ZSKU", "Number Format", "Could not parse Product SKU");
-                return products;
-            }
-            // Find Product
-            Product product = products.Where(x => x.SKU == auxLong).FirstOrDefault();
-
-            // New Product
-            if (product == null)
-            {
-                product = new Product();
-                product.SKU = auxLong;
-                product.Description = Description.Trim();
-                product.Category = Category.Trim();
-                product.Brand = Brand.Trim();
-                product.Qty = new Quantity();
-                product.DSSQty = new Quantity();
-                // Parse CS
-                if (!int.TryParse(CS, NumberStyles.Number, CultureInfo.InvariantCulture, out auxInt))
-                    if (!int.TryParse(CS, NumberStyles.Number, culture, out auxInt))
-                    {
-                        LogError("ZSKU", "Number Format", "Could not parse Product CS");
-                        return products;
-                    }
-                        
-                product.Qty.CS = auxInt;
-
-                // Parse SU
-                if (!double.TryParse(SU, NumberStyles.Number, CultureInfo.InvariantCulture, out auxDouble))
-                    if (!double.TryParse(SU, NumberStyles.Number, culture, out auxDouble))
-                    {
-                        LogError("ZSKU", "Number Format", "Could not parse Product SU");
-                        return products;
-                    }
-
-                product.Qty.SU = auxDouble;
-
-                //Parse  Weight
-                if (!double.TryParse(Weight, NumberStyles.Number, CultureInfo.InvariantCulture, out auxDouble))
-                    if (!double.TryParse(SU, NumberStyles.Number, culture, out auxDouble))
-                    {
-                        LogError("ZSKU", "Number Format", "Could not parse Product Weight");
-                        return products;
-                    }
-
-                product.Qty.NetWeight = auxDouble;
-
-                // Parse Volume
-                if (!double.TryParse(Volume, NumberStyles.Number, CultureInfo.InvariantCulture, out auxDouble))
-                    if (!double.TryParse(Volume, NumberStyles.Number, culture, out auxDouble))
-                    {
-                        LogError("ZSKU", "Number Format", "Could not parse Product Volume");
-                        return products;
-                    }
-
-                product.Qty.Volume = auxDouble;
-
-                if(!String.IsNullOrWhiteSpace(DSSCS))
-                {
-                    // Parse Dss CS
-                    if (!int.TryParse(DSSCS, NumberStyles.Number, CultureInfo.InvariantCulture, out auxInt))
-                        if (!int.TryParse(DSSCS, NumberStyles.Number, culture, out auxInt))
-                        {
-                            LogError("ZSKU", "Number Format", "Could not parse Product DSS CS");
-                            return products;
-                        }
-
-                    product.DSSQty.CS = auxInt;
-
-                    // Parse Dss SU
-                    if (!double.TryParse(DSSSU, NumberStyles.Number, CultureInfo.InvariantCulture, out auxDouble))
-                        if (!double.TryParse(DSSSU, NumberStyles.Number, culture, out auxDouble))
-                        {
-                            LogError("ZSKU", "Number Format", "Could not parse Product DSS SU");
-                            return products;
-                        }
-                    product.DSSQty.SU = auxDouble;
-
-                }
-                products.Add(product);
-
-                return products;
-
-            }
-            else
-            // Product Exist.
-            {
-                // Initialize Quantities
-                if (product.Qty == null)
-                    product.Qty = new Quantity();
-
-                if (product.DSSQty == null)
-                    product.DSSQty = new Quantity();
-
-                if(!String.IsNullOrWhiteSpace(DSSCS))
-                {
-                    // Parse Dss Cs
-                    if (!int.TryParse(DSSCS, NumberStyles.Number, CultureInfo.InvariantCulture, out auxInt))
-                        if (!int.TryParse(DSSCS, NumberStyles.Number, culture, out auxInt))
-                        {
-                            LogError("ZSKU", "Number Format", "Could not parse Product DSS CS");
-                            return products;
-                        }
-                    product.DSSQty.CS = auxInt;
-
-                    // Parse Dss Su
-                    if (!double.TryParse(DSSSU, NumberStyles.Number, CultureInfo.InvariantCulture, out auxDouble))
-                        if (!double.TryParse(DSSSU, NumberStyles.Number, culture, out auxDouble))
-                        {
-                            LogError("ZSKU", "Number Format", "Could not parse Product DSS SU");
-                            return products;
-                        }
-                    product.DSSQty.SU = auxDouble;
-
-                }
-                return products;
-            }
-        }
-
-        /// <summary>
         /// 
         /// </summary>
         /// <param name="splitedLine"></param>
@@ -1090,7 +946,7 @@ namespace Bauhaus.Controllers
                                     {
                                         stReport.Status = 3;
                                     }
-                                    db.SaveChanges();
+                                    SaveChanges(db, stReport);
                                     ready = true;
                                     break;
 
@@ -1111,7 +967,7 @@ namespace Bauhaus.Controllers
                                     break;
 
                                 case "carryfees":
-                                    if (ProcessCarryFees(cWs, stReport) == 0)
+                                    if (ParseCarryFees(cWs, stReport) == 0)
                                         stReport.Status = 1;
                                     else
                                         stReport.Status = 0;
@@ -1119,10 +975,14 @@ namespace Bauhaus.Controllers
                                     break;
 
                                 case "carriercodes":
-                                    if (ProcessCarriers(cWs, stReport) == 0)
+                                    if (ParseCarriers(cWs, stReport) == 0)
                                         stReport.Status = 1;
                                     else
-                                        stReport.Status = 0;
+                                    {
+                                        stReport.Status = 3;
+                                        stReport.Remark = "Finished with Errors. See log for Details.";
+                                    }
+
                                     ready = true;
                                     break;
 
@@ -1143,7 +1003,7 @@ namespace Bauhaus.Controllers
                         System.Diagnostics.Debug.WriteLine("Report Date: " + stReport.CreationDate.ToString());
                         db.Entry(stReport).State = System.Data.Entity.EntityState.Modified;
 
-                        SaveChanges(db);
+                        SaveChanges(db, stReport);
 
                     }
                 }
@@ -1153,13 +1013,22 @@ namespace Bauhaus.Controllers
             }
         }
 
-        private int ProcessCarriers(ExcelWorksheet cWs, Report stReport)
+        /// <summary>
+        /// Parses xlsx report containing Carrier Names and Ids, them stores them in DB
+        /// </summary>
+        /// <param name="cWs">Worksheet containing Carriers</param>
+        /// <param name="stReport">Report associated with cWs</param>
+        /// <returns></returns>
+        private int ParseCarriers(ExcelWorksheet cWs, Report stReport)
         {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
             int cCount = 350;
             Dictionary<String, String> Map = MapReport(cWs);
             System.Diagnostics.Debug.WriteLine("CarryFees");
             CarrierCodes columns = new CarrierCodes();
             String errors = columns.SelfCheck(Map);
+            int errorCount = 0;
             // Check for missing Columns
             if (!String.IsNullOrEmpty(errors))
             {
@@ -1175,7 +1044,8 @@ namespace Bauhaus.Controllers
                 if (!long.TryParse(cWs.Cells[Map[columns.CarrierNumber] + i].Text, out aux1))
                 {
                     LogError("Carrier Code", "Number Format", "Could not parse Carrier number.");
-                    return 1;
+                    errorCount += 1;
+                    continue;
                 }
 
                 Carrier auxCarrier = db.Carriers.Find(aux1);
@@ -1198,20 +1068,19 @@ namespace Bauhaus.Controllers
                     if (auxCarrier.Name != carrName)
                     {
                         auxCarrier.Name = carrName;
-                        SaveChanges(db);
                     }
                 }
                 // Register Progress.
                 if (i % cCount == 0)
                 {
                     stReport.Remark = ((int)((double)((double)i / cWs.Dimension.End.Row) * 100)) + "%";
-                    db.SaveChanges();
+                    stReport.ElapsedTime = sw.Elapsed.TotalMinutes;
+                    SaveChanges(db, stReport);
                     db.Dispose();
                     db = new BauhausEntities();
                 }
             }
-            return 0;
-
+            return errorCount;
         }
 
         /// <summary>
@@ -1232,14 +1101,15 @@ namespace Bauhaus.Controllers
             }
         }
         /// <summary>
-        /// Handles Carry fees processing. Adds Carry Fess with their respective Routes and
-        /// Transportation Companys.
+        /// Parses xlsx containing Carry Fees.
         /// </summary>
         /// <param name="cWs">Current WorkcSheet</param>
         /// <param name="stReport">Report To Be Processed</param>
         /// <returns>Error Count During Processing</returns>
-        private int ProcessCarryFees(ExcelWorksheet cWs, Report stReport)
+        private int ParseCarryFees(ExcelWorksheet cWs, Report stReport)
         {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
             int cCount = 350;
             Dictionary<String, String> Map = MapReport(cWs);
             System.Diagnostics.Debug.WriteLine("CarryFees");
@@ -1316,7 +1186,8 @@ namespace Bauhaus.Controllers
                 if (i % cCount == 0)
                 {
                     stReport.Remark = ((int)((double)((double)i / cWs.Dimension.End.Row) * 100)) + "%";
-                    db.SaveChanges();
+                    stReport.ElapsedTime = sw.Elapsed.TotalMinutes;
+                    SaveChanges(db, stReport);
                     db.Dispose();
                     db = new BauhausEntities();
                 }
@@ -1370,12 +1241,12 @@ namespace Bauhaus.Controllers
                 if (i % commitCount == 0)
                 {
                     stReport.Remark = ((int)((double)((double)i / cWs.Dimension.End.Row) * 100)) + "%";
-                    db.SaveChanges();
+                    SaveChanges(db, stReport);
                     db.Dispose();
                     db = new BauhausEntities();
                 }
             }
-            db.SaveChanges();
+            SaveChanges(db, stReport);
             stReport.Status = 0;
             return 0;
         }
@@ -1422,7 +1293,7 @@ namespace Bauhaus.Controllers
                 if (Int32.TryParse(cWs.Cells[Mapping[columnsMaestro.SaleZone] + i].Text, out auxInt))
                 {
                     tempCust.SaleZone = auxInt;
-                    if (cWs.Cells[Mapping[columnsMaestro.SaleZone] + i].Text.Length>=2)
+                    if (cWs.Cells[Mapping[columnsMaestro.SaleZone] + i].Text.Length >= 2)
                         tempCust.Unit = int.Parse(cWs.Cells[Mapping[columnsMaestro.SaleZone] + i].Text.Substring(0, 2));
                 }
                 else
@@ -1463,15 +1334,25 @@ namespace Bauhaus.Controllers
                 if (tempCust.Contacts == null)
                     tempCust.Contacts = new List<Contact>();
 
+                // Update Main Contact
                 cont = tempCust.Contacts.Where(x => x.Area == "Principal").FirstOrDefault();
                 if (cont == null)
-                    tempCust.Contacts.Add(updateContact(cont, "Principal", tempCust.Name, cWs.Cells[Mapping[columnsMaestro.MainTelephone] + i].Text, cWs.Cells[Mapping[columnsMaestro.GeneralEmail] + i].Text));
+                {
+                    cont = updateContact(cont, "Principal", tempCust.Name, cWs.Cells[Mapping[columnsMaestro.MainTelephone] + i].Text, cWs.Cells[Mapping[columnsMaestro.GeneralEmail] + i].Text);
+                    if (cont != null)
+                        tempCust.Contacts.Add(cont);
+                }
                 else
                     cont = updateContact(cont, "Principal", tempCust.Name, cWs.Cells[Mapping[columnsMaestro.MainTelephone] + i].Text, cWs.Cells[Mapping[columnsMaestro.GeneralEmail] + i].Text);
 
+                // Update Reception Contact
                 cont = tempCust.Contacts.Where(x => x.Area == "Recepción").FirstOrDefault();
-                if(cont == null)
-                    tempCust.Contacts.Add(updateContact(cont, "Recepción", cWs.Cells[Mapping[columnsMaestro.ContactName] + i].Text, cWs.Cells[Mapping[columnsMaestro.ContactTelephone] + i].Text, ""));
+                if (cont == null)
+                {
+                    cont = updateContact(cont, "Recepción", cWs.Cells[Mapping[columnsMaestro.ContactName] + i].Text, cWs.Cells[Mapping[columnsMaestro.ContactTelephone] + i].Text, "");
+                    if(cont!=null)
+                        tempCust.Contacts.Add(cont);
+                }
                 else
                     cont = updateContact(cont, "Recepción", cWs.Cells[Mapping[columnsMaestro.ContactName] + i].Text, cWs.Cells[Mapping[columnsMaestro.ContactTelephone] + i].Text, "");
 
@@ -1482,7 +1363,7 @@ namespace Bauhaus.Controllers
                 if (i % commitCount == 0)
                 {
                     stReport.Remark = ((int)((double)((double)i / cWs.Dimension.End.Row) * 100)) + "%";
-                    db.SaveChanges();
+                    SaveChanges(db, stReport);
                     db.Dispose();
                     db = new BauhausEntities();
                 }
@@ -1505,49 +1386,54 @@ namespace Bauhaus.Controllers
         public Contact updateContact(Contact cont, String area, String name, String tel, String mail)
         {
             // Critical Fields Null? -> Abort
-            if (!String.IsNullOrWhiteSpace(name) || !String.IsNullOrWhiteSpace(tel))
-            {
-                // Initialize
-                if (cont == null)
-                    cont = new Contact();
+            if (String.IsNullOrWhiteSpace(name))
+                return null;
 
-                // Update Name
-                if (cont.Name != name)
+            if (String.IsNullOrWhiteSpace(tel) && String.IsNullOrWhiteSpace(mail))
+                if (!area.Contains("CSR"))
+                    return null;
+
+
+            // Initialize
+            if (cont == null)
+                cont = new Contact();
+
+            // Update Name
+            if (cont.Name != name)
+            {
+                // Look for Name or tel.
+                Contact auxCont = db.Contacts.Where(x => x.Name == name).FirstOrDefault();
+                // Found
+                if (auxCont != null)
                 {
-                    // Look for Name or tel.
-                    Contact auxCont = db.Contacts.Where(x => x.Name == name || x.Telephone == tel).FirstOrDefault();
-                    // Found
-                    if (auxCont != null)
-                    {
-                        // Update Fields
-                        if (auxCont.Telephone != tel && !String.IsNullOrWhiteSpace(tel))
-                            auxCont.Telephone = tel;
-                        if (auxCont.Email != mail && !String.IsNullOrWhiteSpace(mail))
-                            auxCont.Email = mail;
-                    }
-                    else
-                    {
-                        // Create New
-                        auxCont = new Contact();
-                        auxCont.Area = area;
+                    // Update Fields
+                    if (auxCont.Name != name && !String.IsNullOrWhiteSpace(name))
                         auxCont.Name = name;
+                    if (auxCont.Telephone != tel && !String.IsNullOrWhiteSpace(tel))
                         auxCont.Telephone = tel;
+                    if (auxCont.Email != mail && !String.IsNullOrWhiteSpace(mail))
                         auxCont.Email = mail;
-                    }
-                    return auxCont;
                 }
-                    // Same Name, Update Everything else.
                 else
                 {
-                    if (cont.Telephone != tel && !String.IsNullOrWhiteSpace(tel))
-                        cont.Telephone = tel;
-                    if (cont.Email != mail && !String.IsNullOrWhiteSpace(mail))
-                        cont.Email = mail;
-                    return cont;
+                    // Create New
+                    auxCont = new Contact();
+                    auxCont.Area = area;
+                    auxCont.Name = name;
+                    auxCont.Telephone = tel;
+                    auxCont.Email = mail;
                 }
+                return auxCont;
             }
+            // Same Name, Update Everything else.
             else
-                return null;
+            {
+                if (cont.Telephone != tel && !String.IsNullOrWhiteSpace(tel))
+                    cont.Telephone = tel;
+                if (cont.Email != mail && !String.IsNullOrWhiteSpace(mail))
+                    cont.Email = mail;
+                return cont;
+            }
         }
 
         /// <summary>
@@ -1618,8 +1504,19 @@ namespace Bauhaus.Controllers
 
                                 }
 
+                                //Initialize Vehicles
+                                if (auxOrder.Shipment.Vehicle == null)
+                                {
+                                    auxOrder.Shipment.Vehicle = new Vehicle();
+                                    auxOrder.Shipment.Vehicle.Plate = "N/A";
+                                }
+
                                 // Update Vehicle Type
-                                if (auxOrder.Shipment.Vehicle.Type != cWs.Cells[Mapping[columnsOEM.VehicleType] + i].Text)
+                                if (String.IsNullOrWhiteSpace(auxOrder.Shipment.Vehicle.Type))
+                                    auxOrder.Shipment.CalculateVehicle();
+
+                                //Compare Type
+                                if (!String.IsNullOrWhiteSpace(cWs.Cells[Mapping[columnsOEM.VehicleType] + i].Text) && auxOrder.Shipment.Vehicle.Type != cWs.Cells[Mapping[columnsOEM.VehicleType] + i].Text)
                                 {
                                     auxOrder.Shipment.Vehicle.Type = cWs.Cells[Mapping[columnsOEM.VehicleType] + i].Text;
                                 }
@@ -1645,9 +1542,13 @@ namespace Bauhaus.Controllers
                                 {
                                     string newCarr = RemoveSimbols(RemoveDiacritics(carrName.ToLower()), 0);
 
-                                    auxOrder.Shipment.Carrier = (from x in db.Carriers
-                                                                 where x.Name.ToLower() == newCarr
-                                                                 select x).FirstOrDefault();
+                                    Carrier auxCarrier = (from x in db.Carriers
+                                                          where x.Name.ToLower() == newCarr
+                                                          select x).FirstOrDefault();
+
+                                    // If Found assign to order.
+                                    if (auxCarrier != null)
+                                        auxOrder.Shipment.Carrier = auxCarrier;
                                 }
 
                                 // Calculate CarryFee
@@ -1768,10 +1669,13 @@ namespace Bauhaus.Controllers
                         }
                     }
 
+                    //if (auxOrder.Shipment != null && auxOrder.Shipment.Vehicle != null && String.IsNullOrWhiteSpace(auxOrder.Shipment.Vehicle.Type))
+                    //    System.Diagnostics.Debug.WriteLine("Order "+i+" "+ auxOrder.SapID + " no Type");
+
                     if (i % commitCount == 0)
                     {
                         stReport.Remark = " " + ((int)((double)((double)i / cWs.Dimension.End.Row) * 100)) + "%";
-                        db.SaveChanges();
+                        SaveChanges(db, stReport);
                         db.Dispose();
                         db = new BauhausEntities();
                     }
@@ -1931,7 +1835,7 @@ namespace Bauhaus.Controllers
                                     if (ord != null)
                                     {
                                         db.Orders.Remove(ord);
-                                        db.SaveChanges();
+                                        SaveChanges(db);
                                         i -= commitCount;
                                     }
                                 }
@@ -2321,7 +2225,7 @@ namespace Bauhaus.Controllers
                 CSOT.Value = 0;
             }
 
-            db.SaveChanges();
+            SaveChanges(db);
         }
 
         /// <summary>
@@ -2371,7 +2275,7 @@ namespace Bauhaus.Controllers
                 OT.Value = 0;
             }
 
-            db.SaveChanges();
+            SaveChanges(db);
         }
 
         /// <summary>
@@ -2631,7 +2535,7 @@ namespace Bauhaus.Controllers
                     cWs.Cells[columns.DeliveryQtySU + i].Text,
                     cWs.Cells[columns.OrderWeight + i].Text,
                     cWs.Cells[columns.OrderVolume + i].Text);
-               
+
                 DateTime auxDate;
                 if (DateTime.TryParseExact(cWs.Cells[columns.RDDF + i].Text, "dd'.'MM'.'yyyy",
                     CultureInfo.InvariantCulture,
@@ -2980,7 +2884,7 @@ namespace Bauhaus.Controllers
 
                 db.Orders.Remove(ord);
             }
-            db.SaveChanges();
+            SaveChanges(db);
             return 0;
         }
 
@@ -3011,7 +2915,7 @@ namespace Bauhaus.Controllers
                 current.Abort();
             }
 
-            db.SaveChanges();
+            SaveChanges(db);
             TempData["Type"] = "info";
             TempData["Message"] = "Report Aborted Successfully.";
             return View("Index", db.Reports.ToList().OrderBy(x => x.CreationDate));
@@ -3023,7 +2927,7 @@ namespace Bauhaus.Controllers
         /// <param name="id">Reprot ID</param>
         /// <returns>String that contains status simbol and remark</returns>
         [HttpPost]
-        public ContentResult RefreshProgress(int id)
+        public JsonResult RefreshProgress(int id)
         {
             TagBuilder p = new TagBuilder("small");
             TagBuilder i = new TagBuilder("i");
@@ -3039,6 +2943,7 @@ namespace Bauhaus.Controllers
                 {
                     i.AddCssClass("fa fa-fire-extinguisher");
                     p.InnerHtml = "Report Not Available";
+                    return Json(new { Status = 0, Message = "Report Not Found", Progress = i.ToString() + " " + p.ToString(), Elapsed = 0 });
                 }
                 else
                 {
@@ -3064,8 +2969,9 @@ namespace Bauhaus.Controllers
                     p.InnerHtml = rp.Remark;
 
                 }
+
             }
-            return new ContentResult { Content = i.ToString() +" "+ p.ToString() };
+            return Json(new { Status = 1, Message = "Ok", Progress = i.ToString() + " " + p.ToString(), Elapsed = Math.Round(rp.ElapsedTime) });
         }
 
         /// <summary>
@@ -3105,10 +3011,48 @@ namespace Bauhaus.Controllers
                     }
                 }
 
+                LogError("General", "Entity Validation", "Entity Validation Failed - errors follow:\n" + sb.ToString());
+
                 throw new DbEntityValidationException(
                     "Entity Validation Failed - errors follow:\n" +
                     sb.ToString(), ex
                 ); // Add the original exception as the innerException
+            }
+        }
+
+        /// <summary>
+        /// Wrapper for SaveChanges adding the Validation Messages to the generated exception, also resets loading report
+        /// </summary>
+        /// <param name="context">The context.</param>
+        private void SaveChanges(BauhausEntities context, Report report)
+        {
+            try
+            {
+                context.SaveChanges();
+            }
+            catch (DbEntityValidationException ex)
+            {
+                StringBuilder sb = new StringBuilder();
+
+                foreach (var failure in ex.EntityValidationErrors)
+                {
+                    sb.AppendFormat("{0} failed validation\n", failure.Entry.Entity.GetType());
+                    foreach (var error in failure.ValidationErrors)
+                    {
+                        sb.AppendFormat("- {0} : {1}", error.PropertyName, error.ErrorMessage);
+                        sb.AppendLine();
+                    }
+                }
+
+                LogError(report.Name, "Entity Validation", "Entity Validation Failed - errors follow:\n" + sb.ToString());
+
+                context.Dispose();
+                context = new BauhausEntities();
+                context.Reports.Attach(report);
+                report.Status = 3;
+                report.Remark = "Entity Validation Errors Ocurred, see Log for Details.";
+                SaveChanges(context);
+
             }
         }
 

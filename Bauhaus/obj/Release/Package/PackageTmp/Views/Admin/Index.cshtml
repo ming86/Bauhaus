@@ -9,11 +9,13 @@
         <div class="col-md-13">
 
             <ul class="nav nav-tabs">
-                <li class="active"><a href="#general" data-toggle="tab">General</a></li>
-                <li><a id="dc" href="#dcPending" data-toggle="tab">Pending</a></li>
+                <li class="active"><a href="#general" data-toggle="tab">General Summary</a></li>
+                <li><a id="dc" href="#dcPending" data-toggle="tab">Pending Summary</a></li>
                 <li><a id="kpist" href="#KPIS" data-toggle="tab">KPIs</a></li>
                 <li>
-                    <small class="text-muted">Last Updated: @Model.ToString("dd/MM/yyyy h:mm tt") <button class="btn btn-link" data-toggle="modal" data-target="#ReportHelp"><i class="fa fa-question-circle"></i></button></small>
+                    <small class="text-muted">Last Updated: @Model.ToString("dd/MM/yyyy h:mm tt") </small> <button class="btn btn-link" data-toggle="modal" data-target="#CSOHelp">
+                        <i class="fa fa-info-circle fa-2x"></i>
+                    </button>
                 </li>
             </ul>
 
@@ -21,11 +23,6 @@
             <!-- GENERAL SUMMARY TAB -->
             <div class="tab-content">
                 <div class="tab-pane active" id="general">
-                    <div class="row">
-                        <div class="col-md-10">
-                            <h3 class="text-center">General Summary</h3>
-                        </div>
-                    </div>
                     <div class="row" style="margin-top:5px">
                         <div class="col-md-5">
                             <table class="table table-striped">
@@ -198,254 +195,252 @@
                 </div>
                 <div class="tab-pane" id="dcPending">
                     <div class="row">
-                        <div class="col-md-10">
-                            <h3 class="text-center">DC Pending Summary</h3>
+                        <div class="col-md-5">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Reason</th>
+                                        <th>#</th>
+                                        <th>
+                                            SU
+                                        </th>
+                                        <th>
+
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="success">
+                                        <td align="left">
+                                            <i class="fa fa-check"></i>@Html.ActionLink("Planned", "ViewOrders", "Order", new { desc = "planned" }, null)
+                                        </td>
+                                        <td id="plannedD">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="plannedDSU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td>
+                                            <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "planned" })"><span class="fa fa-download"></span></a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="left">
+                                            <i class="fa fa-calendar"></i>@Html.ActionLink("Appointment", "ViewOrders", "Order", new { desc = "appointmentConfirmation" }, null)
+                                        </td>
+                                        <td id="appointmentConfirmation">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="appointmentConfirmationSU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td>
+                                            <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "appointmentConfirmation" })"><span class="fa fa-download"></span></a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="left">
+                                            <i class="fa fa-arrows-alt"></i>@Html.ActionLink("Capacity", "ViewOrders", "Order", new { desc = "customerCapacity" }, null)
+                                        </td>
+                                        <td id="customerCapacity">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="customerCapacitySU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td>
+                                            <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "customerCapacity" })"><span class="fa fa-download"></span></a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="left">
+                                            <i class="fa fa-clock-o"></i>@Html.ActionLink("Postponed", "ViewOrders", "Order", new { desc = "postponed" }, null)
+                                        </td>
+                                        <td id="postponed">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="postponedSU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td>
+                                            <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "postponedOrder" })"><span class="fa fa-download"></span></a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="left">
+                                            <i class="fa fa-truck"></i>@Html.ActionLink("Vehicle", "ViewOrders", "Order", new { desc = "vehicle" }, null)
+                                        </td>
+                                        <td id="vehicle">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="vehicleSU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td>
+                                            <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "vehicle" })"><span class="fa fa-download"></span></a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="left">
+                                            <i class="fa fa-th-large"></i>@Html.ActionLink("Inventory", "ViewOrders", "Order", new { desc = "inventoryLack" }, null)
+                                        </td>
+                                        <td id="inventoryLack">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="inventoryLackSU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td>
+                                            <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "inventoryLack" })"><span class="fa fa-download"></span></a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="left">
+                                            <i class="fa fa-sort-amount-desc"></i>@Html.ActionLink("Min CS", "ViewOrders", "Order", new { desc = "minimun" }, null)
+                                        </td>
+                                        <td id="minimun">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="minimunSU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td>
+                                            <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "minimun" })"><span class="fa fa-download"></span></a>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
-                    </div>
-                    <div class="col-md-5">
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Reason</th>
-                                    <th>#</th>
-                                    <th>
-                                        SU
-                                    </th>
-                                    <th>
+                        <div class="col-md-5">
 
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr class="success">
-                                    <td align="left">
-                                        <i class="fa fa-check"></i>@Html.ActionLink("Planned", "ViewOrders", "Order", new { desc = "planned" }, null)
-                                    </td>
-                                    <td id="plannedD">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td id="plannedDSU">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td>
-                                        <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "planned" })"><span class="fa fa-download"></span></a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td align="left">
-                                        <i class="fa fa-calendar"></i>@Html.ActionLink("Appointment", "ViewOrders", "Order", new { desc = "appointmentConfirmation" }, null)
-                                    </td>
-                                    <td id="appointmentConfirmation">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td id="appointmentConfirmationSU">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td>
-                                        <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "appointmentConfirmation" })"><span class="fa fa-download"></span></a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td align="left">
-                                        <i class="fa fa-arrows-alt"></i>@Html.ActionLink("Capacity", "ViewOrders", "Order", new { desc = "customerCapacity" }, null)
-                                    </td>
-                                    <td id="customerCapacity">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td id="customerCapacitySU">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td>
-                                        <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "customerCapacity" })"><span class="fa fa-download"></span></a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td align="left">
-                                        <i class="fa fa-clock-o"></i>@Html.ActionLink("Postponed", "ViewOrders", "Order", new { desc = "postponed" }, null)
-                                    </td>
-                                    <td id="postponed">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td id="postponedSU">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td>
-                                        <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "postponedOrder" })"><span class="fa fa-download"></span></a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td align="left">
-                                        <i class="fa fa-truck"></i>@Html.ActionLink("Vehicle", "ViewOrders", "Order", new { desc = "vehicle" }, null)
-                                    </td>
-                                    <td id="vehicle">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td id="vehicleSU">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td>
-                                        <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "vehicle" })"><span class="fa fa-download"></span></a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td align="left">
-                                        <i class="fa fa-th-large"></i>@Html.ActionLink("Inventory", "ViewOrders", "Order", new { desc = "inventoryLack" }, null)
-                                    </td>
-                                    <td id="inventoryLack">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td id="inventoryLackSU">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td>
-                                        <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "inventoryLack" })"><span class="fa fa-download"></span></a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td align="left">
-                                        <i class="fa fa-sort-amount-desc"></i>@Html.ActionLink("Min CS", "ViewOrders", "Order", new { desc = "minimun" }, null)
-                                    </td>
-                                    <td id="minimun">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td id="minimunSU">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td>
-                                        <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "minimun" })"><span class="fa fa-download"></span></a>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="col-md-5">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Reason</th>
+                                        <th>#</th>
+                                        <th>
+                                            SU
+                                        </th>
+                                        <th>
 
-                        <table class="table table-striped">
-                            <thead>
-                                <tr>
-                                    <th>Reason</th>
-                                    <th>#</th>
-                                    <th>
-                                        SU
-                                    </th>
-                                    <th>
+                                        </th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td align="left">
+                                            <i class="fa fa-archive"></i>@Html.ActionLink("Pending", "ViewOrders", "Order", new { desc = "pending" }, null)
+                                        </td>
+                                        <td id="pending">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="pendingSU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td>
+                                            <a class="download" href="@Url.Action("DownloadOrders", "Order", new { desc = "pending" })"><span class="fa fa-download"></span></a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="left">
+                                            <i class="fa fa-sort-amount-desc"></i>@Html.ActionLink("Min CS Makro", "ViewOrders", "Order", new { desc = "minimunMakro" }, null)
+                                        </td>
+                                        <td id="minimunMakro">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="minimunMakroSU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td>
+                                            <a class="download" href="@Url.Action("DownloadOrders", "Order", new { desc = "minimunMakro" })"><span class="fa fa-download"></span></a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="left">
+                                            <i class="fa fa-qrcode"></i>@Html.ActionLink("VFR", "ViewOrders", "Order", new { desc = "vfr" }, null)
+                                        </td>
+                                        <td id="vfr">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="vfrSU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td>
+                                            <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "vfr" })"><span class="fa fa-download"></span></a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="left">
+                                            <i class="fa fa-qrcode"></i>@Html.ActionLink("VFR Makro", "ViewOrders", "Order", new { desc = "vfrMakro" }, null)
+                                        </td>
+                                        <td id="vfrMakro">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="vfrMakroSU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td>
+                                            <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "vfrMakro" })"><span class="fa fa-download"></span></a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="left">
+                                            <i class="fa fa-times"></i>@Html.ActionLink("Deleted", "ViewOrders", "Order", new { desc = "deleted" }, null)
+                                        </td>
+                                        <td id="deleted">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="deletedSU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td>
+                                            <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "deleted" })"><span class="fa fa-download"></span></a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="left">
+                                            <i class="fa fa-code-fork"></i>@Html.ActionLink("ZSPLIT", "ViewOrders", "Order", new { desc = "zsplit" }, null)
+                                        </td>
+                                        <td id="zsplit">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="zsplitSU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td>
+                                            <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "zsplit" })"><span class="fa fa-download"></span></a>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td align="left">
+                                            <i class="fa fa-question"></i>@Html.ActionLink("Others", "ViewOrders", "Order", new { desc = "others" }, null)
+                                        </td>
+                                        <td id="others">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="othersSU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td>
+                                            <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "others" })"><span class="fa fa-download"></span></a>
+                                        </td>
+                                    </tr>
+                                    <tr class="danger">
+                                        <td align="left">
+                                            <strong>@Html.ActionLink("Total", "ViewOrders", "Order", new { desc = "allDistribution" }, null)</strong>
+                                        </td>
+                                        <td id="allDistribution">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td id="allDistributionSU">
+                                            <i class="fa fa-cog fa-spin"></i>
+                                        </td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
 
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td align="left">
-                                        <i class="fa fa-archive"></i>@Html.ActionLink("Pending", "ViewOrders", "Order", new { desc = "pending" }, null)
-                                    </td>
-                                    <td id="pending">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td id="pendingSU">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td>
-                                        <a class="download" href="@Url.Action("DownloadOrders", "Order", new { desc = "pending" })"><span class="fa fa-download"></span></a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td align="left">
-                                        <i class="fa fa-sort-amount-desc"></i>@Html.ActionLink("Min CS Makro", "ViewOrders", "Order", new { desc = "minimunMakro" }, null)
-                                    </td>
-                                    <td id="minimunMakro">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td id="minimunMakroSU">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td>
-                                        <a class="download" href="@Url.Action("DownloadOrders", "Order", new { desc = "minimunMakro" })"><span class="fa fa-download"></span></a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td align="left">
-                                        <i class="fa fa-qrcode"></i>@Html.ActionLink("VFR", "ViewOrders", "Order", new { desc = "vfr" }, null)
-                                    </td>
-                                    <td id="vfr">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td id="vfrSU">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td>
-                                        <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "vfr" })"><span class="fa fa-download"></span></a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td align="left">
-                                        <i class="fa fa-qrcode"></i>@Html.ActionLink("VFR Makro", "ViewOrders", "Order", new { desc = "vfrMakro" }, null)
-                                    </td>
-                                    <td id="vfrMakro">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td id="vfrMakroSU">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td>
-                                        <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "vfrMakro" })"><span class="fa fa-download"></span></a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td align="left">
-                                        <i class="fa fa-times"></i>@Html.ActionLink("Deleted", "ViewOrders", "Order", new { desc = "deleted" }, null)
-                                    </td>
-                                    <td id="deleted">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td id="deletedSU">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td>
-                                        <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "deleted" })"><span class="fa fa-download"></span></a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td align="left">
-                                        <i class="fa fa-code-fork"></i>@Html.ActionLink("ZSPLIT", "ViewOrders", "Order", new { desc = "zsplit" }, null)
-                                    </td>
-                                    <td id="zsplit">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td id="zsplitSU">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td>
-                                        <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "zsplit" })"><span class="fa fa-download"></span></a>
-                                    </td>
-                                </tr>
-                                <tr>
-                                    <td align="left">
-                                        <i class="fa fa-question"></i>@Html.ActionLink("Others", "ViewOrders", "Order", new { desc = "others" }, null)
-                                    </td>
-                                    <td id="others">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td id="othersSU">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td>
-                                        <a class="pull-right download" href="@Url.Action("DownloadOrders", "Order", new { desc = "others" })"><span class="fa fa-download"></span></a>
-                                    </td>
-                                </tr>
-                                <tr class="danger">
-                                    <td align="left">
-                                        <strong>@Html.ActionLink("Total", "ViewOrders", "Order", new { desc = "allDistribution" }, null)</strong>
-                                    </td>
-                                    <td id="allDistribution">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td id="allDistributionSU">
-                                        <i class="fa fa-cog fa-spin"></i>
-                                    </td>
-                                    <td></td>
-                                </tr>
-                            </tbody>
-                        </table>
                     </div>
                 </div>
                 <div class="tab-pane" id="KPIS">
@@ -470,38 +465,6 @@
         </div>
     </div>
 </div>
-
-<!-- Modal -->
-<div class="modal fade" id="ReportHelp" tabindex="-1" role="dialog" aria-labelledby="ReportHelpLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header">
-                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
-                <h4 class="modal-title" id="ReportHelpLabel">Need up to date information?</h4>
-            </div>
-            <div class="modal-body">
-                <p>You can update order's information manually by loading a ZSKU report following the next steps</p>
-
-                <ol>
-                    <li>Open SAP LogOn</li>
-                    <li>Choose ZSKU Transaction</li>
-                    <li>Select variant created by CN2819</li>
-                    <li>Use Layout /VEBAUHAUS</li>
-                    <li>Download Report to your computer as "ZSKU.xls"</li>
-                    <li>Open Report and save it with ".xlsx" extension</li>
-                    <li>Open bauhaus.pg.com and LogIn</li>
-                    <li>Select Reports View (<i class="fa fa-archive"></i>)</li>
-                    <li>Choose file ZSKU.xlsx and click upload button (<i class="fa fa-cloud-upload"></i>)</li>
-                </ol>
-
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary" onclick="location.href='@Url.Action("Index", "Report")';return false;">Upload Report</button>
-            </div>
-        </div><!-- /.modal-content -->
-    </div><!-- /.modal-dialog -->
-</div><!-- /.modal -->
 @{
 
     string message = "";
@@ -514,7 +477,147 @@
     }
 }
 
+<!-- Modal -->
+<div class="modal fade" id="CSOHelp" tabindex="-1" role="dialog" aria-labelledby="CSOHelpLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-hidden="true">&times;</button>
+                <h4 class="modal-title" id="ReportHelpLabel">CSO Contacts/Vehicles/Gaps</h4>
+            </div>
+            <div class="modal-body">
+                <!-- Nav tabs -->
+                <ul class="nav nav-tabs">
+                    <li class="active"><a href="#carriers" data-toggle="tab"><i class="fa fa-truck"></i> Carriers</a></li>
+                    <li><a href="#planners" data-toggle="tab"><i class="fa fa-calendar" ></i> Planners</a></li>
+                </ul>
 
+                <!-- Tab panes -->
+                <div class="tab-content">
+                    <div class="tab-pane active" id="carriers">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Ext.</th>
+                                    <th>Else</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>BDC - AM Giovanny Muñoz</td>
+                                    <td>4459</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>BDC PM - Pedro Gutierrez</td>
+                                    <td>4454</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>BDC- Alfredo Urbina</td>
+                                    <td>4358</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>BDC - Marilyn Castro</td>
+                                    <td>4353</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>BDC - Javier Quiroz</td>
+                                    <td>4450</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>BDC AM - Giovanny Muñoz</td>
+                                    <td>4459</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>BDC PM - Pedro Gutierrez</td>
+                                    <td>4454</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>GDC - Omar Nuñez</td>
+                                    <td>3058</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>GDC - Ulises Hidalgo</td>
+                                    <td>3156</td>
+                                    <td></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="tab-pane" id="planners">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Ext.</th>
+                                    <th>Else</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Arimar (Yolanda Dávila)</td>
+                                    <td>4334</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>Gama (Ana Artigas)</td>
+                                    <td></td>
+                                    <td>0414-3581171</td>
+                                </tr>
+                                <tr>
+                                    <td>Hersan (Ana Caripá)</td>
+                                    <td>4313</td>
+                                    <td>4365</td>
+                                </tr>
+                                <tr>
+                                    <td>IKA (Mariely Juarez)</td>
+                                    <td>4213</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>Legisa (Antonio Suárez)</td>
+                                    <td>4304</td>
+                                    <td>4468</td>
+                                </tr>
+                                <tr>
+                                    <td>Rs1954 (Judith Díaz)</td>
+                                    <td>4306</td>
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td>Sanchez Polo (Javier García)</td>
+                                    <td>4308</td>
+                                    <td>0414-4020935</td>
+                                </tr>
+                                <tr>
+                                    <td>Servilong (Luis Álvarez)</td>
+                                    <td>4290</td>
+                                    <td>0424-1058656</td>
+                                </tr>
+                                <tr>
+                                    <td>Venedizca (Jesús Carballo)</td>
+                                    <td>245-55710221</td>
+                                    <td>0414-1435757</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
 <script>
     var loaded = false;
     var loadedGrph = false;
@@ -656,7 +759,7 @@
                     // Suffix of all ylabels
                     postUnits: '%',
                     // X axis labeling interval.
-                    xLabels:"day"
+                    xLabels: "day"
                 });
 
                 new Morris.Line({
@@ -675,7 +778,7 @@
                     // Suffix of all ylabels
                     postUnits: '%',
                     // X axis labeling interval.
-                    xLabels:"day"
+                    xLabels: "day"
                 });
                 loadedGrph = true;
 

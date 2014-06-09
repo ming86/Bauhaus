@@ -30,7 +30,6 @@
             @Html.Grid(Model.Carrier.Vehicles).Named("vehiclesGrid").Columns(columns =>
             {
                 columns.Add(item => item.Plate);
-                columns.Add(item => item.Status);
                 columns.Add(item => item.Type);
                 columns.Add(item => item.Driver.Name)
                     .Titled("Driver's Name");

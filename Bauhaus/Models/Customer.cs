@@ -48,6 +48,5 @@ namespace Bauhaus.Models
 
         public virtual ICollection<Contact> Contacts { get; set; }
         public virtual ICollection<Order> Orders { get; set; }
-
-    }
+    }    
 }

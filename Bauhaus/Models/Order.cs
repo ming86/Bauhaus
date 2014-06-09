@@ -100,7 +100,6 @@ namespace Bauhaus.Models
                 this.Products = new List<Product>();
             long auxLong;
             Double auxDouble;
-            int auxInt;
             // Parse SKU
             if (!long.TryParse(Material, out auxLong))
             {
@@ -119,14 +118,15 @@ namespace Bauhaus.Models
                 product.Brand = Brand.Trim();
                 product.Qty = new Quantity();
                 product.DSSQty = new Quantity();
+
                 // Parse CS
-                if (!int.TryParse(CS, NumberStyles.Number, firstCulture, out auxInt))
-                    if (!int.TryParse(CS, NumberStyles.Number, culture, out auxInt))
+                if (!double.TryParse(CS, NumberStyles.Number, firstCulture, out auxDouble))
+                    if (!double.TryParse(CS, NumberStyles.Number, culture, out auxDouble))
                     {
                         return 1;
                     }
 
-                product.Qty.CS = auxInt;
+                product.Qty.CS = auxDouble;
 
                 // Parse SU
                 if (!double.TryParse(SU, NumberStyles.Number, firstCulture, out auxDouble))
@@ -158,13 +158,13 @@ namespace Bauhaus.Models
                 if (!String.IsNullOrWhiteSpace(DSSCS))
                 {
                     // Parse Dss CS
-                    if (!int.TryParse(DSSCS, NumberStyles.Number, firstCulture, out auxInt))
-                        if (!int.TryParse(DSSCS, NumberStyles.Number, culture, out auxInt))
+                    if (!double.TryParse(DSSCS, NumberStyles.Number, firstCulture, out auxDouble))
+                        if (!double.TryParse(DSSCS, NumberStyles.Number, culture, out auxDouble))
                         {
                             return 1;
                         }
 
-                    product.DSSQty.CS = auxInt;
+                    product.DSSQty.CS = auxDouble;
 
                     // Parse Dss SU
                     if (!double.TryParse(DSSSU, NumberStyles.Number, firstCulture, out auxDouble))
@@ -193,12 +193,12 @@ namespace Bauhaus.Models
                 if (!String.IsNullOrWhiteSpace(DSSCS))
                 {
                     // Parse Dss Cs
-                    if (!int.TryParse(DSSCS, NumberStyles.Number, firstCulture, out auxInt))
-                        if (!int.TryParse(DSSCS, NumberStyles.Number, culture, out auxInt))
+                    if (!double.TryParse(DSSCS, NumberStyles.Number, firstCulture, out auxDouble))
+                        if (!double.TryParse(DSSCS, NumberStyles.Number, culture, out auxDouble))
                         {
                             return 1;
                         }
-                    product.DSSQty.CS = auxInt;
+                    product.DSSQty.CS = auxDouble;
 
                     // Parse Dss Su
                     if (!double.TryParse(DSSSU, NumberStyles.Number, firstCulture, out auxDouble))
@@ -211,7 +211,5 @@ namespace Bauhaus.Models
                 return 0;
             }
         }
-
-
     }
 }

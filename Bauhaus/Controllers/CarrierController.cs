@@ -15,7 +15,7 @@ namespace Bauhaus.Controllers
         BauhausEntities db = new BauhausEntities();
         //
         // GET: /Carrier/
-        [Authorize(Roles="Carrier , Admin")]
+        [Authorize(Roles = "Carrier , Admin")]
         public ActionResult Index()
         {
             ViewBag.Title = "Shipments";
@@ -83,34 +83,40 @@ namespace Bauhaus.Controllers
         /// <returns>JSON with Status and Message of operation.</returns>
         [HttpPost]
         [Authorize(Roles = "Carrier , Admin")]
-        public JsonResult RegisterVehicle(long carrier ,string plate, string type, string driversName, string driversTelephone)
+        public JsonResult RegisterVehicle(long carrier, string plate, string type, string driversName, string driversTelephone)
         {
             Carrier carr = db.Carriers.Find(carrier);
 
-            if(carr==null)
+            if (carr == null)
                 return Json(new { Status = 0, Message = "Carrier not Found." });
+
+            if (String.IsNullOrWhiteSpace(driversName))
+                return Json(new { Status = 0, Message = "Driver must have a Name." });
 
 
             Contact Ndriver = carr.Drivers.Where(item => item.Name == driversName).FirstOrDefault();
-            if ( Ndriver == null)
+            if (Ndriver == null)
             {
                 Ndriver = new Contact();
                 Ndriver.Area = "Driver";
-                Ndriver.Name = driversName;
-                Ndriver.Telephone = driversTelephone;
                 carr.Drivers.Add(Ndriver);
             }
-                
-            Vehicle Veh = carr.Vehicles.Where(item=>item.Plate == plate).FirstOrDefault();
-            if (Veh != null)
-                    return Json(new { Status = 0, Message = "Vehicle Already Registered." });
-            else
+
+            Ndriver.Name = driversName;
+            Ndriver.Telephone = driversTelephone;
+
+
+            Vehicle Veh = carr.Vehicles.Where(item => item.Plate == plate).FirstOrDefault();
+            if (Veh == null)
             {
                 Veh = new Vehicle();
-                Veh.Plate = plate;
-                Veh.Type = type;
                 carr.Vehicles.Add(Veh);
             }
+
+            Veh.Plate = plate;
+            Veh.Type = type;
+            Veh.Driver = Ndriver;
+
             db.SaveChanges();
             return Json(new { Status = 1, Message = "Ok" });
         }
@@ -121,19 +127,15 @@ namespace Bauhaus.Controllers
         /// <param name="ShipmentId">Shipment id</param>
         /// <param name="VehicleId">Vehicle id to assign</param>
         /// <returns>JSON witn status and Message</returns>
-        [Authorize(Roles="Carrier , Admin")]
+        [Authorize(Roles = "Carrier , Admin")]
         public JsonResult AssignVehicle(long ShipmentId, int VehicleId)
         {
             Shipment shpmt = db.Shipments.Find(ShipmentId);
             if (shpmt != null)
             {
                 Vehicle veh = db.Vehicles.Find(VehicleId);
-                if(veh == null)
+                if (veh == null)
                     return Json(new { Status = 0, Message = "Vehicle not Found." });
-                else
-                {
-
-                }
 
                 if (shpmt.Vehicle != null)
                     if (shpmt.Vehicle.Type != veh.Type)
@@ -159,44 +161,44 @@ namespace Bauhaus.Controllers
         /// <param name="VehicleId">Vehicle id to assign</param>
         /// <returns>JSON witn status and Message</returns>
         [Authorize(Roles = "Carrier , Admin")]
-        public JsonResult SaveAssignVehicle(long ShipmentId, long carrier, string plate, string type, string driversName, string driversTelephone)
+        public JsonResult SaveAssignVehicle(long ShipmentId, long carrier, string plate, string type, string driversName, string driversTelephone, int VehicleId = -1)
         {
             Shipment shpmt = db.Shipments.Find(ShipmentId);
             if (shpmt != null)
             {
+                //CARRIER SECTION
                 Carrier carr = db.Carriers.Find(carrier);
-
                 if (carr == null)
                     return Json(new { Status = 0, Message = "Carrier not Found." });
 
-
-                Contact Ndriver = carr.Drivers.Where(item => item.Name == driversName).FirstOrDefault();
+                // DRIVER SECTION
+                Contact Ndriver = carr.Drivers.Where(item => item.Name == driversName 
+                    || item.Telephone == driversTelephone).FirstOrDefault();
                 if (Ndriver == null)
                 {
                     Ndriver = new Contact();
                     Ndriver.Area = "Driver";
-                    Ndriver.Name = driversName;
-                    Ndriver.Telephone = driversTelephone;
                     carr.Drivers.Add(Ndriver);
                 }
+                Ndriver.Name = driversName;
+                Ndriver.Telephone = driversTelephone;
 
-                Vehicle Veh = carr.Vehicles.Where(item => item.Plate == plate).FirstOrDefault();
-                if (Veh != null)
-                {
-                    if (Veh.Driver.Name != driversName)
-                    {
-                        Veh.Driver = Ndriver;
-                    }
-                        
-                }
+                // VECHICLE SECTION
+                Vehicle Veh;
+                if (VehicleId == -1)
+                    Veh = carr.Vehicles.Where(item => item.Plate == plate).FirstOrDefault();
                 else
+                    Veh = carr.Vehicles.Where(item => item.ID == VehicleId).FirstOrDefault();
+
+                if (Veh == null)
                 {
                     Veh = new Vehicle();
-                    Veh.Driver = Ndriver;
-                    Veh.Plate = plate;
-                    Veh.Type = type;
                     carr.Vehicles.Add(Veh);
+
                 }
+                Veh.Driver = Ndriver;
+                Veh.Plate = plate;
+                Veh.Type = type;
                 shpmt.Vehicle = Veh;
                 db.SaveChanges();
                 return Json(new { Status = 1, Message = "Ok" });
@@ -219,7 +221,7 @@ namespace Bauhaus.Controllers
         [HttpPost]
         [Authorize(Roles = "Carrier , Admin")]
         public JsonResult EditVehicle(int id, string plate, string type,
-                                        string driversName, string driversTelephone )
+                                        string driversName, string driversTelephone)
         {
             Vehicle auxVehicle = db.Vehicles.Find(id);
             if (auxVehicle != null)
@@ -248,12 +250,12 @@ namespace Bauhaus.Controllers
         {
 
             Vehicle veh = db.Vehicles.Find(id);
-            if(veh!=null)
+            if (veh != null)
             {
                 var shipments = (from x in db.Shipments
                                  where x.Vehicle.Plate == veh.Plate
                                  select x);
-                if(shipments.Any())
+                if (shipments.Any())
                 {
                     foreach (Shipment shp in shipments)
                     {
@@ -261,7 +263,7 @@ namespace Bauhaus.Controllers
                         shp.Carrier.Vehicles.Remove(veh);
                     }
                 }
-                
+
 
                 db.Vehicles.Remove(veh);
                 db.SaveChanges();
@@ -291,16 +293,16 @@ namespace Bauhaus.Controllers
                 return Json(new { Status = 0, Message = "Customer has no Orders." });
             }
 
-            if(stage < 2 || stage > 5)
+            if (stage < 2 || stage > 5)
             {
                 return Json(new { Status = 0, Message = "Invalid Stage." });
             }
 
             foreach (Order ord in orders)
             {
-                if(stage == 5)
+                if (stage == 5)
                 {
-                    if(ord.POD == null)
+                    if (ord.POD == null)
                     {
                         ord.POD = new POD();
                         ord.POD.Date = DateTime.Today;
@@ -314,7 +316,7 @@ namespace Bauhaus.Controllers
 
             db.SaveChanges();
 
-            return Json( new { Status = 1, Message = "Orders Updated."});
+            return Json(new { Status = 1, Message = "Orders Updated." });
         }
 
         /// <summary>
@@ -330,7 +332,7 @@ namespace Bauhaus.Controllers
         public JsonResult UpdateReason(long shipment, int stage, int reason, string comment)
         {
             Shipment shpmt = db.Shipments.Find(shipment);
-            if(shpmt == null)
+            if (shpmt == null)
             {
                 return Json(new { Status = 0, Message = "Shipment not Found." });
             }
@@ -377,14 +379,14 @@ namespace Bauhaus.Controllers
         /// </summary>
         /// <param name="id">Carriers ID</param>
         /// <returns>Json Object containing Status, Message and Partia View</returns>
-        [Authorize(Roles="Carrier , Admin")]
+        [Authorize(Roles = "Carrier , Admin")]
         public JsonResult GetVehEditModal(long id)
         {
             System.Diagnostics.Debug.WriteLine("Getting Vehicles");
             Shipment shp = db.Shipments.Find(id);
             if (shp == null)
                 return Json(new { Status = 0, Message = "Not found" });
-            return Json(new { Status = 1, Message = "Ok", Content = RenderPartialViewToString("_VehEditModal", shp ) });
+            return Json(new { Status = 1, Message = "Ok", Content = RenderPartialViewToString("_VehEditModal", shp) });
         }
 
         /// <summary>
@@ -393,14 +395,14 @@ namespace Bauhaus.Controllers
         /// <param name="id">Vehicles Carrier Id</param>
         /// <returns>Rendered partial view with vehicles grid</returns>
         [Authorize(Roles = "Carrier , Admin")]
-        public ActionResult GetVehiclesGrid(long id,int page = 1,int elements = 5)
+        public ActionResult GetVehiclesGrid(long id, int page = 1, int elements = 5)
         {
             Carrier carrier = db.Carriers.Find(id);
             IEnumerable<Vehicle> vehicles = carrier.Vehicles.ToList();
             int totalPages = vehicles.Count() / elements;
             vehicles = vehicles.Skip(page * elements - elements).Take(elements);
             TempData["Page"] = page;
-            return PartialView("_VehiclesGrid",vehicles);
+            return PartialView("_VehiclesGrid", vehicles);
         }
 
         /// <summary>
@@ -416,6 +418,6 @@ namespace Bauhaus.Controllers
             return Json(new { Status = 1, Message = "Ok", Content = veh });
         }
 
-        
+
     }
 }

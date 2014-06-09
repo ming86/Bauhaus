@@ -21,6 +21,6 @@ namespace Bauhaus.Models
         public string Uploader { get; set; }
         public string Path { get; set; }
         public string Remark { get; set; }
-        public double ProcessTime { get; set; }
+        public double ElapsedTime { get; set; }
     }
 }

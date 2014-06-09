@@ -13,7 +13,7 @@ namespace Bauhaus.Models
         [Key]
         public int ID { get; set; }
         [Display(Name = "CS")]
-        public int CS { get; set; }
+        public double CS { get; set; }
         [Display(Name = "SU")]
         public double SU { get; set; }
         [Display(Name = "Net WT")]

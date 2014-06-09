@@ -87,7 +87,6 @@ C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\EPPlus.dll
 C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\GridMvc.dll
 C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\Microsoft.Web.Infrastructure.dll
 C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\Microsoft.Web.WebPages.OAuth.dll
-C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\Mvc.Mailer.dll
 C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\Newtonsoft.Json.dll
 C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\PercentageProgressBar.dll
 C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\SmartThreadPool.dll

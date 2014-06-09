@@ -13,6 +13,12 @@ namespace Bauhaus.Controllers
     {
         private BauhausEntities db = new BauhausEntities();
 
+        [Authorize]
+        public ActionResult Index()
+        {
+            return View(db.Contacts.OrderBy(x=>x.Area).ToList());
+        }
+
         [HttpPost]
         [Authorize]
         public ContentResult Create(long customer,String area, String name, String telephone, String email)

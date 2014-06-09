@@ -9,9 +9,24 @@
                               {
                                   columns.Add(item => item.Plate);
                                   columns.Add(item => item.Type);
-                                  columns.Add(item => item.Driver.Name)
-                                      .Titled("Drivers Name");
                                   columns.Add()
+                                      .Titled("Drivers Name")
+                                      .Sanitized(false)
+                                      .Encoded(false)
+                                      .RenderValueAs(o =>
+                                        @<div>
+                                            @if (o.Driver != null)
+                                            {
+                                                <p>@o.Driver.Name</p>
+                                            }
+                                            else
+                                            {
+                                                <p class="text-danger">No Driver</p>
+                                            }
+                                        </div>
+                                      );
+                                  columns.Add()
+                                      .Titled("")
                                       .Sanitized(false)
                                       .Encoded(false)
                                       .RenderValueAs(o =>
@@ -37,7 +52,6 @@
                     $("#vehId").val(data.Content.ID)
                     $("#plate").val(data.Content.Plate);
                     $("#type").val(data.Content.Type);
-                    $("#status").val(data.Content.Status);
                     $("#name").val(data.Content.Driver.Name);
                     $("#tel").val(data.Content.Driver.Telephone);
                     $("#vehicleInfo").show("slow");

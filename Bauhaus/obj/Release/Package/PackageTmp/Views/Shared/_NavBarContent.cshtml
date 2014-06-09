@@ -15,8 +15,9 @@
                     <li class="divider"></li>
                     <li><a onclick="location.href='@Url.Action("Index", "Carrier")';return false;">Shipments <i class="fa fa-truck fa-x2"></i></a></li>
                     <li class="divider"></li>
+                    <li><a onclick="location.href='@Url.Action("Index", "Contact")';return false;">Contacts <i class="fa fa-book fa-x2"></i></a></li>
                     <li><a onclick="location.href='@Url.Action("ManageUsers", "Admin")';return false;">Users <i class="fa fa-users fa-x2"></i></a></li>
-                    <li><a onclick="location.href='@Url.Action("LogIndex", "Admin")';return false;">Log <i class="fa fa-video-camera fa-x2"></i></a></li>
+                    <li><a onclick="location.href='@Url.Action("LogIndex", "Admin")';return false;">Activity Log <i class="fa fa-video-camera fa-x2"></i></a></li>
                 </ul>
             </li>
 
@@ -38,7 +39,7 @@
                     <li><a href="@Url.Action("Index", "Customer", new { filter = true })"><i class="fa fa-filter"></i> Filtered</a></li>
                     <li class="divider"></li>
                     <li><a onclick="location.href='@Url.Action("VisibilityIndex", "Order")';return false;">Order Tracking <i class="fa fa-map-marker fa-x2"></i></a></li>
-                    <li><a onclick="location.href='@Url.Action("RDDFConfirmation", "Order")';return false;">RDDF Check <i class="fa fa-calendar fa-x2"></i></a></li>
+                    <li><a onclick="location.href='@Url.Action("RDDFConfirmation", "Order", new { filter = true })';return false;">RDDF Check <i class="fa fa-calendar fa-x2"></i></a></li>
                 </ul>
             </li>
         }

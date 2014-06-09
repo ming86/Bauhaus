@@ -8,25 +8,25 @@
     @Styles.Render("~/Content/css")
     @Scripts.Render("~/bundles/modernizr")
     <meta name="viewport" content="width=device-width" />
-    <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.min.css" rel="stylesheet">
+    <link href="//netdna.bootstrapcdn.com/font-awesome/4.1.0/css/font-awesome.min.css" rel="stylesheet">
     <link href="@Url.Content("~/Content/Gridmvc.css")" rel="stylesheet" />
     <link href="//netdna.bootstrapcdn.com/bootstrap/3.0.2/css/bootstrap.min.css" rel="stylesheet">
-    @* <link href="@Url.Content("~/Content/bootstrap/bootstrap.min.css")" rel="stylesheet" />*@
     <link href="@Url.Content("~/Content/toastr.min.css")" rel="stylesheet" />
     <link href="@Url.Content("~/Content/toastr.css")" rel="stylesheet" />
     <link href="@Url.Content("~/Content/themes/base/jquery.ui.all.css")" rel="stylesheet" />
     <link href="//netdna.bootstrapcdn.com/font-awesome/4.0.3/css/font-awesome.css" rel="stylesheet">
-    <link rel="stylesheet" href="http://cdn.oesmith.co.uk/morris-0.4.3.min.css" />
+    <link href="http://cdn.oesmith.co.uk/morris-0.4.3.min.css" rel="stylesheet" />
 
 
     <script src="@Url.Content("~/Scripts/jquery-2.0.3.min.js")"></script>
     <script src="@Url.Content("~/Scripts/jquery-ui-1.10.3.min.js")"></script>
-    <script src="//netdna.bootstrapcdn.com/bootstrap/3.0.2/js/bootstrap.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
     <script src="@Url.Content("~/Scripts/toastr.js")"></script>
     <script src="@Url.Content("~/Scripts/gridmvc.min.js")"></script>
     <script src="//cdnjs.cloudflare.com/ajax/libs/raphael/2.1.0/raphael-min.js"></script>
     <script src="http://cdn.oesmith.co.uk/morris-0.4.3.min.js"></script>
     <script src="@Url.Content("~/Scripts/helpers.js")"></script>
+    <script src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit" type="text/javascript"></script>
 
     <meta name="google-translate-customization" content="34504c74728c6283-0152bb7b4f86d6d9-ga46b4e809db4e92e-10" />
 </head>
@@ -34,21 +34,7 @@
     <div class="container">
         <div class="header">
             <div class="content-wrapper">
-                <div id="google_translate_element" class="text-right">
-                    <script type="text/javascript">
-                        function googleTranslateElementInit() {
-                            new google.translate.TranslateElement(
-                                {
-                                    pageLanguage: 'en', includedLanguages: 'en,es', layout: google.translate.TranslateElement.InlineLayout.SIMPLE, autoDisplay: false
-
-                                }, 'google_translate_element');
-                        }
-                    </script>
-                    <script type="text/javascript" src="//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit">
-
-                    </script>
-                </div>
-
+                <div id="google_translate_element" class="float-right"></div>
 
                 <a onclick="location.href='@Url.Action("Index", "Home")';return false;" id="logo"><img src="~/Images/PGBauhausLogo.png" /></a>
 
@@ -129,4 +115,11 @@
             $("#feedbackForm").slideDown();
         })
     });
+    function googleTranslateElementInit() {
+        new google.translate.TranslateElement(
+            {
+                pageLanguage: 'en', includedLanguages: 'en,es', layout: google.translate.TranslateElement.InlineLayout.SIMPLE, autoDisplay: false
+
+            }, 'google_translate_element');
+    }
 </script>

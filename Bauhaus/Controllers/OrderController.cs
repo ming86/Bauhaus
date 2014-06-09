@@ -127,7 +127,7 @@ namespace Bauhaus.Controllers
                                        select x).FirstOrDefault();
                                 if (ord != null)
                                 {
-                                    return RedirectToAction("Details", new { id = idn });
+                                    return View("Details", ord);
                                 }
                                 else
                                 {
@@ -138,7 +138,7 @@ namespace Bauhaus.Controllers
                                                    select x).FirstOrDefault();
                                     if (linqOrd != null)
                                     {
-                                        return RedirectToAction("Details", linqOrd);
+                                        return View("Details", linqOrd);
                                     }
                                 }
                             }
@@ -298,7 +298,10 @@ namespace Bauhaus.Controllers
             {
                 foreach (String order in orders)
                 {
-                    long ordNumber = long.Parse(order);
+                    long ordNumber;
+                    if (!long.TryParse(order, out ordNumber))
+                        continue;
+
                     Order ord = db.Orders.Find(ordNumber);
                     if (ord != null && ord.Customer != null)
                     {
@@ -719,7 +722,7 @@ namespace Bauhaus.Controllers
         {
             IQueryable<Order> orders = SelectOrders(desc,filter);
             int count = orders.Count();
-            int cs = (from order in orders
+            double cs = (from order in orders
                       from product in order.Products
                       select product.Qty.CS).Sum(); 
             double su = Math.Round((from order in orders
@@ -779,108 +782,108 @@ namespace Bauhaus.Controllers
         {
             IQueryable<Order> orders = SelectOrders("openItems", filter);
             //int openItems = orders.Count();
-            //int openItemsCS = (from order in orders
-            //                   from product in order.Products
-            //                   select product.Qty.CS).Sum(); 
+            //int openItemsCS = Math.Round((from order in orders
+                                           //from product in order.Products
+                                           //select (double?)product.Qty.CS).Sum() ?? 0, 2);
             //double openItemsSU = Math.Round((from order in orders
             //                                   from product in order.Products
             //                                   select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             //orders = SelectOrders("15D", filter);
             //int D15 = orders.Count();
-            //int D15CS = (from order in orders
-            //                   from product in order.Products
-            //                   select product.Qty.CS).Sum(); 
+            //int D15CS = Math.Round((from order in orders
+                                           //from product in order.Products
+                                           //select (double?)product.Qty.CS).Sum() ?? 0, 2);
             //double D15SU = Math.Round((from order in orders
             //                               from product in order.Products
             //                               select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             //orders = SelectOrders("3D", filter);
             //int D3 = orders.Count();
-            //int D3CS = (from order in orders
-            //             from product in order.Products
-            //             select product.Qty.CS).Sum();
+            //int D3CS = Math.Round((from order in orders
+                                           //from product in order.Products
+                                           //select (double?)product.Qty.CS).Sum() ?? 0, 2);
             //double D3SU = Math.Round((from order in orders
             //                           from product in order.Products
             //                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             //orders = SelectOrders("5D", filter);
             //int D5 = orders.Count();
-            //int D5CS = (from order in orders
-            //             from product in order.Products
-            //             select product.Qty.CS).Sum();
+            //int D5CS = Math.Round((from order in orders
+                                           //from product in order.Products
+                                           //select (double?)product.Qty.CS).Sum() ?? 0, 2);
             //double D5SU = Math.Round((from order in orders
             //                           from product in order.Products
             //                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("blocked", filter);
             int blocked = orders.Count();
-            int blockedCS = (from order in orders
-                         from product in order.Products
-                         select product.Qty.CS).Sum();
+            double blockedCS = Math.Round((from order in orders
+                                           from product in order.Products
+                                           select (double?)product.Qty.CS).Sum() ?? 0, 2);
             double blockedSU = Math.Round((from order in orders
                                        from product in order.Products
                                        select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("open", filter);
             int open = orders.Count();
-            int openCS = (from order in orders
-                             from product in order.Products
-                             select product.Qty.CS).Sum();
+            double openCS = Math.Round((from order in orders
+                                        from product in order.Products
+                                        select (double?)product.Qty.CS).Sum() ?? 0, 2);
             double openSU = Math.Round((from order in orders
                                            from product in order.Products
                                            select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("assigned", filter);
             int assigned = orders.Count();
-            int assignedCS = (from order in orders
-                             from product in order.Products
-                             select product.Qty.CS).Sum();
+            double assignedCS = Math.Round((from order in orders
+                                            from product in order.Products
+                                            select (double?)product.DSSQty.CS).Sum() ?? 0, 2);
             double assignedSU = Math.Round((from order in orders
                                            from product in order.Products
-                                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
+                                           select (double?)product.DSSQty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("planned", filter);
             int planned = orders.Count();
-            int plannedCS = (from order in orders
-                             from product in order.Products
-                             select product.Qty.CS).Sum();
+            double plannedCS = Math.Round((from order in orders
+                                           from product in order.Products
+                                           select (double?)product.DSSQty.CS).Sum() ?? 0, 2);
             double plannedSU = Math.Round((from order in orders
                                            from product in order.Products
-                                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
+                                           select (double?)product.DSSQty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("invoiced", filter);
             int invoiced = orders.Count();
-            int invoicedCS = (from order in orders
-                             from product in order.Products
-                             select product.Qty.CS).Sum();
+            double invoicedCS = Math.Round((from order in orders
+                                            from product in order.Products
+                                            select (double?)product.DSSQty.CS).Sum() ?? 0, 2);
             double invoicedSU = Math.Round((from order in orders
                                            from product in order.Products
-                                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
+                                           select (double?)product.DSSQty.SU).Sum() ?? 0, 2);
 
             //orders = SelectOrders("onTransit", filter);
             //int transit = orders.Count();
-            //int transitCS = (from order in orders
-            //                 from product in order.Products
-            //                 select product.Qty.CS).Sum();
+            //int transitCS = Math.Round((from order in orders
+                                           //from product in order.Products
+                                           //select (double?)product.Qty.CS).Sum() ?? 0, 2);
             //double transitSU = Math.Round((from order in orders
             //                               from product in order.Products
             //                               select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             //orders = SelectOrders("onCustomer", filter);
             //int customer = orders.Count();
-            //int customerCS = (from order in orders
-            //                 from product in order.Products
-            //                 select product.Qty.CS).Sum();
+            //int customerCS =Math.Round((from order in orders
+                                           //from product in order.Products
+                                           //select (double?)product.Qty.CS).Sum() ?? 0, 2);
             //double customerSU = Math.Round((from order in orders
             //                               from product in order.Products
             //                               select (double?)product.Qty.SU).Sum() ?? 0, 2);
 
             //orders = SelectOrders("delivered", filter);
             //int delivered = orders.Count();
-            //int deliveredCS = (from order in orders
-            //                 from product in order.Products
-            //                 select product.Qty.CS).Sum();
+            //int deliveredCS = Math.Round((from order in orders
+                                           //from product in order.Products
+                                           //select (double?)product.Qty.CS).Sum() ?? 0, 2);
             //double deliveredSU = Math.Round((from order in orders
             //                               from product in order.Products
             //                               select (double?)product.Qty.SU).Sum() ?? 0, 2);
@@ -891,7 +894,7 @@ namespace Bauhaus.Controllers
 
             int total = blocked + open + assigned + planned + invoiced;
             //transit + customer + delivered;
-            int totalCS = blockedCS + openCS + assignedCS + plannedCS + invoicedCS;
+            double totalCS = blockedCS + openCS + assignedCS + plannedCS + invoicedCS;
             //transitCS + customerCS + deliveredCS;
             double totalSU = blockedSU + openSU + assignedSU + plannedSU + invoicedSU;
             //transitSU + customerSU + deliveredSU;
@@ -953,85 +956,85 @@ namespace Bauhaus.Controllers
             IQueryable<Order> orders = SelectOrders("planned", filter);
             double plannedSU = Math.Round((from order in orders
                                                from product in order.Products
-                                               select (double?)product.Qty.SU).Sum() ?? 0, 2);
+                                               select (double?)product.DSSQty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("appointmentConfirmation", filter);
             int appointment = orders.Count();
             double appointmentSU = Math.Round((from order in orders
                                                from product in order.Products
-                                               select (double?)product.Qty.SU).Sum() ?? 0, 2);
+                                               select (double?)product.DSSQty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("pending", filter);
             int pending = orders.Count();
             double pendingSU = Math.Round((from order in orders
                                            from product in order.Products
-                                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
+                                           select (double?)product.DSSQty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("customerCapacity", filter);
             int customerCapacity = orders.Count();
             double customerCapacitySU = Math.Round((from order in orders
                                                     from product in order.Products
-                                                    select (double?)product.Qty.SU).Sum() ?? 0, 2);
+                                                    select (double?)product.DSSQty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("postponed", filter);
             int postponed = orders.Count();
             double postponedSU = Math.Round((from order in orders
                                              from product in order.Products
-                                             select (double?)product.Qty.SU).Sum() ?? 0, 2);
+                                             select (double?)product.DSSQty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("vehicle", filter);
             int vehicle = orders.Count();
             double vehicleSU = Math.Round((from order in orders
                                            from product in order.Products
-                                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
+                                           select (double?)product.DSSQty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("inventoryLack", filter);
             int inventoryLack = orders.Count();
             double inventoryLackSU = Math.Round((from order in orders
                                                  from product in order.Products
-                                                 select (double?)product.Qty.SU).Sum() ?? 0, 2);
+                                                 select (double?)product.DSSQty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("minimun", filter);
             int minimun = orders.Count();
             double minimunSU = Math.Round((from order in orders
                                            from product in order.Products
-                                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
+                                           select (double?)product.DSSQty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("minimunMakro", filter);
             int minimunMakro = orders.Count();
             double minimunMakroSU = Math.Round((from order in orders
                                                 from product in order.Products
-                                                select (double?)product.Qty.SU).Sum() ?? 0, 2);
+                                                select (double?)product.DSSQty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("vfr", filter);
             int vfr = orders.Count();
             double vfrSU = Math.Round((from order in orders
                                        from product in order.Products
-                                       select (double?)product.Qty.SU).Sum() ?? 0, 2);
+                                       select (double?)product.DSSQty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("vfrMakro", filter);
             int vfrMakro = orders.Count();
             double vfrMakroSU = Math.Round((from order in orders
                                             from product in order.Products
-                                            select (double?)product.Qty.SU).Sum() ?? 0, 2);
+                                            select (double?)product.DSSQty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("deleted", filter);
             int deleted = orders.Count();
             double deletedSU = Math.Round((from order in orders
                                            from product in order.Products
-                                           select (double?)product.Qty.SU).Sum() ?? 0, 2);
+                                           select (double?)product.DSSQty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("zsplit", filter);
             int zsplit = orders.Count();
             double zsplitSU = Math.Round((from order in orders
                                           from product in order.Products
-                                          select (double?)product.Qty.SU).Sum() ?? 0, 2);
+                                          select (double?)product.DSSQty.SU).Sum() ?? 0, 2);
 
             orders = SelectOrders("others", filter);
             int others  = orders.Count();
             double othersSU = Math.Round((from order in orders
                                           from product in order.Products
-                                          select (double?)product.Qty.SU).Sum() ?? 0, 2);
+                                          select (double?)product.DSSQty.SU).Sum() ?? 0, 2);
 
             int allDistribution = pending + appointment + customerCapacity + postponed + vehicle + inventoryLack + minimun +
                 minimunMakro + vfr + vfrMakro + deleted + zsplit + others;

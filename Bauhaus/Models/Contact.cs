@@ -16,7 +16,6 @@ namespace Bauhaus.Models
         public String Telephone {get; set;}
         [DataType(DataType.EmailAddress)]
         public String Email { get; set; }
-
     }
 
 

@@ -30,7 +30,7 @@
                                    <i class="fa fa-cog fa-spin"></i>
                                    <small>@o.Remark</small>
                                </div>
-                               if (o.CreationDate.AddMinutes(20) <= TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById("Venezuela Standard Time")))
+                               if (o.CreationDate.AddMinutes(10) <= TimeZoneInfo.ConvertTime(DateTime.Now, TimeZoneInfo.FindSystemTimeZoneById("Venezuela Standard Time")))
                                 {
                                    <button type="button" class="btn btn-link" onclick="location.href='@Url.Action("Abort", new { id = o.ReportID })';return false;">
                                        <i class="fa fa-unlink"></i>
@@ -50,12 +50,12 @@
                );
         columns.Add(item => item.Uploader);
         columns.Add()
-            .Titled("Process Time")
+            .Titled("Elapsed Time")
             .Sanitized(false)
             .Encoded(false)
             .RenderValueAs(o =>
-                @<div>
-                    @Math.Round(o.ProcessTime) Mins
+                @<div class="@o.ReportID">
+                    @Math.Round(o.ElapsedTime) Mins
                 </div>);
             
     }).SetLanguage("En").Sortable().WithPaging(10).Filterable().WithMultipleFilters().Selectable(false)
@@ -64,13 +64,19 @@
     $(function () {
         $(".proc").each(function () {
             setInterval(function () {
-                $(".proc").animate({ opacity: 0 });
+                
+                var id = $(".proc").attr('id');
                     $.post('@Url.Action("RefreshProgress", "Report")',
                         {
-                            id: $(".proc").attr('id'),
+                            id: id,
                         },
-                        function (Content) {
-                            $(".proc").html(Content).animate({opacity:1});
+                        function (data) {
+                            if (data.Status != 1)
+                                displayAlert("warning", data.Message);
+                            $(".proc").animate({ opacity: 0 });
+                            $(".proc").html(data.Progress).animate({ opacity: 1 });
+                            $("." + id).animate({ opacity: 0 });
+                            $("." + id).text(data.Elapsed +" Mins").animate({ opacity: 1 });
                         });
             }, 10000);
         });

@@ -197,7 +197,7 @@
 
     //Delete Vehicle
     $("#deleteVeh").click(function () {
-        alert($("small:contains('"+$("#plate").val()+"')").text());
+//        alert($("small:contains('"+$("#plate").val()+"')").text());
         if ($("#vehId").val() != "") {
             $.post("@Url.Action("DeleteVehicle")", {
                 id: $("#vehId").val()

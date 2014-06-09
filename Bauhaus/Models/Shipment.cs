@@ -35,9 +35,14 @@ namespace Bauhaus.Models
             if(this.Vehicle==null)
             {
                 this.Vehicle = new Models.Vehicle();
+                this.Vehicle.Plate = "N/A";
+                this.Vehicle.Type = "VE01";
             }
-                
-            double volume = this.Orders.Sum(x => x.Products.Sum(y => y.Qty.Volume));
+            double volume;
+            if (this.Orders != null)
+                volume = this.Orders.Sum(x => x.Products.Sum(y => y.Qty.Volume));
+            else
+                volume = 1;
             if (volume <= 10000)
                 this.Vehicle.Type = "VE01";
             else

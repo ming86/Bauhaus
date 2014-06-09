@@ -1,11 +1,11 @@
 ﻿@using Bauhaus.Models
 @model Bauhaus.Models.Order
 
-<h3 class="text-center"> @Model.Status.CodeDescription()</h3>
+<h4 class="text-center"> @Model.Status.CodeDescription()</h4>
 @if(!User.IsInRole("CBD"))
 {
-    <small class="text-center">@Model.Status.ReasonDescription()</small>
-    <p class="text-danger">@Html.DisplayFor(x=>x.Status.Comment)</p>   
+    <p class="text-center"><small>@Model.Status.ReasonDescription()</small></p>
+    <p class="text-danger text-center">@Html.DisplayFor(x=>x.Status.Comment)</p>   
 }
 <table class="table table-condensed">
 
