@@ -1,0 +1,35 @@
+﻿@{
+    ViewBag.Title = "Data Tier Control";
+}
+<div class="container">
+    <div class="row">
+        <div class="col-md-4">
+            <button class="btn btn-default" id="changeStatus" onclick="location.href='@Url.Action("Backup", "Admin")';return false;">
+                <i id="bulb" class=" fa fa-cloud-download fa-5x"></i><br />
+                Generate Backup
+            </button>
+        </div>
+        <div class="col-md-4">
+            <button id="restore" class="btn btn-default" id="showProfile">
+                <i class="fa fa-recycle fa-5x"></i><br />
+                Restore Database
+            </button>
+            <div style="display:none;" id="fileForm">
+                <form>
+                    <label>
+                        Select SQL Script to Load:
+                    </label>
+                    <input type="file" accept="text/x-sql" />
+                    <button class="btn btn-default" type="submit">
+                        Upload
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    $("#restore").click(
+        $("#fileForm").slideToggle()
+        );
+</script>

@@ -141,3 +141,10 @@ C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\Mono.Math.xml
 C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\obj\Debug\Bauhaus.dll
 C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\obj\Debug\Bauhaus.pdb
 C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\obj\Debug\Bauhaus.csprojResolveAssemblyReference.cache
+C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\Microsoft.SqlServer.ConnectionInfo.dll
+C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\Microsoft.SqlServer.ConnectionInfoExtended.dll
+C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\Microsoft.SqlServer.Management.Sdk.Sfc.dll
+C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\Microsoft.SqlServer.Smo.dll
+C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\Microsoft.SqlServer.SmoExtended.dll
+C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\Microsoft.SqlServer.SqlClrProvider.dll
+C:\Users\meneses.bs@pg.com\Documents\GitHub\Bauhaus\Bauhaus\bin\Microsoft.SqlServer.SqlEnum.dll

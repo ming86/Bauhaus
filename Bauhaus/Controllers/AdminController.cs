@@ -16,6 +16,12 @@ using System.Data;
 using System.Globalization;
 using PercentageProgressBar;
 using Bauhaus.Helpers;
+using Microsoft.SqlServer.Management.Common;
+using Microsoft.SqlServer.Management.Smo;
+using System.Collections.Specialized;
+using Microsoft.SqlServer.Management.Sdk.Sfc;
+using System.Text;
+using System.Web.Hosting;
 
 namespace Bauhaus.Controllers
 {
@@ -25,7 +31,7 @@ namespace Bauhaus.Controllers
         //
         // GET: /Admin/
 
-        [Authorize(Roles="Admin")]
+        [Authorize(Roles = "Admin")]
         public ActionResult Index()
         {
             DateTime updated = (from x in db.Reports
@@ -75,7 +81,7 @@ namespace Bauhaus.Controllers
             return View(roles);
         }
 
-       
+
         [Authorize(Roles = "Admin")]
         [HttpPost]
         public ActionResult AddRole(string roleName)
@@ -102,10 +108,10 @@ namespace Bauhaus.Controllers
             }
 
             var users = System.Web.Security.Roles.GetUsersInRole(roleName);
-            if(users.Length != 0)
+            if (users.Length != 0)
                 System.Web.Security.Roles.RemoveUsersFromRole(users, roleName);
             System.Web.Security.Roles.DeleteRole(roleName);
-            return RedirectToAction("ManageRoles","Admin");
+            return RedirectToAction("ManageRoles", "Admin");
         }
 
         [Authorize(Roles = "Admin")]
@@ -114,14 +120,14 @@ namespace Bauhaus.Controllers
         {
             if (!Roles.RoleExists(roleName))
                 return Json(new { Status = 0, Message = "Wanted role does not exist." });
-            if(!WebSecurity.UserExists(userName))
+            if (!WebSecurity.UserExists(userName))
                 return Json(new { Status = 0, Message = "User does not exist." });
-            
-            String [] roles = System.Web.Security.Roles.GetRolesForUser(userName);
-            if(roles.Length>0)
+
+            String[] roles = System.Web.Security.Roles.GetRolesForUser(userName);
+            if (roles.Length > 0)
                 System.Web.Security.Roles.RemoveUserFromRoles(userName, roles);
 
-            System.Web.Security.Roles.AddUserToRole(userName,roleName);
+            System.Web.Security.Roles.AddUserToRole(userName, roleName);
 
             //Security Log Details
             Log log = new Log(Request.UserHostAddress, User.Identity.Name, "Warning", "Assigned " + roleName + " role to user " + userName);
@@ -162,7 +168,7 @@ namespace Bauhaus.Controllers
         public ActionResult LogIndex()
         {
             ViewBag.Title = "Security Log";
-            return View(db.Logs.ToList().OrderByDescending(log=>log.Date));
+            return View(db.Logs.ToList().OrderByDescending(log => log.Date));
         }
 
 
@@ -175,9 +181,9 @@ namespace Bauhaus.Controllers
             ViewBag.Title = "Visit Stadistics Month " + DateTime.Today.Month;
             List<UserProfile> users = db.UserProfiles.ToList();
             Dictionary<String, int> visits = new Dictionary<string, int>();
-            foreach(UserProfile user in users)
+            foreach (UserProfile user in users)
             {
-                if(!visits.ContainsKey(user.UserName))
+                if (!visits.ContainsKey(user.UserName))
                     visits.Add(user.UserName, 0);
             }
 
@@ -185,8 +191,8 @@ namespace Bauhaus.Controllers
                                                 x.Description.Contains("Logged In") &&
                                                 x.Date.Month == DateTime.Today.Month
                                                 ).ToList();
-            
-            foreach(Log lg in logs)
+
+            foreach (Log lg in logs)
             {
                 if (visits.ContainsKey(lg.UserName))
                     visits[lg.UserName] += 1;
@@ -200,7 +206,7 @@ namespace Bauhaus.Controllers
                 ExcelWorksheet ws = pck.Workbook.Worksheets.Add("Visits");
 
                 // Load Info
-                ws.Cells["A1"].LoadFromCollection(visits.OrderBy(x=>x.Value).ToList(), true);
+                ws.Cells["A1"].LoadFromCollection(visits.OrderBy(x => x.Value).ToList(), true);
 
                 // Format Headers
                 using (ExcelRange rng = ws.Cells["A1:B1"])
@@ -214,7 +220,7 @@ namespace Bauhaus.Controllers
                 ws.Cells["A1"].Value = "User";
                 ws.Cells["B1"].Value = "# of Visits";
 
-                
+
                 // Write Back Response to Client
                 Response.Clear();
                 Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -222,6 +228,68 @@ namespace Bauhaus.Controllers
                 Response.BinaryWrite(pck.GetAsByteArray());
                 Response.End();
             }
+        }
+
+        [Authorize(Roles = "Admin")]
+        public ActionResult DataTierControl()
+        {
+            return View();
+        }
+
+        [Authorize(Roles = "Admin")]
+        public void Backup()
+        {
+            //Check if Directory Exist
+            if (!System.IO.Directory.Exists(Server.MapPath("~/Content/BackupScripts")))
+            {
+                System.Diagnostics.Debug.WriteLine("Creating Directory");
+                System.IO.Directory.CreateDirectory(Server.MapPath("~/Content/BackupScripts"));
+            }
+            
+            String FileName = "backupScript"+DateTime.Today.ToString("ddMMyyyy")+".sql";
+
+            String Path = string.Format("{0}/{1}", Server.MapPath("~/Content/BackupScripts"),
+                                        FileName);
+
+            // Define Tables to BackUp
+            String[] Tables = new String[5] {"__MigrationHistory","UserProfile","webpages_Membership","webpages_Roles","webpages_UsersInRoles"};
+            StringBuilder sb = new StringBuilder();
+
+            //Server srv = new Server(new Microsoft.SqlServer.Management.Common.ServerConnection("BauhausDB", "<user name>", "<password>"));
+            Server srv = new Server();
+            Database dbs = srv.Databases["BauhausDB"];
+            ScriptingOptions options = new ScriptingOptions();
+            options.ScriptData = true;
+            options.ScriptDrops = false;
+            options.FileName = Path;
+            options.EnforceScriptingOptions = true;
+            options.ScriptSchema = true;
+            options.IncludeHeaders = true;
+            options.AppendToFile = true;
+            options.Indexes = true;
+            options.WithDependencies = true;
+            foreach (var tbl in Tables)
+            {
+                dbs.Tables[tbl].EnumScript(options);
+            }
+
+            // Write Back Response to Client
+            Response.ClearContent();
+            Response.Clear();
+            Response.ContentType = "text/x-sql";
+            Response.AddHeader("content-disposition", "attachment; filename= " +FileName+";");
+            Response.TransmitFile(Path);
+            Response.Flush();
+            // Delete File from server
+            System.IO.File.Delete(Path);
+            Response.End();
+
+        }
+
+        [Authorize(Roles = "Admin")]
+        public JsonResult Restore(String fileName)
+        {
+
         }
     }
 }
