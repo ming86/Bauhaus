@@ -45,6 +45,19 @@ namespace Bauhaus
                 Roles.CreateRole("CBD");
             if (!Roles.RoleExists("Planner"))
                 Roles.CreateRole("Planner");
+            if (!WebSecurity.UserExists("admin"))
+            {
+                WebSecurity.CreateUserAndAccount("admin", "bauhaus", propertyValues: new
+                {
+                    FullName = "System Administrator",
+                    Email = "bauhaus.admin@pg.com",
+                    Active = true
+                });
+                Roles.AddUserToRole("admin", "Admin");
+
+            }
+                
+                
         }
     }
 }

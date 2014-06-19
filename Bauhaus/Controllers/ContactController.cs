@@ -21,76 +21,60 @@ namespace Bauhaus.Controllers
 
         [HttpPost]
         [Authorize]
-        public ContentResult Create(long customer,String area, String name, String telephone, String email)
+        public JsonResult Create(String area, String name, String telephone, String email)
         {
-            int type;
-            string result;
-
-            if (area!=null && name!=null && telephone!=null && telephone!=null && email!=null)
+            if (area!=null && name!=null && telephone!=null || email!=null)
             {
-                Customer cust = db.Customers.Find(customer);
                 Contact contact = new Contact();
                 contact.Area = area;
                 contact.Name = name;
                 contact.Telephone = telephone;
                 contact.Email = email;
-                cust.Contacts.Add(contact);
                 db.Contacts.Add(contact);
                 db.SaveChanges();
-                type = 0;
-                result = "Contact Saved.";
+                return Json(new { Status = 1, Message = "Contact Saved." });
             }
             else
             {
-                type = 1;
-                result = "Contact Saving Failed.";
+                return Json(new { Status = 1, Message = "Contact must have Area, Name and either Tlf or Mail." });
             }
-
-            return new ContentResult { Content = type + "|" + result };
         }
 
         //
         // GET: /Contact/Edit/5
         [Authorize]
-        public ActionResult Edit(int id = 0)
+        public JsonResult GetContact(int id)
         {
             Contact contact = db.Contacts.Find(id);
             if (contact == null)
-            {
-                return HttpNotFound();
-            }
-            return View(contact);
+                return Json(new { Status = 0, Message = "Contact not found"});
+            return Json(new { Status = 1, Message = "Ok", Contact = contact});
+        }
+
+        [Authorize]
+        public ActionResult GetContactsGrid()
+        {
+            return PartialView("_ContactsGrid", db.Contacts.OrderBy(x => x.Area).ToList());
         }
 
         //
         // POST: /Contact/Edit/5
         [Authorize]
         [HttpPost]
-        public ContentResult Update(int id, String area, String name, String telephone, String email)
+        public JsonResult Update(int id, String area, String name, String telephone, String email)
         {
-
-            int type;
-            string result;
-            if (area!=null && name!=null && telephone!=null && email!=null)
+            if (area != null && name != null && telephone != null || email != null)
             {
                 Contact contact = db.Contacts.Find(id);
                 contact.Area = area;
                 contact.Name = name;
                 contact.Telephone = telephone;
                 contact.Email = email;
-                db.Entry(contact).State = EntityState.Modified;
                 db.SaveChanges();
-                type = 0;
-                result = "Contact Saved.";
-                
+                return Json(new { Status = 1, Messsage = "Contact Saved" });
             }
             else
-            {
-                type = 1;
-                result = "Contact Saving Failed.";
-            }
-
-            return new ContentResult { Content = type + "|" + result };
+                return Json(new { Status = 0, Message = "Contact Saving Failed." });
         }
 
         //
@@ -98,7 +82,6 @@ namespace Bauhaus.Controllers
         [Authorize]
         public JsonResult Delete(int id)
         {
-            System.Diagnostics.Debug.WriteLine("Deleting Contact: " + id);
             Contact contact = db.Contacts.Find(id);
             if (contact == null)
                 return Json(new { Status = 0, Message = "Not found" });
@@ -106,11 +89,11 @@ namespace Bauhaus.Controllers
             {
                 db.Contacts.Remove(contact);
                 db.SaveChanges();
+                return Json(new { Status = 1, Message = "Contact Removed" });
             }
-            return Json(new { Status = 1, Message = "OK" });
+            
         }
 
-        
         protected override void Dispose(bool disposing)
         {
             db.Dispose();

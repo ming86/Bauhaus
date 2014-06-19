@@ -187,8 +187,7 @@ namespace Bauhaus.Controllers
                     visits.Add(user.UserName, 0);
             }
 
-            List<Log> logs = db.Logs.Where(x => x.Type == "Warning" &&
-                                                x.Description.Contains("Logged In") &&
+            List<Log> logs = db.Logs.Where(x => x.Description.Contains("Logged In") &&
                                                 x.Date.Month == DateTime.Today.Month
                                                 ).ToList();
 
@@ -231,13 +230,14 @@ namespace Bauhaus.Controllers
         }
 
         [Authorize(Roles = "Admin")]
-        public ActionResult DataTierControl()
+        public ActionResult DataControls()
         {
             return View();
         }
 
+        
         [Authorize(Roles = "Admin")]
-        public void Backup()
+        public void Backup(String tableNames = "__MigrationHistory", Boolean promptDownload = false)
         {
             //Check if Directory Exist
             if (!System.IO.Directory.Exists(Server.MapPath("~/Content/BackupScripts")))
@@ -246,13 +246,17 @@ namespace Bauhaus.Controllers
                 System.IO.Directory.CreateDirectory(Server.MapPath("~/Content/BackupScripts"));
             }
             
+
             String FileName = "backupScript"+DateTime.Today.ToString("ddMMyyyy")+".sql";
 
             String Path = string.Format("{0}/{1}", Server.MapPath("~/Content/BackupScripts"),
                                         FileName);
 
+            if (System.IO.File.Exists(Path))
+                System.IO.File.Delete(Path);
+
             // Define Tables to BackUp
-            String[] Tables = new String[5] {"__MigrationHistory","UserProfile","webpages_Membership","webpages_Roles","webpages_UsersInRoles"};
+            String[] Tables = tableNames.Split(',');
             StringBuilder sb = new StringBuilder();
 
             //Server srv = new Server(new Microsoft.SqlServer.Management.Common.ServerConnection("BauhausDB", "<user name>", "<password>"));
@@ -263,33 +267,93 @@ namespace Bauhaus.Controllers
             options.ScriptDrops = false;
             options.FileName = Path;
             options.EnforceScriptingOptions = true;
-            options.ScriptSchema = true;
+            options.ScriptSchema = false;
             options.IncludeHeaders = true;
             options.AppendToFile = true;
             options.Indexes = true;
             options.WithDependencies = true;
+            options.IncludeDatabaseContext = true;
+
             foreach (var tbl in Tables)
             {
                 dbs.Tables[tbl].EnumScript(options);
             }
 
-            // Write Back Response to Client
-            Response.ClearContent();
-            Response.Clear();
-            Response.ContentType = "text/x-sql";
-            Response.AddHeader("content-disposition", "attachment; filename= " +FileName+";");
-            Response.TransmitFile(Path);
-            Response.Flush();
-            // Delete File from server
-            System.IO.File.Delete(Path);
-            Response.End();
+            if(promptDownload)
+            {
+                // Write Back Response to Client
+                Response.ClearContent();
+                Response.Clear();
+                Response.ContentType = "text/x-sql";
+                Response.AddHeader("content-disposition", "attachment; filename= " + FileName + ";");
+                Response.TransmitFile(Path);
+                Response.Flush();
+                // Delete File from server
+                System.IO.File.Delete(Path);
+                Response.End();
+            }
+            
 
         }
 
+        [HttpPost]
         [Authorize(Roles = "Admin")]
-        public JsonResult Restore(String fileName)
+        public JsonResult Erase()
         {
+            // Emergency Backup
+            Backup();
 
+            // Erase All
+            Server srv = new Server();
+            String deleteScript = "USE [BauhausDB]\r\nGO\r\nEXEC sp_MSForEachTable 'DISABLE TRIGGER ALL ON ?'\r\nGO\r\nEXEC sp_MSForEachTable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL'\r\nGO\r\nEXEC sp_MSForEachTable 'DELETE FROM ?'\r\nGO\r\nEXEC sp_MSForEachTable 'ALTER TABLE ? CHECK CONSTRAINT ALL'\r\nGO\r\nEXEC sp_MSForEachTable 'ENABLE TRIGGER ALL ON ?'\r\nGO";
+            srv.ConnectionContext.ExecuteNonQuery(deleteScript);
+
+            //Restore Model Data
+            DirectoryInfo dir = new DirectoryInfo(Server.MapPath("~/Content/BackupScripts"));
+            FileInfo file = dir.GetFiles().OrderByDescending(f => f.LastWriteTime).First();
+            String script = file.OpenText().ReadToEnd();
+            srv.ConnectionContext.ExecuteNonQuery(script, ExecutionTypes.ContinueOnError);
+
+
+            return Json(new { Status = 1, Message = "Ok", Type = "" });
+        }
+
+        [HttpPost]
+        [Authorize(Roles = "Admin")]
+        public ActionResult Restore()
+        {
+            //Check if file selected
+            if (Request.Files["fileUpload"].ContentLength > 0)
+            {
+                //Check if Directory Exist
+                if (!System.IO.Directory.Exists(Server.MapPath("~/Content/BackupScripts")))
+                    System.IO.Directory.CreateDirectory(Server.MapPath("~/Content/BackupScripts"));
+
+                string path = string.Format("{0}/{1}", Server.MapPath("~/Content/BackupScripts"),
+                                       Request.Files["fileUpload"].FileName);
+
+                if (Path.GetExtension(path) != ".sql")
+                {
+                    TempData["Type"] = "warning";
+                    TempData["Message"] = "Incorrect File Extension, please use only '.sql' files.";
+                    return View("DataControls");
+                }
+
+                Request.Files["fileUpload"].SaveAs(path);
+                FileInfo fil = new FileInfo(path);
+                String script = fil.OpenText().ReadToEnd();
+                Server srv = new Server();
+                srv.ConnectionContext.ExecuteNonQuery(script,ExecutionTypes.ContinueOnError);
+                TempData["Type"] = "success";
+                TempData["Message"] = "Script loaded successfully";
+            }
+            else
+            {
+                TempData["Type"] = "warning";
+                TempData["Message"] = "No File Selected.";
+
+            }
+            return View("DataControls");
         }
     }
 }

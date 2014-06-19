@@ -1,0 +1,56 @@
+﻿@using GridMvc
+@using GridMvc.Filtering
+@using GridMvc.Html
+@using GridMvc.Sorting
+@model IEnumerable<Bauhaus.Models.Contact>
+
+@Html.Grid(Model).Named("ContactGrid").Columns(columns =>
+           {
+               columns.Add(item => item.ID, true);
+               columns.Add(item => item.Area);
+               columns.Add(item => item.Name);
+               columns.Add(item => item.Telephone);
+               columns.Add(item => item.Email);
+               columns.Add()
+                   .Titled("")
+                   .Sanitized(false)
+                   .Encoded(false)
+                   .RenderValueAs(o =>
+                    @<div id="@o.ID">
+                        <button type="button" class="btn btn-sm btn-default editContact" data-toggle="modal" data-target="#editModal"><i class="fa fa-edit fa-2x"></i></button>
+                        <button type="button" class="btn btn-sm btn-default deleteContact" data-toggle="modal" data-target="#deleteModal"><i class="fa fa-times fa-2x"></i></button>
+                    </div>
+                   );
+           }).SetLanguage("En").WithPaging(15).Sortable().Filterable().WithMultipleFilters().Selectable(false)
+
+<script>
+    //LOAD EDIT CONTACT
+    $(".editContact").click(function () {
+        contactID = $(this).parent($("div")).attr('id');
+        $.post("@Url.Action("GetContact")", {
+            id: contactID
+        }, function (data) {
+            if (data.Status != 1)
+                displayAlert("warning", data.Message);
+            else {
+                $("#editArea").val(data.Contact.Area);
+                $("#editName").val(data.Contact.Name);
+                $("#editTelephone").val(data.Contact.Telephone);
+                $("#editEmail").val(data.Contact.Email);
+            }
+        });
+    });
+
+    //REMOVE CONTACT
+    $(".deleteContact").click(function () {
+        $.post("@Url.Action("Delete")", {
+            id: $(this).parent($("div")).attr('id')
+        }, function (data) {
+            if (data.Status != 1)
+                displayAlert("warning", data.Message);
+            else
+                $("#contactsGrid").load("@Url.Action("GetContactsGrid")").fadeIn("slow");
+        });
+    });
+
+</script>

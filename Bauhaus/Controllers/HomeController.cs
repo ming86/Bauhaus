@@ -18,6 +18,19 @@ namespace Bauhaus.Controllers
         [Authorize]
         public ActionResult Index()
         {
+            if (!WebSecurity.UserExists("admin"))
+            {
+                WebSecurity.CreateUserAndAccount("admin", "bauhaus", propertyValues: new
+                {
+                    FullName = "System Administrator",
+                    Email = "bauhaus.admin@pg.com",
+                    Active = true
+                });
+                if (!Roles.RoleExists("Admin"))
+                    Roles.CreateRole("Admin");
+                Roles.AddUserToRole("admin", "Admin");
+
+            }
             try
             {
                 string[] userRoles = Roles.GetRolesForUser();
