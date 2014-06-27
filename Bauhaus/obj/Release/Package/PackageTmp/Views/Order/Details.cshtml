@@ -203,8 +203,38 @@
                                          columns.Add(item => item.Description);
                                          columns.Add(item => item.Qty.CS);
                                          columns.Add(item => item.Qty.SU);
-                                         columns.Add(item => item.DSSQty.CS);
-                                         columns.Add(item => item.DSSQty.SU);
+                                         columns.Add()
+                                             .Titled("DSS CS")
+                                             .Encoded(false)
+                                             .Sanitized(false)
+                                             .RenderValueAs(o =>
+                                                 @<div>
+                                                    @if(o.DSSQty != null)
+                                                    {
+                                                       <p>@o.DSSQty.CS</p> 
+                                                    }
+                                                    else
+                                                    {
+                                                        <p class="text-danger">N/A</p>
+                                                    }
+                                                  </div>
+                                             );
+                                         columns.Add()
+                                             .Titled("DSS SU")
+                                             .Encoded(false)
+                                             .Sanitized(false)
+                                             .RenderValueAs(o =>
+                                                 @<div>
+                                                    @if(o.DSSQty != null)
+                                                    {
+                                                       <p>@o.DSSQty.SU</p> 
+                                                    }
+                                                    else
+                                                    {
+                                                        <p class="text-danger">N/A</p>
+                                                    }
+                                                  </div>
+                                             );
                                      }
                    
                     ).Selectable(false)

@@ -1,0 +1,17 @@
+﻿@using Bauhaus.Models
+@model ICollection<Contact>
+
+@foreach (Contact cont in Model)
+{
+    <tr id="@cont.ID" class="contact">
+        <td style="word-wrap:break-word">
+            <strong id="area">@cont.Area</strong>
+            <button value="@cont.ID" class="btn btn-link btn-xs EditContact" data-toggle="modal" data-target="#EditContactModal">Edit</button>
+            <button value="@cont.ID" class="btn btn-link btn-xs DeleteContact" data-toggle="modal" data-target="#DeleteContactModal">Del</button>
+            <br>
+            <p style="margin:0 0 0px" id="name">@cont.Name</p>
+            <p style="margin:0 0 0px" id="telephone">@cont.Telephone</p>
+            <p style="margin:0 0 0px" id="email">@cont.Email</p>
+        </td>
+    </tr>
+}

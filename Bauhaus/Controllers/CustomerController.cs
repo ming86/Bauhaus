@@ -172,24 +172,22 @@ namespace Bauhaus.Controllers
 
         [HttpPost]
         [Authorize]
-        public ContentResult UpdateObservation(long ID, String newObservation)
+        public JsonResult UpdateObservation(long ID, String newObservation)
         {
-            int type = 0;
-            string result = "Observation Updated.";
-            Customer cust = db.Customers.Find(ID);
-            if (cust != null)
+            if (!String.IsNullOrWhiteSpace(newObservation))
             {
-                cust.Observation = newObservation;
-                db.SaveChanges();
+                Customer cust = db.Customers.Find(ID);
+                if (cust != null)
+                {
+                    cust.Observation = newObservation.Trim();
+                    db.SaveChanges();
+                    return Json(new { Status = 1, Message = "Observation Saved.", Observation = cust.Observation});
+                }
+                else
+                    return Json(new { Status = 0, Message = "Customer not Found." });
             }
             else
-            {
-                type = 1;
-                result = "Observation Update Failed.";
-            }
-
-
-            return new ContentResult { Content = type + "|" + result };
+                return Json(new { Status = 0, Message = "Observation Empty." });
         }
 
         /// <summary>
@@ -226,6 +224,14 @@ namespace Bauhaus.Controllers
             TempData["Page"] = page;
             return PartialView("_CustomersGridCBD", customers);
         }
+
+        [Authorize]
+        public ActionResult GetContactsTable(int customer)
+        {
+            Customer cust = db.Customers.Find(customer);
+            return PartialView("_ContactsTable", cust.Contacts);
+        }
+
 
 
     }

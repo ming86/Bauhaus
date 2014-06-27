@@ -6,7 +6,7 @@ by editing this MSBuild file. In order to learn more about this please visit htt
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <PropertyGroup>
     <TimeStampOfAssociatedLegacyPublishXmlFile />
-    <_PublishTargetUrl>C:\Users\meneses.bs@pg.com\Desktop\IIS Server Management\NewDeploy</_PublishTargetUrl>
+    <_PublishTargetUrl>C:\Users\meneses.bs@pg.com\Documents\Bauhaus\IIS Server Management\NewDeploy</_PublishTargetUrl>
   </PropertyGroup>
   <ItemGroup>
     <File Include="BauhausMoonSmall.ico">
@@ -16,7 +16,7 @@ by editing this MSBuild file. In order to learn more about this please visit htt
       <publishTime>12/26/2013 10:25:03</publishTime>
     </File>
     <File Include="bin/Bauhaus.dll">
-      <publishTime>06/05/2014 12:06:50</publishTime>
+      <publishTime>06/27/2014 09:50:43</publishTime>
     </File>
     <File Include="bin/de/Microsoft.Data.Edm.resources.dll">
       <publishTime>10/09/2013 09:42:46</publishTime>
@@ -110,6 +110,27 @@ by editing this MSBuild file. In order to learn more about this please visit htt
     </File>
     <File Include="bin/Microsoft.Data.OData.dll">
       <publishTime>10/09/2013 09:43:08</publishTime>
+    </File>
+    <File Include="bin/Microsoft.SqlServer.ConnectionInfo.dll">
+      <publishTime>06/12/2014 12:14:33</publishTime>
+    </File>
+    <File Include="bin/Microsoft.SqlServer.ConnectionInfoExtended.dll">
+      <publishTime>06/12/2014 12:14:33</publishTime>
+    </File>
+    <File Include="bin/Microsoft.SqlServer.Management.Sdk.Sfc.dll">
+      <publishTime>06/12/2014 12:14:33</publishTime>
+    </File>
+    <File Include="bin/Microsoft.SqlServer.Smo.dll">
+      <publishTime>06/12/2014 12:14:33</publishTime>
+    </File>
+    <File Include="bin/Microsoft.SqlServer.SmoExtended.dll">
+      <publishTime>06/12/2014 12:14:33</publishTime>
+    </File>
+    <File Include="bin/Microsoft.SqlServer.SqlClrProvider.dll">
+      <publishTime>06/12/2014 12:14:33</publishTime>
+    </File>
+    <File Include="bin/Microsoft.SqlServer.SqlEnum.dll">
+      <publishTime>06/12/2014 12:14:33</publishTime>
     </File>
     <File Include="bin/Microsoft.Web.Infrastructure.dll">
       <publishTime>12/26/2013 10:24:11</publishTime>
@@ -577,7 +598,7 @@ by editing this MSBuild file. In order to learn more about this please visit htt
       <publishTime>05/22/2014 15:03:15</publishTime>
     </File>
     <File Include="packages.config">
-      <publishTime>05/22/2014 15:03:15</publishTime>
+      <publishTime>06/12/2014 12:14:58</publishTime>
     </File>
     <File Include="Scripts/bootstrap.js">
       <publishTime>12/26/2013 10:24:53</publishTime>
@@ -762,11 +783,14 @@ by editing this MSBuild file. In order to learn more about this please visit htt
     <File Include="Views/Admin/Dashboard.cshtml">
       <publishTime>01/13/2014 10:49:15</publishTime>
     </File>
+    <File Include="Views/Admin/DataControls.cshtml">
+      <publishTime>06/26/2014 15:52:00</publishTime>
+    </File>
     <File Include="Views/Admin/Index.cshtml">
       <publishTime>05/19/2014 17:16:47</publishTime>
     </File>
     <File Include="Views/Admin/LogIndex.cshtml">
-      <publishTime>03/28/2014 15:26:44</publishTime>
+      <publishTime>06/19/2014 16:48:38</publishTime>
     </File>
     <File Include="Views/Admin/ManageRoles.cshtml">
       <publishTime>04/22/2014 09:34:37</publishTime>
@@ -778,7 +802,7 @@ by editing this MSBuild file. In order to learn more about this please visit htt
       <publishTime>05/02/2014 10:12:42</publishTime>
     </File>
     <File Include="Views/Carrier/Index.cshtml">
-      <publishTime>05/02/2014 15:22:29</publishTime>
+      <publishTime>06/19/2014 15:41:49</publishTime>
     </File>
     <File Include="Views/Carrier/ListVehicles.cshtml">
       <publishTime>06/01/2014 14:58:37</publishTime>
@@ -793,10 +817,10 @@ by editing this MSBuild file. In order to learn more about this please visit htt
       <publishTime>05/02/2014 16:31:28</publishTime>
     </File>
     <File Include="Views/Carrier/_VehEditModal.cshtml">
-      <publishTime>06/01/2014 15:19:59</publishTime>
+      <publishTime>06/06/2014 11:27:25</publishTime>
     </File>
     <File Include="Views/Carrier/_VehiclesGrid.cshtml">
-      <publishTime>06/01/2014 15:47:09</publishTime>
+      <publishTime>06/06/2014 09:31:25</publishTime>
     </File>
     <File Include="Views/CBD/FilterSetup.cshtml">
       <publishTime>05/21/2014 07:59:42</publishTime>
@@ -820,16 +844,22 @@ by editing this MSBuild file. In order to learn more about this please visit htt
       <publishTime>10/09/2013 09:44:24</publishTime>
     </File>
     <File Include="Views/Contact/Index.cshtml">
-      <publishTime>05/16/2014 16:30:19</publishTime>
+      <publishTime>06/19/2014 16:27:36</publishTime>
+    </File>
+    <File Include="Views/Contact/_ContactsGrid.cshtml">
+      <publishTime>06/19/2014 16:25:13</publishTime>
     </File>
     <File Include="Views/CSR/Index.cshtml">
       <publishTime>05/19/2014 17:21:30</publishTime>
     </File>
     <File Include="Views/Customer/Details.cshtml">
-      <publishTime>05/16/2014 15:23:27</publishTime>
+      <publishTime>06/27/2014 09:13:28</publishTime>
     </File>
     <File Include="Views/Customer/Index.cshtml">
       <publishTime>03/25/2014 12:11:28</publishTime>
+    </File>
+    <File Include="Views/Customer/_ContactsGrid.cshtml">
+      <publishTime>06/26/2014 17:17:44</publishTime>
     </File>
     <File Include="Views/Customer/_CustomerInfo.cshtml">
       <publishTime>04/03/2014 10:27:11</publishTime>
@@ -856,7 +886,7 @@ by editing this MSBuild file. In order to learn more about this please visit htt
       <publishTime>03/09/2014 09:03:54</publishTime>
     </File>
     <File Include="Views/Home/Index.cshtml">
-      <publishTime>10/21/2013 18:17:54</publishTime>
+      <publishTime>06/20/2014 16:28:57</publishTime>
     </File>
     <File Include="Views/Home/Unassigned.cshtml">
       <publishTime>04/22/2014 09:18:38</publishTime>
@@ -865,7 +895,7 @@ by editing this MSBuild file. In order to learn more about this please visit htt
       <publishTime>02/23/2014 21:29:55</publishTime>
     </File>
     <File Include="Views/Order/Details.cshtml">
-      <publishTime>06/03/2014 09:30:09</publishTime>
+      <publishTime>06/16/2014 17:46:48</publishTime>
     </File>
     <File Include="Views/Order/Index.cshtml">
       <publishTime>03/09/2014 11:34:25</publishTime>
@@ -907,7 +937,7 @@ by editing this MSBuild file. In order to learn more about this please visit htt
       <publishTime>03/20/2014 18:27:01</publishTime>
     </File>
     <File Include="Views/Shared/_NavBarContent.cshtml">
-      <publishTime>05/23/2014 14:25:03</publishTime>
+      <publishTime>06/19/2014 10:03:17</publishTime>
     </File>
     <File Include="Views/Shipment/Details.cshtml">
       <publishTime>05/14/2014 07:15:30</publishTime>
@@ -919,7 +949,7 @@ by editing this MSBuild file. In order to learn more about this please visit htt
       <publishTime>10/09/2013 09:44:23</publishTime>
     </File>
     <File Include="Web.config">
-      <publishTime>05/23/2014 16:24:53</publishTime>
+      <publishTime>06/20/2014 09:53:14</publishTime>
     </File>
   </ItemGroup>
 </Project>

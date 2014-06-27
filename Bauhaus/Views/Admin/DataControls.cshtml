@@ -35,7 +35,7 @@
                 Restore Database
             </button>
             <div style="display:none;margin-top:10px" id="fileForm">
-                @using (Html.BeginForm("Restore", "Admin", FormMethod.Post, new { enctype = "multipart/form-data" }))
+                @using (Html.BeginForm("UploadReport", "Report", FormMethod.Post, new { enctype = "multipart/form-data" }))
                 {@Html.ValidationSummary()
                     <form>
                         <label>
@@ -49,6 +49,12 @@
                     </form>
                 }
             </div>
+        </div>
+            <div class="col-md-2">
+                <button class="btn btn-default" onclick="location.href='@Url.Action("backupContactsComments", "Admin")';return false;">
+                    <i class=" fa fa-comments-o fa-5x"></i><br />
+                    Contacts & Comments
+                </button>
         </div>
     </div>
 </div>
@@ -66,14 +72,12 @@
         $("#clean").click(function () {
             $("#eraseDB").slideToggle()
         });
-        $("#erase").click(function(){
-            $.post("@Url.Action("Erase","Admin")", {}, function (data) {
-                displayAlert(data.Type, data.Message);               
+        $("#erase").click(function () {
+            alert("hello");
+            $.post("@Url.Action("Erase","Admin")", function (data) {
+                displayAlert(data.Type, data.Message);
             });
         });
 
     });
-    
-
-
 </script>

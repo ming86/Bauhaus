@@ -19,25 +19,59 @@ namespace Bauhaus.Controllers
             return View(db.Contacts.OrderBy(x=>x.Area).ToList());
         }
 
+
+        /// <summary>
+        /// Register a new contact in DB. If customer number is provided the contact will be linked with customer.
+        /// </summary>
+        /// <param name="area">Contact Work Area</param>
+        /// <param name="name">Contact Name</param>
+        /// <param name="telephone">Contact Telehpne</param>
+        /// <param name="email">Contact Email</param>
+        /// <param name="customer">Customer ID</param>
+        /// <returns>Json Object with description message.</returns>
         [HttpPost]
         [Authorize]
-        public JsonResult Create(String area, String name, String telephone, String email)
+        public JsonResult Create(String area, String name, String telephone, String email, int customer = -1)
         {
             if (area!=null && name!=null && telephone!=null || email!=null)
             {
-                Contact contact = new Contact();
-                contact.Area = area;
-                contact.Name = name;
-                contact.Telephone = telephone;
-                contact.Email = email;
-                db.Contacts.Add(contact);
-                db.SaveChanges();
-                return Json(new { Status = 1, Message = "Contact Saved." });
+                Customer cust;
+                if (customer != -1)
+                    cust = db.Customers.Find(customer);
+                else
+                    cust = null;
+                
+                Contact contact = db.Contacts.Where(x=>x.Area == area && x.Name == name).FirstOrDefault();
+
+                if(contact == null)
+                {
+                    contact = new Contact();
+                    contact.Area = area;
+                    contact.Name = name;
+                    contact.Telephone = telephone;
+                    contact.Email = email;
+
+                    if( customer == -1)
+                        db.Contacts.Add(contact);
+                    else
+                        cust.Contacts.Add(contact);
+
+                    db.SaveChanges();
+                    return Json(new { Status = 1, Message = "Contact Saved." });
+                }
+                else
+                {
+                    if(customer == -1)
+                        return Json(new { Status = 0, Message = "Contact Already Exist." });
+                    else
+                    {
+                        cust.Contacts.Add(contact);
+                        return Json(new { Status = 1, Message = "Contact Saved." });
+                    }
+                }
             }
             else
-            {
                 return Json(new { Status = 1, Message = "Contact must have Area, Name and either Tlf or Mail." });
-            }
         }
 
         //

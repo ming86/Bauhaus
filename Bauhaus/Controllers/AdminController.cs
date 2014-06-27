@@ -229,6 +229,72 @@ namespace Bauhaus.Controllers
             }
         }
 
+
+        /// <summary>
+        /// Backups all Customers contacts and comments
+        /// </summary>
+        [Authorize(Roles="Admin")]
+        public void backupContactsComments()
+        {
+            ViewBag.Title = "Customer 's Contacts & Comments";
+
+            var contacts = from x in db.Customers
+                           from y in x.Contacts
+                           select new
+                           {
+                               Customer = x.ID,
+                               Area = y.Area,
+                               Name =y.Name,
+                               Tel = y.Telephone,
+                               Email = y.Email
+                           };
+
+            var comments = from x in db.Customers
+                           select new
+                           {
+                               Customer = x.ID,
+                               Comment = x.Observation
+                           };
+
+             using (ExcelPackage pck = new ExcelPackage())
+            {
+                // Create WorkSheet
+                ExcelWorksheet ws = pck.Workbook.Worksheets.Add("Contacts");
+                ExcelWorksheet ws2 = pck.Workbook.Worksheets.Add("Comments");
+
+
+                // Load Info
+                ws.Cells["A1"].LoadFromCollection(contacts.ToList(), true);
+                ws2.Cells["A1"].LoadFromCollection(comments.ToList(), true);
+
+                // Format Headers
+                using (ExcelRange rng = ws.Cells["A1:E1"])
+                {
+                    rng.Style.Font.Bold = true;
+                    rng.Style.Font.Color.SetColor(Color.White);
+                    rng.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                    rng.Style.Fill.BackgroundColor.SetColor(Color.DarkBlue);
+                }
+
+                using (ExcelRange rng = ws2.Cells["A1:B1"])
+                {
+                    rng.Style.Font.Bold = true;
+                    rng.Style.Font.Color.SetColor(Color.White);
+                    rng.Style.Fill.PatternType = OfficeOpenXml.Style.ExcelFillStyle.Solid;
+                    rng.Style.Fill.BackgroundColor.SetColor(Color.DarkBlue);
+                }
+
+                // Write Back Response to Client
+                Response.Clear();
+                Response.ContentType = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+                Response.AddHeader("content-disposition", "attachment; filename= " + ViewBag.Title +" "+DateTime.Now +".xlsx");
+                Response.BinaryWrite(pck.GetAsByteArray());
+                Response.Flush();
+                Response.End();
+            }
+
+        }
+
         [Authorize(Roles = "Admin")]
         public ActionResult DataControls()
         {
@@ -252,15 +318,22 @@ namespace Bauhaus.Controllers
             String Path = string.Format("{0}/{1}", Server.MapPath("~/Content/BackupScripts"),
                                         FileName);
 
-            if (System.IO.File.Exists(Path))
-                System.IO.File.Delete(Path);
+            try
+            {
+                if (System.IO.File.Exists(Path))
+                    System.IO.File.Delete(Path);
+            }
+            catch(IOException e)
+            {
+                Path = string.Format("{0}/{1}", Server.MapPath("~/Content/BackupScripts"),
+                                        "1"+FileName);
+            }
 
             // Define Tables to BackUp
             String[] Tables = tableNames.Split(',');
             StringBuilder sb = new StringBuilder();
 
-            //Server srv = new Server(new Microsoft.SqlServer.Management.Common.ServerConnection("BauhausDB", "<user name>", "<password>"));
-            Server srv = new Server();
+            Server srv = new Server(new Microsoft.SqlServer.Management.Common.ServerConnection("BDC-SQLP040\\PRDNP4012", "BauhausDB_User", "gladOS146"));
             Database dbs = srv.Databases["BauhausDB"];
             ScriptingOptions options = new ScriptingOptions();
             options.ScriptData = true;
@@ -292,8 +365,6 @@ namespace Bauhaus.Controllers
                 System.IO.File.Delete(Path);
                 Response.End();
             }
-            
-
         }
 
         [HttpPost]
@@ -304,15 +375,15 @@ namespace Bauhaus.Controllers
             Backup();
 
             // Erase All
-            Server srv = new Server();
+            Server srv = new Server(new Microsoft.SqlServer.Management.Common.ServerConnection("BDC-SQLP040\\PRDNP4012", "BauhausDB_User", "gladOS146"));
             String deleteScript = "USE [BauhausDB]\r\nGO\r\nEXEC sp_MSForEachTable 'DISABLE TRIGGER ALL ON ?'\r\nGO\r\nEXEC sp_MSForEachTable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL'\r\nGO\r\nEXEC sp_MSForEachTable 'DELETE FROM ?'\r\nGO\r\nEXEC sp_MSForEachTable 'ALTER TABLE ? CHECK CONSTRAINT ALL'\r\nGO\r\nEXEC sp_MSForEachTable 'ENABLE TRIGGER ALL ON ?'\r\nGO";
-            srv.ConnectionContext.ExecuteNonQuery(deleteScript);
+            srv.ConnectionContext.ExecuteNonQuery(deleteScript,ExecutionTypes.ContinueOnError);
 
             //Restore Model Data
             DirectoryInfo dir = new DirectoryInfo(Server.MapPath("~/Content/BackupScripts"));
             FileInfo file = dir.GetFiles().OrderByDescending(f => f.LastWriteTime).First();
             String script = file.OpenText().ReadToEnd();
-            srv.ConnectionContext.ExecuteNonQuery(script, ExecutionTypes.ContinueOnError);
+            srv.ConnectionContext.ExecuteNonQuery(script);
 
 
             return Json(new { Status = 1, Message = "Ok", Type = "" });
@@ -342,7 +413,7 @@ namespace Bauhaus.Controllers
                 Request.Files["fileUpload"].SaveAs(path);
                 FileInfo fil = new FileInfo(path);
                 String script = fil.OpenText().ReadToEnd();
-                Server srv = new Server();
+                Server srv = new Server(new Microsoft.SqlServer.Management.Common.ServerConnection("BDC-SQLP040\\PRDNP4012", "BauhausDB_User", "gladOS146"));
                 srv.ConnectionContext.ExecuteNonQuery(script,ExecutionTypes.ContinueOnError);
                 TempData["Type"] = "success";
                 TempData["Message"] = "Script loaded successfully";

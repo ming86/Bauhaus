@@ -39,7 +39,7 @@ namespace Bauhaus.Controllers
         {
             if (ModelState.IsValid && WebSecurity.Login(model.UserName, model.Password, persistCookie: model.RememberMe))
             {
-                Log log = new Log(Request.UserHostAddress, User.Identity.Name, "Warning", "Logged In");
+                Log log = new Log(Request.UserHostAddress, model.UserName, "Info", "Logged In");
                 db.Logs.Add(log);
                 db.SaveChanges();
                 if (!String.IsNullOrWhiteSpace(returnUrl))

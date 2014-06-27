@@ -9,8 +9,22 @@
                               {
                                   columns.Add(item => item.Plate);
                                   columns.Add(item => item.Type);
-                                  columns.Add(item => item.Driver.Name)
-                                      .Titled("Drivers Name");
+                                  columns.Add()
+                                      .Titled("Drivers Name")
+                                      .Sanitized(false)
+                                      .Encoded(false)
+                                      .RenderValueAs(o =>
+                                        @<div>
+                                            @if (o.Driver != null)
+                                            {
+                                                <p>@o.Driver.Name</p>
+                                            }
+                                            else
+                                            {
+                                                <p class="text-danger">No Driver</p>
+                                            }
+                                        </div>
+                                      );
                                   columns.Add()
                                       .Titled("")
                                       .Sanitized(false)

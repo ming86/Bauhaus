@@ -18,6 +18,8 @@ using Bauhaus.Helpers;
 using System.Data.Entity.Core;
 using System.Data.SqlClient;
 using System.Data.Entity.Infrastructure;
+using Microsoft.SqlServer.Management.Common;
+using Microsoft.SqlServer.Management.Smo;
 
 namespace Bauhaus.Controllers
 {
@@ -58,7 +60,7 @@ namespace Bauhaus.Controllers
                                         Request.Files["fileUpload"].FileName);
 
                 // Check File Extension
-                if (Path.GetExtension(path) != ".xlsx" && Path.GetExtension(path) != ".txt")
+                if (Path.GetExtension(path) != ".xlsx" && Path.GetExtension(path) != ".txt" && Path.GetExtension(path) != ".sql")
                 {
                     TempData["Type"] = "warning";
                     TempData["Message"] = "Incorrect Format, please use '.xlsx' or '.txt' files.";
@@ -128,15 +130,21 @@ namespace Bauhaus.Controllers
                     {
                         try
                         {
+                            switch(Path.GetExtension(path))
+                            {
+                                case ".txt":
+                                    ProcessReportTxt(stReport.ReportID);
+                                    break;
+                                case ".xlsx":
+                                    ProcessReportExcel(stReport.ReportID);
+                                    break;
+                                case ".sql":
+                                    ProcessReportSQL(stReport.ReportID);
+                                    break;
+                                default:
+                                    break;
+                            }
 
-                            if (Path.GetExtension(path) == ".txt")
-                            {
-                                ProcessReportTxt(stReport.ReportID);
-                            }
-                            else
-                            {
-                                ProcessReportExcel(stReport.ReportID);
-                            }
                             if (stReport.Name == "ZSKU.txt" || stReport.Name == "ZSKU.xlsx")
                                 CleanOrders(stReport.ReportID);
 
@@ -169,6 +177,31 @@ namespace Bauhaus.Controllers
             }
 
             return RedirectToAction("Index");
+        }
+
+        /// <summary>
+        /// Process a SQL report with the given ID
+        /// </summary>
+        /// <param name="p">Report Id to be processed.</param>
+        private void ProcessReportSQL(int id)
+        {
+            Report report = db.Reports.Find(id);
+            if (report == null)
+                return;
+            FileInfo fil = new FileInfo(report.Path);
+                String script = fil.OpenText().ReadToEnd();
+            try
+            {
+                Server srv = new Server(new Microsoft.SqlServer.Management.Common.ServerConnection("BDC-SQLP040\\PRDNP4012", "BauhausDB_User", "gladOS146"));
+                srv.ConnectionContext.ExecuteNonQuery(script,ExecutionTypes.ContinueOnError);
+                TempData["Type"] = "success";
+                TempData["Message"] = "Script loaded successfully";
+            }
+            catch(Exception e)
+            {
+                TempData["Type"] = "warning";
+                TempData["Message"] = "Exception Ocurred while connecting to server and executing command. "+e.Message;
+            }
         }
 
         /// <summary>
@@ -831,12 +864,12 @@ namespace Bauhaus.Controllers
         }
 
         /// <summary>
-        /// 
+        /// Checks if Order already have pointed invoice registered. If not it adds the invoice to order.
         /// </summary>
-        /// <param name="splitedLine"></param>
-        /// <param name="order"></param>
-        /// <param name="zsku"></param>
-        /// <returns></returns>
+        /// <param name="splitedLine">Line where the order is located</param>
+        /// <param name="order">Order to be checked</param>
+        /// <param name="zsku">Zsku report Structure</param>
+        /// <returns>True if new invoice was added, false otherwise</returns>
         private Boolean AddInvoice(string[] splitedLine, Order order, ReportStructureTXT zsku)
         {
             CultureInfo culture = new CultureInfo("en-US");
@@ -985,7 +1018,13 @@ namespace Bauhaus.Controllers
 
                                     ready = true;
                                     break;
-
+                                case "contacts":
+                                    ParseContacts(cWs, stReport);
+                                    break;
+                                case "comments":
+                                    ParseComments(cWs,stReport);
+                                    ready = true;
+                                    break;
                                 default:
                                     break;
                             }
@@ -1011,6 +1050,16 @@ namespace Bauhaus.Controllers
                 package.Dispose();
                 RemoveReport(stReport.ReportID, 0);
             }
+        }
+
+        private void ParseComments(ExcelWorksheet cWs, Report stReport)
+        {
+            throw new NotImplementedException();
+        }
+
+        private void ParseContacts(ExcelWorksheet cWs, Report stReport)
+        {
+            throw new NotImplementedException();
         }
 
         /// <summary>

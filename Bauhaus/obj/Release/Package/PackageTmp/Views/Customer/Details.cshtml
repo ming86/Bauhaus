@@ -688,11 +688,11 @@
     $("#SaveNewContact").click(function () {
         $.post('@Url.Action("Create","Contact")',
             {
-                customer: "@Model.ID",
                 area: $("#NewContactArea").val(),
                 name: $("#NewContactName").val(),
                 telephone: $("#NewContactTelephone").val(),
                 email: $("#NewContactEmail").val(),
+                customer: "@Model.ID",
             }, showResult)
     });
 

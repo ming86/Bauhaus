@@ -89,26 +89,18 @@
                     </div>
                     <div class="col-md-4">
                         <table class="table" style="table-layout:fixed">
-                            <tr>
-                                <td class="active">
-                                    <strong>@Html.DisplayNameFor(model => model.Contacts)</strong>
-                                    <button class="btn btn-link btn-xs" data-toggle="modal" data-target="#NewContactModal">Add</button>
-                                </td>
-                            </tr>
-                            @foreach (Bauhaus.Models.Contact cont in Model.Contacts)
-                            {
-                            <tr id="@cont.ID" class="contact">
-                                <td style="word-wrap:break-word">
-                                    <strong id="area">@cont.Area</strong>
-                                    <button value="@cont.ID" class="btn btn-link btn-xs EditContact" data-toggle="modal" data-target="#EditContactModal">Edit</button>
-                                    <button value="@cont.ID" class="btn btn-link btn-xs DeleteContact" data-toggle="modal" data-target="#DeleteContactModal">Del</button>
-                                    <br>
-                                    <p style="margin:0 0 0px" id="name">@cont.Name</p>
-                                    <p style="margin:0 0 0px" id="telephone">@cont.Telephone</p>
-                                    <p style="margin:0 0 0px" id="email">@cont.Email</p>
-                                </td>
-                            </tr>
-                            }
+                            <thead>
+                                <tr>
+                                    <th class="active">
+                                        @Html.DisplayNameFor(model => model.Contacts)
+                                        <button class="btn btn-link btn-xs" data-toggle="modal" data-target="#NewContactModal">Add</button>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody id="contacts">
+                                @Html.Partial("_ContactsTable", Model.Contacts)
+                            </tbody>
+                            
                             <tr>
                                 <td>
                                     <strong>@Html.DisplayNameFor(model => model.Observation)</strong>
@@ -225,8 +217,15 @@
                 <div class="table">
                     @Html.Grid(Model.Orders).Named("CustOrdersGrid").Columns(columns =>
            {
-               columns.Add(item => item.SapID)
-                   .Titled("Order Number");
+               columns.Add()
+                   .Titled("Order Number")
+                   .Sanitized(false)
+                   .Encoded(false)
+                   .RenderValueAs(d =>
+                    @<b>
+                        @Html.ActionLink(d.SapID.ToString(), "Details", "Order", new { id = d.SapID }, null)
+                    </b>
+                   );
                columns.Add(item => item.CustomerPO)
                    .Titled("Cust. PO");
                columns.Add(item => item.DocDate)
@@ -392,14 +391,6 @@
                    .Encoded(false)
                    .Sanitized(false)
                    .RenderValueAs(o => o.Products.Sum(x => x.DSSQty.CS).ToString());
-               columns.Add()
-                   .Encoded(false)
-                   .Sanitized(false)
-                   .SetWidth(30)
-                   .RenderValueAs(d =>
-                    @<b>
-                        @Html.ActionLink("Details", "Details", "Order", new { id = d.SapID }, null)
-                    </b>);
 
            }).SetLanguage("En").Sortable().Filterable().WithMultipleFilters().Selectable(false)
                 </div>
@@ -594,6 +585,11 @@
 </div>
 <!-- /.modal -->
 <script>
+    $(function () {
+        if ('@TempData["Message"]' != '')
+            displayAlert('@TempData["Type"]', '@TempData["Message"]');
+    });
+
     //Show all tooltips
     $('[data-toggle="tooltip"]').tooltip({
         'placement': 'top'
@@ -629,7 +625,7 @@
                 $(".contact[id='" + id + "']").remove().animate({ opacity: 0 });
             }
             else {
-                toastr.warning("Contact could not be eliminated.");
+                displayAlert("warning",data.Message)
             }
         })
     });
@@ -661,7 +657,13 @@
                 name: $("#EditContactName").val(),
                 telephone: $("#EditContactTelephone").val(),
                 email: $("#EditContactEmail").val(),
-            }, UpdateContact);
+            }, function (data) {
+                if (data.Status != 1)
+                    displayAlert("warning", data.Message);
+                $("#contacts").animate({ opacity: 0 });
+                $("#contacts").load("@Url.Action("GetContactsTable", new { customer = Model.ID })").animate({ opacity: 1 });
+
+            });
 
         ID = $(this).val(),
         Area = $("#EditContactArea").val();
@@ -671,29 +673,21 @@
 
     });
 
-    // Shows Result of COntact Updating
-    function UpdateContact() {
-        //alert($("#" + contactID).children("#name").text());
-        location.href = '@Url.Action("Details","Customer",new { id=@Model.ID})';
-        
-        resultArray = content.split("|");
-        if (resultArray[0] == 0)
-            toastr.success(resultArray[1]);
-        else
-            toastr.warning(resultArray[1]);
-
-    };
-
     // Register new Contact on Customer
     $("#SaveNewContact").click(function () {
         $.post('@Url.Action("Create","Contact")',
             {
-                customer: "@Model.ID",
                 area: $("#NewContactArea").val(),
                 name: $("#NewContactName").val(),
                 telephone: $("#NewContactTelephone").val(),
                 email: $("#NewContactEmail").val(),
-            }, showResult)
+                customer: "@Model.ID",
+            }, function (data) {
+                if (data.Status != 1)
+                    displayAlert("warning", data.Message);
+                $("#contacts").animate({ opacity: 0 });
+                $("#contacts").load("@Url.Action("GetContactsTable", new { customer = Model.ID })").animate({ opacity: 1 });
+            });
     });
 
     // Refresh Whole Page for User
@@ -707,41 +701,18 @@
             {
                 ID: "@Model.ID",
                 newObservation: $("#newObservation").val(),
-            },
-            showObsUpdate
-            )
+            }, function (data) {
+                if (data.Status != 1)
+                    displayAlert("warning", data.Message);
+                $("#observation").animate({ opacity: 0 })
+                $("#observation").text(data.Observation).animate({ opacity: 1 });
+
+            });
     });
-
-    // Propagates update throug page
-    function showObsUpdate(content) {
-
-        $("#observation").text($("#newObservation").val());
-
-        toastr.options = {
-            "closeButton": true,
-            "debug": false,
-            "positionClass": "toast-bottom-right",
-            "onclick": null,
-            "showDuration": "500",
-            "hideDuration": "1000",
-            "timeOut": "5000",
-            "extendedTimeOut": "1000",
-            "showEasing": "swing",
-            "hideEasing": "linear",
-            "showMethod": "fadeIn",
-            "hideMethod": "fadeOut"
-        }
-
-        resultArray = content.split("|");
-        if (resultArray[0] == 0)
-            toastr.success(resultArray[1]);
-        else
-            toastr.warning(resultArray[1]);
-    }
 
     // Alert the user that his download is being prepared.
     $(".download").click(function () {
-        toastr.info("Please Wait. Your Download is being prepared.");
+        displayAlert("info","Please Wait. Your Download is being prepared.");
     });
 
     // Toggle Payment Information
