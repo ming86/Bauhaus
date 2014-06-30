@@ -5,19 +5,19 @@
     <div class="row">
         <div class="col-md-2">
             <button class="btn btn-default" id="backup" onclick="location.href='@Url.Action("DownloadVisitStadistics", "Admin")';return false;">
-                <i class=" fa fa-users fa-5x"></i><br />
+                <i id="accessfa" class=" fa fa-users fa-5x"></i><br />
                 Access Stadistics
             </button>
         </div>
         <div class="col-md-2">
             <button class="btn btn-default" id="backup" onclick="location.href='@Url.Action("Backup", "Admin", new { tableNames = "__MigrationHistory,UserProfile,webpages_Membership,webpages_Roles,webpages_UsersInRoles" , promptDownload = true})'">
-                <i id="bulb" class=" fa fa-cloud-download fa-5x"></i><br />
+                <i id="backupfa" class=" fa fa-cloud-download fa-5x"></i><br />
                 Generate Backup
             </button>
         </div>
         <div class="col-md-2">
             <button class="btn btn-default" id="clean">
-                <i id="bulb" class=" fa fa-trash-o fa-5x"></i><br />
+                <i id="erasefa" class=" fa fa-trash-o fa-5x"></i><br />
                 Clean Database
             </button>
             <div style="display:none;margin-top:10px" id="eraseDB">
@@ -63,7 +63,7 @@
     $(function () {
         if ('@TempData["Message"]' != '')
             displayAlert('@TempData["Type"]', '@TempData["Message"]');
-        $("#restore").click(function(){
+        $("#restore").click(function () {
             $("#fileForm").slideToggle()
         });
         $("#backup").click(function () {
@@ -73,9 +73,18 @@
             $("#eraseDB").slideToggle()
         });
         $("#erase").click(function () {
-            alert("hello");
+            $("#erasefa").removeClass("fa-trash-o").addClass("fa-cog fa-spin");
             $.post("@Url.Action("Erase","Admin")", function (data) {
-                displayAlert(data.Type, data.Message);
+                if (data.Status != 1)
+                    displayAlert("warning", data.Message);
+                $("#erasefa").removeClass("fa-cog fa-spin").addClass("fa-trash-o");
+                if (data.Status == 1)
+                {
+                    alert("Due to Database reset you must log in again using root admin credentials.");
+                    window.location = '@Url.Action("Index","Home")';
+                }
+                    
+
             });
         });
 

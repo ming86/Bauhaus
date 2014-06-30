@@ -90,20 +90,38 @@ namespace Bauhaus.Controllers
             return View();
         }
 
+        /// <summary>
+        /// Hanldes autoenrollment for system restarts.
+        /// </summary>
+        /// <param name="masterKey"></param>
+        /// <returns></returns>
         [Authorize]
         [HttpPost]
         public ActionResult MasterKeyCheck(string masterKey)
         {
-            string storedMasterKey = "bauhaus";
+            string storedMasterKey = "B4uh4u5";
             if (storedMasterKey == masterKey)
             {
                 if (!System.Web.Security.Roles.RoleExists("Admin"))
                     System.Web.Security.Roles.CreateRole("Admin");
-
-                System.Web.Security.Roles.AddUserToRole(User.Identity.Name, "Admin");
+                try
+                {
+                    if (!User.IsInRole("Admin"))
+                        System.Web.Security.Roles.AddUserToRole(User.Identity.Name, "Admin");
+                }
+                catch(InvalidOperationException e)
+                {
+                    return RedirectToAction("Index", "Admin");
+                }
+                
+            }
+            else
+            {
+                TempData["Type"] = "warning";
+                TempData["Message"] = "Masterkey was incorrect";
             }
 
-            return RedirectToAction("Index");
+            return RedirectToAction("Index","Admin");
         }
 
         [Authorize]

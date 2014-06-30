@@ -333,7 +333,8 @@ namespace Bauhaus.Controllers
             String[] Tables = tableNames.Split(',');
             StringBuilder sb = new StringBuilder();
 
-            Server srv = new Server(new Microsoft.SqlServer.Management.Common.ServerConnection("BDC-SQLP040\\PRDNP4012", "BauhausDB_User", "gladOS146"));
+            Server srv = new Server(new Microsoft.SqlServer.Management.Common.ServerConnection("BDC-SQLP040\\PRDNP4012", "BauhausDB_User", "gladOS146")); // Server Config
+            //Server srv = new Server(); // Localhost Config
             Database dbs = srv.Databases["BauhausDB"];
             ScriptingOptions options = new ScriptingOptions();
             options.ScriptData = true;
@@ -375,18 +376,32 @@ namespace Bauhaus.Controllers
             Backup();
 
             // Erase All
-            Server srv = new Server(new Microsoft.SqlServer.Management.Common.ServerConnection("BDC-SQLP040\\PRDNP4012", "BauhausDB_User", "gladOS146"));
+            Server srv = new Server(new Microsoft.SqlServer.Management.Common.ServerConnection("BDC-SQLP040\\PRDNP4012", "BauhausDB_User", "gladOS146")); // Server Config
+            // Server srv = new Server(); // Localhost Config
             String deleteScript = "USE [BauhausDB]\r\nGO\r\nEXEC sp_MSForEachTable 'DISABLE TRIGGER ALL ON ?'\r\nGO\r\nEXEC sp_MSForEachTable 'ALTER TABLE ? NOCHECK CONSTRAINT ALL'\r\nGO\r\nEXEC sp_MSForEachTable 'DELETE FROM ?'\r\nGO\r\nEXEC sp_MSForEachTable 'ALTER TABLE ? CHECK CONSTRAINT ALL'\r\nGO\r\nEXEC sp_MSForEachTable 'ENABLE TRIGGER ALL ON ?'\r\nGO";
-            srv.ConnectionContext.ExecuteNonQuery(deleteScript,ExecutionTypes.ContinueOnError);
+            try
+            {
+                srv.ConnectionContext.ExecuteNonQuery(deleteScript);
+            }
+            catch(SqlException e)
+            {
+                return Json(new { Status = 0, Message = "DB Cleaning Script Failed under "+e.Message+". Please contact an Administrator." });
+            }
+                
+            
 
             //Restore Model Data
             DirectoryInfo dir = new DirectoryInfo(Server.MapPath("~/Content/BackupScripts"));
-            FileInfo file = dir.GetFiles().OrderByDescending(f => f.LastWriteTime).First();
-            String script = file.OpenText().ReadToEnd();
-            srv.ConnectionContext.ExecuteNonQuery(script);
-
-
-            return Json(new { Status = 1, Message = "Ok", Type = "" });
+            FileInfo file = dir.GetFiles().OrderByDescending(f => f.LastWriteTime).FirstOrDefault();
+            if(file!=null)
+            {
+                String script = file.OpenText().ReadToEnd();
+                srv.ConnectionContext.ExecuteNonQuery(script,ExecutionTypes.ContinueOnError);
+            }
+            else
+                return Json(new { Status = 0, Message = "DB Metadata Restoring Failed. Metadata Script was not found or was not created." });
+            
+            return Json(new { Status = 1, Message = "System Restarted Successfully"});
         }
 
         [HttpPost]

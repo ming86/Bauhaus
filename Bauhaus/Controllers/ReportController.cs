@@ -185,6 +185,8 @@ namespace Bauhaus.Controllers
         /// <param name="p">Report Id to be processed.</param>
         private void ProcessReportSQL(int id)
         {
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
             Report report = db.Reports.Find(id);
             if (report == null)
                 return;
@@ -192,16 +194,20 @@ namespace Bauhaus.Controllers
                 String script = fil.OpenText().ReadToEnd();
             try
             {
-                Server srv = new Server(new Microsoft.SqlServer.Management.Common.ServerConnection("BDC-SQLP040\\PRDNP4012", "BauhausDB_User", "gladOS146"));
+                //Server srv = new Server(new Microsoft.SqlServer.Management.Common.ServerConnection("BDC-SQLP040\\PRDNP4012", "BauhausDB_User", "gladOS146"));
+                Server srv = new Server();
                 srv.ConnectionContext.ExecuteNonQuery(script,ExecutionTypes.ContinueOnError);
-                TempData["Type"] = "success";
-                TempData["Message"] = "Script loaded successfully";
+                report.Remark = "Script loaded successfully";
+                report.Status = 1;
             }
             catch(Exception e)
             {
-                TempData["Type"] = "warning";
-                TempData["Message"] = "Exception Ocurred while connecting to server and executing command. "+e.Message;
+                report.Remark = "Exception Ocurred while connecting to server and executing command. "+e.Message;
+                report.Status = 3;
             }
+            sw.Stop();
+            report.ElapsedTime = sw.Elapsed.Minutes;
+            SaveChanges(db);
         }
 
         /// <summary>

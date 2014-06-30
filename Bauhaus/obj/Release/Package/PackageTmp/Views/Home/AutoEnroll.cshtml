@@ -18,3 +18,10 @@
         </div><!-- /.col-lg-6 -->
     </div>
 }
+
+<script>
+    $(function () {
+        if ('@TempData["Message"]' != '')
+            displayAlert('@TempData["Type"]', '@TempData["Message"]');
+    });
+</script>
