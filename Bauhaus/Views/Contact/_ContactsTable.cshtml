@@ -1,0 +1,11 @@
+﻿@using Bauhaus.Models
+@model IEnumerable<Contact>
+
+@foreach (Contact contact in Model)
+{
+    <tr>
+        <td>@contact.Name</td>
+        <td>@contact.Telephone</td>
+        <td>@contact.Email</td>
+    </tr>
+}

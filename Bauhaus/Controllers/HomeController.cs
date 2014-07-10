@@ -109,7 +109,7 @@ namespace Bauhaus.Controllers
                     if (!User.IsInRole("Admin"))
                         System.Web.Security.Roles.AddUserToRole(User.Identity.Name, "Admin");
                 }
-                catch(InvalidOperationException e)
+                catch(InvalidOperationException)
                 {
                     return RedirectToAction("Index", "Admin");
                 }

@@ -249,6 +249,21 @@ namespace Bauhaus.Controllers
                                Email = y.Email
                            };
 
+            int ccount = contacts.Count();
+
+            var contactsE = from x in db.Contacts
+                            where !(from y in db.Customers
+                                    from z in y.Contacts
+                                    select z.ID).Contains(x.ID)
+                            select new
+                            {
+                                Customer = "",
+                                Area = x.Area,
+                                Name = x.Name,
+                                Tel = x.Telephone,
+                                Email = x.Email
+                            };
+
             var comments = from x in db.Customers
                            select new
                            {
@@ -266,6 +281,8 @@ namespace Bauhaus.Controllers
                 // Load Info
                 ws.Cells["A1"].LoadFromCollection(contacts.ToList(), true);
                 ws2.Cells["A1"].LoadFromCollection(comments.ToList(), true);
+                ccount = ccount + 1;
+                ws.Cells["A" + ccount].LoadFromCollection(contactsE.ToList(), false);
 
                 // Format Headers
                 using (ExcelRange rng = ws.Cells["A1:E1"])
@@ -323,7 +340,7 @@ namespace Bauhaus.Controllers
                 if (System.IO.File.Exists(Path))
                     System.IO.File.Delete(Path);
             }
-            catch(IOException e)
+            catch(IOException)
             {
                 Path = string.Format("{0}/{1}", Server.MapPath("~/Content/BackupScripts"),
                                         "1"+FileName);

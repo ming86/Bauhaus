@@ -144,5 +144,36 @@ namespace Bauhaus.Models
             Fee = "fee";
         }
     }
+
+    public class Comments: ReportLayout
+    {
+        public String Customer { get; set; }
+        public String Comment { get; set; }
+
+        public Comments()
+        {
+            Customer = "customer";
+            Comment = "comment";
+        }
+    }
+
+    public class Contacts: ReportLayout
+    {
+        public String Customer { get; set; }
+        public String Area { get; set; }
+        public String Name { get; set; }
+        public String Telephone { get; set; }
+        public String Email { get; set; }
+
+        public Contacts()
+        {
+            Customer = "customer";
+            Area = "area";
+            Name = "name";
+            Telephone = "tel";
+            Email = "email";
+        }
+    }
+
      
 }

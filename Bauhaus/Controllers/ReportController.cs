@@ -130,7 +130,7 @@ namespace Bauhaus.Controllers
                     {
                         try
                         {
-                            switch(Path.GetExtension(path))
+                            switch (Path.GetExtension(path))
                             {
                                 case ".txt":
                                     ProcessReportTxt(stReport.ReportID);
@@ -191,18 +191,18 @@ namespace Bauhaus.Controllers
             if (report == null)
                 return;
             FileInfo fil = new FileInfo(report.Path);
-                String script = fil.OpenText().ReadToEnd();
+            String script = fil.OpenText().ReadToEnd();
             try
             {
                 //Server srv = new Server(new Microsoft.SqlServer.Management.Common.ServerConnection("BDC-SQLP040\\PRDNP4012", "BauhausDB_User", "gladOS146"));
                 Server srv = new Server();
-                srv.ConnectionContext.ExecuteNonQuery(script,ExecutionTypes.ContinueOnError);
+                srv.ConnectionContext.ExecuteNonQuery(script, ExecutionTypes.ContinueOnError);
                 report.Remark = "Script loaded successfully";
                 report.Status = 1;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                report.Remark = "Exception Ocurred while connecting to server and executing command. "+e.Message;
+                report.Remark = "Exception Ocurred while connecting to server and executing command. " + e.Message;
                 report.Status = 3;
             }
             sw.Stop();
@@ -1028,7 +1028,7 @@ namespace Bauhaus.Controllers
                                     ParseContacts(cWs, stReport);
                                     break;
                                 case "comments":
-                                    ParseComments(cWs,stReport);
+                                    ParseComments(cWs, stReport);
                                     ready = true;
                                     break;
                                 default:
@@ -1058,14 +1058,147 @@ namespace Bauhaus.Controllers
             }
         }
 
-        private void ParseComments(ExcelWorksheet cWs, Report stReport)
+
+        /// <summary>
+        /// Parses customers Comments 
+        /// </summary>
+        /// <param name="cWs">Worksheet to Parse</param>
+        /// <param name="stReport">Report containing sheet</param>
+        /// <returns>Error Number ocurred while parsing</returns>
+        private int ParseComments(ExcelWorksheet cWs, Report stReport)
         {
-            throw new NotImplementedException();
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            int cCount = 350;
+            Dictionary<String, String> Map = MapReport(cWs);
+            System.Diagnostics.Debug.WriteLine("Comments");
+            Comments columns = new Comments();
+            String errors = columns.SelfCheck(Map);
+            int errorCount = 0;
+            // Check for missing Columns
+            if (!String.IsNullOrEmpty(errors))
+            {
+                System.Diagnostics.Debug.WriteLine("Aborting process due to missing columns");
+                LogError("Customer Comments", "Missing Columns", errors);
+                stReport.Remark = "An error ocurred, missing columns: " + errors;
+                return 1;
+            }
+
+            for (int i = 2; i <= cWs.Dimension.End.Row; i++)
+            {
+                long aux1;
+                if (!long.TryParse(cWs.Cells[Map[columns.Customer] + i].Text, out aux1))
+                {
+                    LogError("Carrier Code", "Number Format", "Could not parse Customer number." + cWs.Cells[Map[columns.Customer] + i].Text);
+                    errorCount += 1;
+                    continue;
+                }
+                System.Diagnostics.Debug.WriteLine(aux1);
+                Customer auxCustomer = db.Customers.Find(aux1);
+                String comment = cWs.Cells[Map[columns.Comment] + i].Text.Trim();
+
+                if (auxCustomer != null)
+                {
+                    if (auxCustomer.Observation != comment)
+                        auxCustomer.Observation = comment;
+                }
+                else
+                {
+                    LogError("Carrier Code", "Not Found", "Could not find Customer number." + aux1);
+                    errorCount += 1;
+                    continue;
+                }
+
+                // Register Progress.
+                if (i % cCount == 0)
+                {
+                    stReport.Remark = ((int)((double)((double)i / cWs.Dimension.End.Row) * 100)) + "%";
+                    stReport.ElapsedTime = sw.Elapsed.TotalMinutes;
+                    SaveChanges(db, stReport);
+                    db.Dispose();
+                    db = new BauhausEntities();
+                }
+            }
+            return errorCount;
         }
 
-        private void ParseContacts(ExcelWorksheet cWs, Report stReport)
+        /// <summary>
+        /// Parses Customer Contacts
+        /// </summary>
+        /// <param name="cWs">Worksheet to parse</param>
+        /// <param name="stReport">Report containing Worksheet</param>
+        /// <returns>returns Error Number while parsing</returns>
+        private int ParseContacts(ExcelWorksheet cWs, Report stReport)
         {
-            throw new NotImplementedException();
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            int cCount = 350;
+            Dictionary<String, String> Map = MapReport(cWs);
+            System.Diagnostics.Debug.WriteLine("Contacts");
+            Contacts columns = new Contacts();
+            String errors = columns.SelfCheck(Map);
+            int errorCount = 0;
+            long prev = 0;
+            Customer cust = null;
+            // Check for missing Columns
+            if (!String.IsNullOrEmpty(errors))
+            {
+                System.Diagnostics.Debug.WriteLine("Aborting process due to missing columns");
+                LogError("Customer Contacts", "Missing Columns", errors);
+                stReport.Remark = "An error ocurred, missing columns: " + errors;
+                return 1;
+            }
+
+            for (int i = 2; i <= cWs.Dimension.End.Row; i++)
+            {
+                if (!String.IsNullOrWhiteSpace(cWs.Cells[Map[columns.Customer] + i].Text))
+                {
+                    long aux1;
+                    if (!long.TryParse(cWs.Cells[Map[columns.Customer] + i].Text, out aux1))
+                    {
+                        LogError("Contacts", "Number Format", "Could not parse Customer number.");
+                        errorCount += 1;
+                        continue;
+                    }
+                    if (aux1 != prev)
+                        cust = db.Customers.Find(aux1);
+
+                    if (cust != null)
+                    {
+                        errorCount += cust.updateContact(cWs.Cells[Map[columns.Area] + i].Text, cWs.Cells[Map[columns.Name] + i].Text, cWs.Cells[Map[columns.Telephone] + i].Text, cWs.Cells[Map[columns.Email] + i].Text, db);
+                    }
+
+                }
+                else
+                {
+                    // When Contact does not belong to any customer
+                    if (!String.IsNullOrWhiteSpace(cWs.Cells[Map[columns.Area] + i].Text))
+                    {
+                        Contact contactE = db.Contacts.Where(x => x.Area == cWs.Cells[Map[columns.Area] + i].Text && x.Name == cWs.Cells[Map[columns.Area] + i].Text).FirstOrDefault();
+
+                        if (contactE == null)
+                        {
+                            contactE = new Contact();
+                            contactE.Area = cWs.Cells[Map[columns.Area] + i].Text;
+                            contactE.Name = cWs.Cells[Map[columns.Name] + i].Text;
+                            db.Contacts.Add(contactE);
+                        }
+
+                        contactE.Telephone = cWs.Cells[Map[columns.Telephone] + i].Text;
+                        contactE.Email = cWs.Cells[Map[columns.Email] + i].Text;
+                    }
+                }
+                // Register Progress.
+                if (i % cCount == 0)
+                {
+                    stReport.Remark = ((int)((double)((double)i / cWs.Dimension.End.Row) * 100)) + "%";
+                    stReport.ElapsedTime = sw.Elapsed.TotalMinutes;
+                    SaveChanges(db, stReport);
+                    db.Dispose();
+                    db = new BauhausEntities();
+                }
+            }
+            return errorCount;
         }
 
         /// <summary>
@@ -1314,7 +1447,7 @@ namespace Bauhaus.Controllers
         /// <returns> 0 if all processing went right, # of Errors encountered.</returns>
         private int ProcessCustomerData(ExcelWorksheet cWs, Report stReport)
         {
-            int commitCount = 350;
+            int commitCount = 2;
             Dictionary<String, String> Mapping = MapReport(cWs);
             System.Diagnostics.Debug.WriteLine("Data de Clientes");
             Customers columnsMaestro = new Customers();
@@ -1359,57 +1492,42 @@ namespace Bauhaus.Controllers
                 tempCust.Team = cWs.Cells[Mapping[columnsMaestro.Team] + i].Text;
 
                 // REGISTER CBD REP
-                tempCust.CBDRep = updateContact(tempCust.CBDRep, "CBD", cWs.Cells[Mapping[columnsMaestro.CBDRep] + i].Text, cWs.Cells[Mapping[columnsMaestro.CBDRepTel] + i].Text, "");
+                updateContact(tempCust, "CBD", cWs.Cells[Mapping[columnsMaestro.CBDRep] + i].Text, cWs.Cells[Mapping[columnsMaestro.CBDRepTel] + i].Text, "");
 
                 // REGISTER GU
-                tempCust.GU = updateContact(tempCust.GU, "GU", cWs.Cells[Mapping[columnsMaestro.GU] + i].Text, cWs.Cells[Mapping[columnsMaestro.GUTel] + i].Text, "");
+                updateContact(tempCust, "GU", cWs.Cells[Mapping[columnsMaestro.GU] + i].Text, cWs.Cells[Mapping[columnsMaestro.GUTel] + i].Text, "");
 
                 //tempCust.PayTerm = cWs.Cells[Mapping[columnsMaestro.PaymentTerm] + i].Text;
                 // tempCust.PayDescription = cWs.Cells[Mapping[columnsMaestro.PaymentTermDescription] + i].Text;
+
                 tempCust.MaxVEH = cWs.Cells[Mapping[columnsMaestro.MaxVehicle] + i].Text;
+
                 //Route
                 System.Diagnostics.Debug.WriteLine(cWs.Cells[Mapping[columnsMaestro.Route] + i].Text);
                 String routeName = cWs.Cells[Mapping[columnsMaestro.Route] + i].Text;
                 tempCust.Route = db.Routes.Where(route => route.Name == routeName).FirstOrDefault();
 
                 // REGISTER MAIN CSR OM
-                tempCust.MainCSROM = updateContact(tempCust.MainCSROM, "CSR OM", cWs.Cells[Mapping[columnsMaestro.MainOMCSR] + i].Text, "", "");
+                updateContact(tempCust, "MAIN CSR OM", cWs.Cells[Mapping[columnsMaestro.MainOMCSR] + i].Text, "", "");
 
                 // REGISTER BACKUP CSR OM
-                tempCust.BackupCSROM = updateContact(tempCust.BackupCSROM, "CSR OM", cWs.Cells[Mapping[columnsMaestro.BackupOMCSR] + i].Text, "", "");
+                updateContact(tempCust, "BACKUP CSR OM", cWs.Cells[Mapping[columnsMaestro.BackupOMCSR] + i].Text, "", "");
 
                 // REGISTER MAIN CSR AR
-                tempCust.MainCSRAR = updateContact(tempCust.MainCSRAR, "CSR AR", cWs.Cells[Mapping[columnsMaestro.MainARCSR] + i].Text, "", "");
+                updateContact(tempCust, "MAIN CSR AR", cWs.Cells[Mapping[columnsMaestro.MainARCSR] + i].Text, "", "");
 
                 // REGISTER BACKUP CSR AR
-                tempCust.BackupCSRAR = updateContact(tempCust.BackupCSRAR, "CSR AR", cWs.Cells[Mapping[columnsMaestro.BackupARCSR] + i].Text, "", "");
+                updateContact(tempCust, "BACKUP CSR AR", cWs.Cells[Mapping[columnsMaestro.BackupARCSR] + i].Text, "", "");
 
                 // Register || Update Initial Contacts
-                Contact cont;
                 if (tempCust.Contacts == null)
                     tempCust.Contacts = new List<Contact>();
 
                 // Update Main Contact
-                cont = tempCust.Contacts.Where(x => x.Area == "Principal").FirstOrDefault();
-                if (cont == null)
-                {
-                    cont = updateContact(cont, "Principal", tempCust.Name, cWs.Cells[Mapping[columnsMaestro.MainTelephone] + i].Text, cWs.Cells[Mapping[columnsMaestro.GeneralEmail] + i].Text);
-                    if (cont != null)
-                        tempCust.Contacts.Add(cont);
-                }
-                else
-                    cont = updateContact(cont, "Principal", tempCust.Name, cWs.Cells[Mapping[columnsMaestro.MainTelephone] + i].Text, cWs.Cells[Mapping[columnsMaestro.GeneralEmail] + i].Text);
+                updateContact(tempCust, "Principal", tempCust.Name, cWs.Cells[Mapping[columnsMaestro.MainTelephone] + i].Text, cWs.Cells[Mapping[columnsMaestro.GeneralEmail] + i].Text);
 
                 // Update Reception Contact
-                cont = tempCust.Contacts.Where(x => x.Area == "Recepción").FirstOrDefault();
-                if (cont == null)
-                {
-                    cont = updateContact(cont, "Recepción", cWs.Cells[Mapping[columnsMaestro.ContactName] + i].Text, cWs.Cells[Mapping[columnsMaestro.ContactTelephone] + i].Text, "");
-                    if(cont!=null)
-                        tempCust.Contacts.Add(cont);
-                }
-                else
-                    cont = updateContact(cont, "Recepción", cWs.Cells[Mapping[columnsMaestro.ContactName] + i].Text, cWs.Cells[Mapping[columnsMaestro.ContactTelephone] + i].Text, "");
+                updateContact(tempCust, "Recepción", cWs.Cells[Mapping[columnsMaestro.ContactName] + i].Text, cWs.Cells[Mapping[columnsMaestro.ContactTelephone] + i].Text, "");
 
                 // Register new Customer
                 if (nuevo)
@@ -1417,6 +1535,7 @@ namespace Bauhaus.Controllers
 
                 if (i % commitCount == 0)
                 {
+                    System.Diagnostics.Debug.WriteLine("=================== SAVING ======================");
                     stReport.Remark = ((int)((double)((double)i / cWs.Dimension.End.Row) * 100)) + "%";
                     SaveChanges(db, stReport);
                     db.Dispose();
@@ -1438,57 +1557,78 @@ namespace Bauhaus.Controllers
         /// <param name="tel">new Contact Telephone</param>
         /// <param name="mail">new Contact Mail</param>
         /// <returns>Returns Updated Contact or Null if new Name is Empty</returns>
-        public Contact updateContact(Contact cont, String area, String name, String tel, String mail)
+        public int updateContact(Customer cust, String area, String name, String tel, String mail)
         {
-            // Critical Fields Null? -> Abort
-            if (String.IsNullOrWhiteSpace(name))
-                return null;
-
-            if (String.IsNullOrWhiteSpace(tel) && String.IsNullOrWhiteSpace(mail))
-                if (!area.Contains("CSR"))
-                    return null;
-
-
-            // Initialize
-            if (cont == null)
-                cont = new Contact();
-
-            // Update Name
-            if (cont.Name != name)
+            if (!String.IsNullOrWhiteSpace(area) && !String.IsNullOrWhiteSpace(name))
             {
-                // Look for Name or tel.
-                Contact auxCont = db.Contacts.Where(x => x.Name == name).FirstOrDefault();
-                // Found
-                if (auxCont != null)
+                // Use real area to look in DB
+                string auxArea = "";
+                switch (area)
                 {
-                    // Update Fields
-                    if (auxCont.Name != name && !String.IsNullOrWhiteSpace(name))
-                        auxCont.Name = name;
-                    if (auxCont.Telephone != tel && !String.IsNullOrWhiteSpace(tel))
-                        auxCont.Telephone = tel;
-                    if (auxCont.Email != mail && !String.IsNullOrWhiteSpace(mail))
-                        auxCont.Email = mail;
+                    case "MAIN CSR OM":
+                        auxArea = "CSR OM";
+                        break;
+                    case "BACKUP CSR OM":
+                        auxArea = "CSR OM";
+                        break;
+                    case "MAIN CSR AR":
+                        auxArea = "CSR AR";
+                        break;
+                    case "BACKUP CSR AR":
+                        auxArea = "CSR AR";
+                        break;
+                    default:
+                        auxArea = area;
+                        break;
                 }
-                else
+                // Look for contact in DB
+                Contact newCont = db.Contacts.Where(c => c.Area == auxArea && c.Name == name).FirstOrDefault();
+                // Contact in DB
+                if (newCont == null)
                 {
-                    // Create New
-                    auxCont = new Contact();
-                    auxCont.Area = area;
-                    auxCont.Name = name;
-                    auxCont.Telephone = tel;
-                    auxCont.Email = mail;
+                    newCont = new Contact();
+                    newCont.Area = auxArea;
+                    newCont.Name = name;
+                    db.Contacts.Add(newCont);
+
                 }
-                return auxCont;
+                newCont.Telephone = tel;
+                newCont.Email = mail;
+                // Assign contact where it belongs
+                switch (area)
+                {
+                    case "MAIN CSR OM":
+                        if (cust.MainCSROM != newCont)
+                            cust.MainCSROM = newCont;
+                        break;
+                    case "BACKUP CSR OM":
+                        if (cust.BackupCSROM != newCont)
+                            cust.BackupCSROM = newCont;
+                        break;
+                    case "MAIN CSR AR":
+                        if (cust.MainCSRAR != newCont)
+                            cust.MainCSRAR = newCont;
+                        break;
+                    case "BACKUP CSR AR":
+                        if (cust.BackupCSRAR != newCont)
+                            cust.BackupCSRAR = newCont;
+                        break;
+                    case "CBD":
+                        if (cust.CBDRep != newCont)
+                            cust.CBDRep = newCont;
+                        break;
+                    case "GU":
+                        if (cust.GU != newCont)
+                            cust.GU = newCont;
+                        break;
+                    default:
+                        if (!cust.Contacts.Contains(newCont))
+                            cust.Contacts.Add(newCont);
+                        break;
+                }
+                return 0;
             }
-            // Same Name, Update Everything else.
-            else
-            {
-                if (cont.Telephone != tel && !String.IsNullOrWhiteSpace(tel))
-                    cont.Telephone = tel;
-                if (cont.Email != mail && !String.IsNullOrWhiteSpace(mail))
-                    cont.Email = mail;
-                return cont;
-            }
+            return 1;
         }
 
         /// <summary>

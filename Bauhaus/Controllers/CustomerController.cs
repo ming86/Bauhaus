@@ -69,8 +69,9 @@ namespace Bauhaus.Controllers
         [Authorize]
         public ActionResult Details(long id, string returnUrl)
         {
-            ViewBag.Title = "Customer Details";
+            
             Customer customer = db.Customers.Find(id);
+            ViewBag.Title = customer.Name;
             return View(customer);
         }
 

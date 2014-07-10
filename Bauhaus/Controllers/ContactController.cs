@@ -128,6 +128,16 @@ namespace Bauhaus.Controllers
             
         }
 
+        /// <summary>
+        /// Return Partial View containing a table body full with contacts that have the requested area.
+        /// </summary>
+        /// <param name="area">Area of the requested contacts</param>
+        /// <returns>Partial View</returns>
+        public ActionResult GetContactsTable(String area)
+        {
+            return PartialView("_ContactsTable", db.Contacts.Where(x => x.Area == area).OrderBy(x=>x.Name).ToList());
+        }
+
         protected override void Dispose(bool disposing)
         {
             db.Dispose();
