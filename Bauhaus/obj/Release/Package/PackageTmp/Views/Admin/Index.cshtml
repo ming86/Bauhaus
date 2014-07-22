@@ -11,9 +11,9 @@
             <ul class="nav nav-tabs">
                 <li class="active"><a href="#general" data-toggle="tab">General Summary</a></li>
                 <li><a id="dc" href="#dcPending" data-toggle="tab">Pending Summary</a></li>
-                <li><a id="kpist" href="#KPIS" data-toggle="tab">KPIs</a></li>
+                @*<li><a id="kpist" href="#KPIS" data-toggle="tab">KPIs</a></li>*@
                 <li>
-                    <small class="text-muted">Last Updated: @Model.ToString("dd/MM/yyyy h:mm tt") </small> <button class="btn btn-link" data-toggle="modal" data-target="#CSOHelp">
+                    <small class="text-muted">Last Updated: @Model.ToString("dd/MM/yyyy h:mm tt") </small> <button id="contacts" class="btn btn-link" data-toggle="modal" data-target="#CSOHelp">
                         <i class="fa fa-info-circle fa-2x"></i>
                     </button>
                 </li>
@@ -488,125 +488,35 @@
             <div class="modal-body">
                 <!-- Nav tabs -->
                 <ul class="nav nav-tabs">
-                    <li class="active"><a href="#carriers" data-toggle="tab"><i class="fa fa-truck"></i> Carriers</a></li>
-                    <li><a href="#planners" data-toggle="tab"><i class="fa fa-calendar" ></i> Planners</a></li>
+                    <li class="active"><a href="#carriersTab" data-toggle="tab"><i class="fa fa-truck"></i> Carriers</a></li>
+                    <li><a id="planners" href="#plannersTab" data-toggle="tab"><i class="fa fa-calendar" ></i> Planners</a></li>
                 </ul>
 
                 <!-- Tab panes -->
                 <div class="tab-content">
-                    <div class="tab-pane active" id="carriers">
+                    <div class="tab-pane active" id="carriersTab">
                         <table class="table">
                             <thead>
                                 <tr>
                                     <th>Name</th>
-                                    <th>Ext.</th>
-                                    <th>Else</th>
+                                    <th>Tel.</th>
+                                    <th>Mail/2nd Tel.</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td>BDC - AM Giovanny Muñoz</td>
-                                    <td>4459</td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td>BDC PM - Pedro Gutierrez</td>
-                                    <td>4454</td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td>BDC- Alfredo Urbina</td>
-                                    <td>4358</td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td>BDC - Marilyn Castro</td>
-                                    <td>4353</td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td>BDC - Javier Quiroz</td>
-                                    <td>4450</td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td>BDC AM - Giovanny Muñoz</td>
-                                    <td>4459</td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td>BDC PM - Pedro Gutierrez</td>
-                                    <td>4454</td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td>GDC - Omar Nuñez</td>
-                                    <td>3058</td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td>GDC - Ulises Hidalgo</td>
-                                    <td>3156</td>
-                                    <td></td>
-                                </tr>
+                            <tbody id="carriersT">
                             </tbody>
                         </table>
                     </div>
-                    <div class="tab-pane" id="planners">
+                    <div class="tab-pane" id="plannersTab">
                         <table class="table">
                             <thead>
                                 <tr>
                                     <th>Name</th>
-                                    <th>Ext.</th>
-                                    <th>Else</th>
+                                    <th>Tel.</th>
+                                    <th>Mail/2nd Tel.</th>
                                 </tr>
                             </thead>
-                            <tbody>
-                                <tr>
-                                    <td>Arimar (Yolanda Dávila)</td>
-                                    <td>4334</td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td>Gama (Ana Artigas)</td>
-                                    <td></td>
-                                    <td>0414-3581171</td>
-                                </tr>
-                                <tr>
-                                    <td>Hersan (Ana Caripá)</td>
-                                    <td>4313</td>
-                                    <td>4365</td>
-                                </tr>
-                                <tr>
-                                    <td>IKA (Mariely Juarez)</td>
-                                    <td>4213</td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td>Legisa (Antonio Suárez)</td>
-                                    <td>4304</td>
-                                    <td>4468</td>
-                                </tr>
-                                <tr>
-                                    <td>Rs1954 (Judith Díaz)</td>
-                                    <td>4306</td>
-                                    <td></td>
-                                </tr>
-                                <tr>
-                                    <td>Sanchez Polo (Javier García)</td>
-                                    <td>4308</td>
-                                    <td>0414-4020935</td>
-                                </tr>
-                                <tr>
-                                    <td>Servilong (Luis Álvarez)</td>
-                                    <td>4290</td>
-                                    <td>0424-1058656</td>
-                                </tr>
-                                <tr>
-                                    <td>Venedizca (Jesús Carballo)</td>
-                                    <td>245-55710221</td>
-                                    <td>0414-1435757</td>
-                                </tr>
+                            <tbody id="plannersT">
                             </tbody>
                         </table>
                     </div>
@@ -710,7 +620,6 @@
             $("#vfrMakro").text(data.VFRMakro).animate({ opacity: 1 });
             $("#vfrMakroSU").html("").animate({ opacity: 0 });
             $("#vfrMakroSU").text(data.VFRMakroSU).animate({ opacity: 1 });
-            $("#deleted").html("").animate({ opacity: 0 });
             $("#deleted").text(data.Deleted).animate({ opacity: 1 });
             $("#deletedSU").html("").animate({ opacity: 0 });
             $("#deletedSU").text(data.DeletedSU).animate({ opacity: 1 });
@@ -789,4 +698,25 @@
     $(".download").click(function () {
         displayAlert("info", "Please Wait. Your Download is being prepared.");
     });
+
+    var carga1 = false;
+    var carga2 = false;
+    // Load Contacts data on click
+    $("#contacts").click(function () {
+        if (!carga1)
+        {
+            $("#carriersT").load("@Url.Action("GetContactsTable","Contact", new { area = "Carrier" })");
+            carga1 = true;
+        }
+            
+    });
+
+    $("#planners").click(function () {
+        if (!carga2)
+        {
+            $("#plannersT").load("@Url.Action("GetContactsTable","Contact", new { area = "Planner" })");
+            carga2 = true;
+        }
+    });
+        
 </script>

@@ -710,4 +710,12 @@
     $(".download").click(function () {
         displayAlert("info", "Please Wait. Your Download is being prepared.");
     });
+
+    $("#planners").click(function () {
+        if (!carga2)
+        {
+            $("#plannersT").load("@Url.Action("GetContactsTable","Contact", new { area = "Planner" })");
+            carga2 = true;
+        }
+    });
 </script>

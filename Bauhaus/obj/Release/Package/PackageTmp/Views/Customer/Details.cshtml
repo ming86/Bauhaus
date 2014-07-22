@@ -390,8 +390,19 @@
                    .Titled("DSS CS")
                    .Encoded(false)
                    .Sanitized(false)
-                   .RenderValueAs(o => o.Products.Sum(x => x.DSSQty.CS).ToString());
+                   .RenderValueAs(o =>
+                        @<div>
+                        @if (o.Delivery != null)
+                        {
+                            <strong>@o.Products.Sum(x => x.DSSQty.CS).ToString()</strong>
+                        }
+                        else
+                        {
+                            <strong class="text-danger">N/A</strong>
+                        }
 
+                    </div>
+                    );
            }).SetLanguage("En").Sortable().Filterable().WithMultipleFilters().Selectable(false)
                 </div>
             </div>

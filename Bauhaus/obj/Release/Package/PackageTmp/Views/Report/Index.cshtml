@@ -31,12 +31,13 @@
               <i class="fa fa-cloud-upload fa-x2"></i>
           </button>
     </div>
+    }
         <div class="col-md-1">
-            <button class="btn btn-link" data-toggle="modal" data-target="#ReportHelp">
+            <button type="button" class="btn btn-link" data-toggle="modal" data-target="#ReportHelp">
                 <i class="fa fa-info-circle fa-2x"></i>
             </button>
     </div>
-    }
+    
     @{
         
         string message = "";
@@ -69,11 +70,12 @@
                 <p>Bauhaus can process the following reports:</p>
                 <ul>
                     <li><a href="#" data-toggle="tooltip" title="<p>Format: .txt</p>
-                                                                 <p>Layout:</p>">ZSKU</a></li>
+                                                                 <p>Variant: /VEBAUHAUS2 by CN2819</p>
+                                                                 <p>Layout: /VEBAUHAUS2</p>">ZSKU</a></li>
 
                     <li><a href="#" data-toggle="tooltip" title="<p>Format: .xlsx</p>
                                                                  <p>Sheet Name: ZVORF/Pendiente</p>
-                                                                 <p>Layout:</p>">Ordenes en Mano</a></li>
+                                                                 <p>Layout: SAP Order,Delivery,Shipment,Ship-To,Cust. Name,Route,Lead Time,Transporte,Status,Observacion,Delvry Qty (CS),Delvry Qty (SU),Deliv Quan.(C31),Peso,Volumen,Fecha,DSS DAY,Type</p>">Ordenes en Mano</a></li>
 
                     <li><a href="#" data-toggle="tooltip" title="<p>Format: .xlsx</p>
                                                                  <p>Sheet Name: CarryFees</p>
@@ -90,6 +92,20 @@
                     <li><a href="#" data-toggle="tooltip" title="<p>Format: .xlsx</p>
                                                                  <p>Sheet Name: Info OM Transporte</p>
                                                                  <p>Layout: Cliente,Nombre Comercial,CSR OM Titular,CSR OM Backup,Dirección,Región,Ciudad,Ruta,Team,Zona,CBD Rep,Tlf. CBDR,GU,Tlf. GU,Team Leader,Clientes Clave OM,CSR AR Titular,CSR AR Backup,Nombre de Persona Contacto,Teléfono de Persona Contacto,E-Mail General,Teléfono Principal,Máximo Camión</p>">Customers</a></li>
+                    <li>
+                        <a href="#" data-toggle="tooltip" title="
+                            <p>Format: .xlsx</p>
+                            <p>Sheet Name: Comments</p>
+                            <p>Layout: Customer,Comment</p>">Customers Comments
+                        </a>
+                    </li>
+                    <li>
+                        <a href="#" data-toggle="tooltip" title="
+                            <p>Format: .xlsx</p>
+                            <p>Sheet Name: Contacts</p>
+                            <p>Layout: Customer,Area,Name,Tel,Email </p>">Customers Contacts
+                        </a>
+                    </li>
                 </ul>
                 <p class="text-danger">Note that the only formats allowed are .txt and .xlsx.</p>
 
@@ -99,10 +115,9 @@
                     <li>Choose ZSKU Transaction</li>
                     <li>Select variant VEBAUHAUS created by CN2819 (default)</li>
                     <li>Execute Report</li>
-                    <li>Apply Layout /VEBAUHAUS<strong>2</strong></li>
                     <li>Download Report to your computer choosing <strong>"Unconverted"</strong> option</li>
                     <li>Save report naming it <strong>"ZSKU.txt"</strong></li>
-                    <li>Log into bauhaus.pg.com with Administrator Account</li>
+                    <li>Log into bauhaus.pg.com</li>
                     <li>Select Reports View (<i class="fa fa-archive"></i>)</li>
                     <li>Choose file "ZSKU.txt"</li>
                     <li>Confirm Report Upload (<i class="fa fa-cloud-upload"></i>)</li>

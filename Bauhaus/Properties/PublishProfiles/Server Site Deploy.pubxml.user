@@ -16,7 +16,7 @@ by editing this MSBuild file. In order to learn more about this please visit htt
       <publishTime>12/26/2013 10:25:03</publishTime>
     </File>
     <File Include="bin/Bauhaus.dll">
-      <publishTime>06/30/2014 10:35:13</publishTime>
+      <publishTime>07/14/2014 09:22:20</publishTime>
     </File>
     <File Include="bin/de/Microsoft.Data.Edm.resources.dll">
       <publishTime>10/09/2013 09:42:46</publishTime>
@@ -784,13 +784,13 @@ by editing this MSBuild file. In order to learn more about this please visit htt
       <publishTime>01/13/2014 10:49:15</publishTime>
     </File>
     <File Include="Views/Admin/DataControls.cshtml">
-      <publishTime>06/30/2014 10:32:48</publishTime>
+      <publishTime>07/14/2014 17:04:35</publishTime>
     </File>
     <File Include="Views/Admin/Index.cshtml">
-      <publishTime>05/19/2014 17:16:47</publishTime>
+      <publishTime>07/02/2014 14:24:43</publishTime>
     </File>
     <File Include="Views/Admin/LogIndex.cshtml">
-      <publishTime>06/19/2014 16:48:38</publishTime>
+      <publishTime>07/10/2014 09:37:14</publishTime>
     </File>
     <File Include="Views/Admin/ManageRoles.cshtml">
       <publishTime>04/22/2014 09:34:37</publishTime>
@@ -849,11 +849,14 @@ by editing this MSBuild file. In order to learn more about this please visit htt
     <File Include="Views/Contact/_ContactsGrid.cshtml">
       <publishTime>06/19/2014 16:25:13</publishTime>
     </File>
+    <File Include="Views/Contact/_ContactsTable.cshtml">
+      <publishTime>07/01/2014 11:05:23</publishTime>
+    </File>
     <File Include="Views/CSR/Index.cshtml">
-      <publishTime>05/19/2014 17:21:30</publishTime>
+      <publishTime>07/02/2014 14:23:04</publishTime>
     </File>
     <File Include="Views/Customer/Details.cshtml">
-      <publishTime>06/27/2014 13:04:40</publishTime>
+      <publishTime>07/22/2014 10:22:51</publishTime>
     </File>
     <File Include="Views/Customer/Index.cshtml">
       <publishTime>03/25/2014 12:11:28</publishTime>
@@ -919,7 +922,7 @@ by editing this MSBuild file. In order to learn more about this please visit htt
       <publishTime>04/03/2014 15:31:37</publishTime>
     </File>
     <File Include="Views/Report/Index.cshtml">
-      <publishTime>05/15/2014 15:09:50</publishTime>
+      <publishTime>07/03/2014 10:46:09</publishTime>
     </File>
     <File Include="Views/Report/_ReportsGrid.cshtml">
       <publishTime>05/22/2014 15:29:42</publishTime>

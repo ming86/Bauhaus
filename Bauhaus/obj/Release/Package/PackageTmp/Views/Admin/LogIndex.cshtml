@@ -9,17 +9,6 @@
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
     
-    @{
-        
-        string message = "";
-        string type = "";
-        
-        if (TempData["Message"] != null)
-        {
-            message = TempData["Message"].ToString();
-            type = TempData["Type"].ToString();
-        }
-    } 
 <div class="row">
     <div class="col-md-15">
         @Html.Grid(Model).Named("LogGrid").Columns(columns =>
@@ -30,14 +19,14 @@
         columns.Add(item => item.Type);
         columns.Add(item => item.Description);
 
-    }).SetLanguage("En").Sortable().WithPaging(8).Filterable().WithMultipleFilters()
+    }).SetLanguage("En").Selectable(false).Sortable().WithPaging(8).Filterable().WithMultipleFilters()
 
     </div>
 </div>
 
 <script>
-
     $(function () {
-        displayAlert('@type','@message');
+        if ('@TempData["Message"]' != '')
+            displayAlert('@TempData["Type"]', '@TempData["Message"]');
     });
 </script>
